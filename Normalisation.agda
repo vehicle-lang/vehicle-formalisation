@@ -6,13 +6,6 @@ open import Data.Unit using (⊤; tt)
 open import MiniVehicle
 open import norm-expr
 
--- TODO:
--- 1. [DONE] Define the standard semantics for MiniVehicle
--- 2. Define the semantics of LinExp, ConstraintExp and LetLift
--- 3. Define the logical relation relating the semanticses
--- 4. Extend with queries
--- 5. Extend with tensors with indexing and tuples
-
 ⟦_⟧ty : Type → LinVarCtxt → Set
 ⟦ Bool constraint ⟧ty = ConstraintExp
 ⟦ Num const ⟧ty       = K ℚ
