@@ -112,7 +112,6 @@ eval-ConstraintExp (p and q)   η = eval-ConstraintExp p η ∧ eval-ConstraintE
 eval-ConstraintExp (p or q)    η = eval-ConstraintExp p η ∨ eval-ConstraintExp q η
 
 -- TODO operations above commute with evaluation
--- TODO environment preserving renaming preserves evaluation
 
 ------------------------------------------------------------------------------
 -- Part III : Let/If lifting monad
