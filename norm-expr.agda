@@ -1,7 +1,8 @@
 module norm-expr where
 
-open import Data.Bool using (Bool; true; false; _∧_; _∨_; if_then_else_)
-open import Data.Rational as ℚ using (ℚ; 1ℚ; _*_; _+_; _≤ᵇ_)
+open import Data.Bool using (Bool; true; false; _∧_; _∨_; if_then_else_; not)
+open import Data.Rational as ℚ using (ℚ; 1ℚ; _*_; _+_; _≤ᵇ_; _≟_)
+open import Relation.Nullary using (does)
 
 ------------------------------------------------------------------------------
 -- Linear variable contexts and renaming
@@ -79,8 +80,8 @@ rename-ConstraintExp ρ (e₁ `≠` e₂) = rename-LinExp ρ e₁ `≠` rename-L
 -- Operations
 
 _⊛_ : ∀ {Δ} → ℚ → LinExp Δ → LinExp Δ
-q ⊛ const x = const (q ℚ.* x)
-q ⊛ var r v = var (q ℚ.* r) v
+q ⊛ const x    = const (q ℚ.* x)
+q ⊛ var r v    = var (q ℚ.* r) v
 q ⊛ (e₁ `+ e₂) = (q ⊛ e₁) `+ (q ⊛ e₂)
 
 negate : ∀ {Δ} → ConstraintExp Δ → ConstraintExp Δ
@@ -104,9 +105,9 @@ eval-LinExp (e₁ `+ e₂) η = eval-LinExp e₁ η + eval-LinExp e₂ η
 
 eval-ConstraintExp : ∀ {Δ} → ConstraintExp Δ → Env Δ → Bool
 eval-ConstraintExp (e₁ `≤` e₂) η = eval-LinExp e₁ η ≤ᵇ eval-LinExp e₂ η
-eval-ConstraintExp (e₁ `>` e₂) η = {!!}
-eval-ConstraintExp (e₁ `=` e₂) η = {!!}
-eval-ConstraintExp (e₁ `≠` e₂) η = {!!}
+eval-ConstraintExp (e₁ `>` e₂) η = not (eval-LinExp e₁ η ≤ᵇ eval-LinExp e₂ η)
+eval-ConstraintExp (e₁ `=` e₂) η = (eval-LinExp e₁ η ≟ eval-LinExp e₂ η) .does
+eval-ConstraintExp (e₁ `≠` e₂) η = not ((eval-LinExp e₁ η ≟ eval-LinExp e₂ η) .does)
 eval-ConstraintExp (p and q)   η = eval-ConstraintExp p η ∧ eval-ConstraintExp q η
 eval-ConstraintExp (p or q)    η = eval-ConstraintExp p η ∨ eval-ConstraintExp q η
 
@@ -154,6 +155,9 @@ bind-let : ∀ {Δ A B} → LetLift A Δ → (A ⇒ₖ LetLift B) Δ → LetLift
 bind-let (return x)    f = f _ (λ x → x) x
 bind-let (if e kt kf)  f = if e (bind-let kt f) λ ρ → bind-let (kf ρ) (rename-⇒ₖ ρ f)
 bind-let (let-exp x k) f = let-exp x (bind-let k (rename-⇒ₖ succ f))
+
+------------------------------------------------------------------------------
+-- Existential Quantification monad
 
 data Ex (A : LinVarCtxt → Set) : LinVarCtxt → Set where
   ex      : ∀ {Δ} → Ex A (Δ ,∙) → Ex A Δ

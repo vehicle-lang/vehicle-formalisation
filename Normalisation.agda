@@ -33,32 +33,32 @@ rename-ctxt {Γ ,- A} ρ (γ , a) = rename-ctxt {Γ} ρ γ , rename-ty A ρ a
 ⟦_⟧tm : ∀ {Γ A} → Γ ⊢ A → ∀ {Δ} → ⟦ Γ ⟧ctxt Δ → LetLift ⟦ A ⟧ty Δ
 ⟦ var x ⟧tm γ =
   return (⟦ x ⟧var γ)
-⟦_⟧tm {Γ} (ƛ t) γ =
+⟦ ƛ t ⟧tm γ =
   -- FIXME: if the domain type is 'Num linear', then convert this to a
-  -- let expression, to prevent some blow up
-  return (λ Δ' ρ a → ⟦ t ⟧tm (rename-ctxt {Γ} ρ γ , a))
-⟦_⟧tm {Γ} (s ∙ t) γ =
+  -- let expression, to prevent some unnecessary expansion of terms
+  return (λ Δ' ρ a → ⟦ t ⟧tm (rename-ctxt ρ γ , a))
+⟦ s ∙ t ⟧tm γ =
   bind-let (⟦ s ⟧tm γ) λ Δ' ρ f →
-  bind-let (⟦ t ⟧tm (rename-ctxt {Γ} ρ γ)) λ Δ'' ρ' a →
+  bind-let (⟦ t ⟧tm (rename-ctxt ρ γ)) λ Δ'' ρ' a →
   f _ ρ' a
 ⟦ const x ⟧tm γ =
   return x
 ⟦ lift t ⟧tm γ =
   bind-let (⟦ t ⟧tm γ) λ Δ' ρ q →
   return (const q)
-⟦_⟧tm {Γ} (s `+ t) γ =
+⟦ s `+ t ⟧tm γ =
   bind-let (⟦ s ⟧tm γ) λ Δ' ρ x →
-  bind-let (⟦ t ⟧tm (rename-ctxt {Γ} ρ γ)) λ Δ'' ρ' y →
+  bind-let (⟦ t ⟧tm (rename-ctxt ρ γ)) λ Δ'' ρ' y →
   return (rename-LinExp ρ' x `+ y)
-⟦_⟧tm {Γ} (s `* t) γ =
+⟦ s `* t ⟧tm γ =
   bind-let (⟦ s ⟧tm γ) λ Δ' ρ x →
   bind-let (⟦ t ⟧tm (rename-ctxt ρ γ)) λ Δ'' ρ' y →
   return (x ⊛ y)
-⟦_⟧tm {Γ} (s `≤ t) γ =
+⟦ s `≤ t ⟧tm γ =
   bind-let (⟦ s ⟧tm γ) λ Δ' ρ x →
   bind-let (⟦ t ⟧tm (rename-ctxt ρ γ)) λ Δ'' ρ' y →
   return (rename-LinExp ρ' x `≤` y)
-⟦_⟧tm {Γ} (if s then t else u) γ =
+⟦ if s then t else u ⟧tm γ =
   bind-let (⟦ s ⟧tm γ) λ Δ' ρ e →
   if e (⟦ t ⟧tm (rename-ctxt ρ γ)) (λ ρ' → ⟦ u ⟧tm (rename-ctxt (ρ ∘ ρ') γ))
 ⟦ `¬ t ⟧tm γ =
