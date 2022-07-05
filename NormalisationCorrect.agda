@@ -1,17 +1,20 @@
 {-# OPTIONS --postfix-projections #-}
 module NormalisationCorrect where
 
+open import Data.Bool using (not; _∧_; _∨_; true; false) renaming (Bool to 𝔹; if_then_else_ to ifᵇ_then_else_)
+open import Data.Product using (_×_; _,_; proj₁; proj₂)
+open import Data.Unit using (⊤; tt)
+open import Data.Rational using (ℚ; _+_; _*_; _≤ᵇ_; _≟_)
+open import Relation.Binary.PropositionalEquality using (_≡_; refl; sym; trans; cong; cong₂)
+open import Relation.Nullary using (does)
+
 open import MiniVehicle
 open import norm-expr
 import StandardSemantics as S
 import Normalisation as N
-open import Data.Bool renaming (Bool to 𝔹; if_then_else_ to ifᵇ_then_else_)
-open import Data.Product using (_×_; _,_; proj₁; proj₂)
-open import Data.Unit using (⊤; tt)
-open import Data.Rational using (ℚ; _+_; _*_; _≤ᵇ_)
-open import Relation.Binary.PropositionalEquality using (_≡_; refl; sym; trans; cong; cong₂)
 
--- worlds are now pairs of LinVarCtxts and Environments for them
+------------------------------------------------------------------------------
+-- worlds are pairs of LinVarCtxts and Environments for them
 
 record World : Set where
   constructor _,_
@@ -20,6 +23,8 @@ record World : Set where
     env  : Env ctxt
 open World
 
+-- world morphisms extend the context so that the environment is
+-- preserved
 record _⇒w_ (w₁ w₂ : World) : Set where
   field
     ren   : w₁ .ctxt ⇒ᵣ w₂ .ctxt
@@ -53,7 +58,6 @@ LetLiftR R w a (if c k₁ k₂) =
 LetLiftR R w a (let-exp e k) =
   LetLiftR R ((w .ctxt ,∙) , extend-env (w .env) (eval-LinExp e (w .env))) a k
 
--- Does this need to be upgraded to be strong?
 let-bindR : ∀ {A A' B B'}{RA : WRel A A'}{RB : WRel B B'} w x y (f : A → B) g →
   LetLiftR RA w x y →
   (∀ w' (ρ : w' ⇒w w) a b → RA w' a b → LetLiftR RB w' (f a) (g (w' .ctxt) (ρ .ren) b)) →
@@ -84,18 +88,18 @@ ext-evalLinExp (const q)  ρ = refl
 ext-evalLinExp (var q x)  ρ = cong (λ □ → q * □) (sym (ρ .presv x))
 ext-evalLinExp (e₁ `+ e₂) ρ = cong₂ _+_ (ext-evalLinExp e₁ ρ) (ext-evalLinExp e₂ ρ)
 
-
 ext-evalConstraint :
   ∀ {w₁ w₂} p (ρ : w₂ ⇒w w₁) →
     eval-ConstraintExp p (w₁ .env)
     ≡ eval-ConstraintExp (rename-ConstraintExp (ρ .ren) p) (w₂ .env)
-ext-evalConstraint (e₁ `≤` e₂) ρ = cong₂ _≤ᵇ_ (ext-evalLinExp e₁ ρ) (ext-evalLinExp e₂ ρ)
-ext-evalConstraint (e₁ `>` e₂) ρ = {!!}
-ext-evalConstraint (e₁ `=` e₂) ρ = {!!}
-ext-evalConstraint (e₁ `≠` e₂) ρ = {!!}
-ext-evalConstraint (p and q)   ρ = cong₂ _∧_ (ext-evalConstraint p ρ) (ext-evalConstraint q ρ)
-ext-evalConstraint (p or q)    ρ = cong₂ _∨_ (ext-evalConstraint p ρ) (ext-evalConstraint q ρ)
+ext-evalConstraint (e₁ `≤` e₂) ρ rewrite ext-evalLinExp e₁ ρ rewrite ext-evalLinExp e₂ ρ = refl
+ext-evalConstraint (e₁ `>` e₂) ρ rewrite ext-evalLinExp e₁ ρ rewrite ext-evalLinExp e₂ ρ = refl
+ext-evalConstraint (e₁ `=` e₂) ρ rewrite ext-evalLinExp e₁ ρ rewrite ext-evalLinExp e₂ ρ = refl
+ext-evalConstraint (e₁ `≠` e₂) ρ rewrite ext-evalLinExp e₁ ρ rewrite ext-evalLinExp e₂ ρ = refl
+ext-evalConstraint (p and q)   ρ rewrite ext-evalConstraint p ρ rewrite ext-evalConstraint q ρ = refl
+ext-evalConstraint (p or q)    ρ rewrite ext-evalConstraint p ρ rewrite ext-evalConstraint q ρ = refl
 
+------------------------------------------------------------------------------
 -- Relatedness for types
 ⟦_⟧ty : ∀ A → WRel S.⟦ A ⟧ty N.⟦ A ⟧ty
 ⟦ Bool constraint ⟧ty w x y = x ≡ eval-ConstraintExp y (w .env)
@@ -183,7 +187,8 @@ ext-ctxt (Γ ,- A) ρ (γ₁γ₂ , a₁a₂) =
         _
         (⟦ t ⟧tm w' (ext-ctxt _ ρ γ₁-γ₂))
         λ w'' ρ₁ a₁ b₁ r-a₁b₁ →
-          {!!}
+          trans (cong₂ _*_ r-ab r-a₁b₁)
+                (eval-⊛ b b₁ (w'' .env))
 ⟦ s `≤ t ⟧tm w {γₛ}{γₙ} γ₁-γ₂ =
   let-bindR w (S.⟦ s ⟧tm γₛ) (N.⟦ s ⟧tm γₙ)
     (λ a → a ≤ᵇ S.⟦ t ⟧tm γₛ)
@@ -215,11 +220,33 @@ ext-ctxt (Γ ,- A) ρ (γ₁γ₂ , a₁a₂) =
     not
     (λ _ _ x → return (negate x))
     (⟦ t ⟧tm w γ₁-γ₂)
-    λ { w' ρ a b refl → {!!} } -- FIXME: negate works correctly
-⟦ s `∧ t ⟧tm w γ₁-γ₂ =
-  {!!}
-⟦ s `∨ t ⟧tm w γ₁-γ₂ =
-  {!!}
-  -- FIXME: lemmas for unary and binary operators
+    λ { w' ρ a b refl → eval-negate b (w' .env) }
+⟦ s `∧ t ⟧tm w {γₛ}{γₙ} γ₁-γ₂ =
+  let-bindR w (S.⟦ s ⟧tm γₛ) (N.⟦ s ⟧tm γₙ)
+    (λ a → a ∧ S.⟦ t ⟧tm γₛ)
+    _
+    (⟦ s ⟧tm w γ₁-γ₂)
+    λ w' ρ a b r-ab →
+      let-bindR w' (S.⟦ t ⟧tm γₛ) (N.⟦ t ⟧tm (N.rename-ctxt (ρ .ren) γₙ))
+        (λ b → a ∧ b)
+        _
+        (⟦ t ⟧tm w' (ext-ctxt _ ρ γ₁-γ₂))
+        λ w'' ρ₁ a₁ b₁ r-a₁b₁ →
+        cong₂ _∧_ (trans r-ab (ext-evalConstraint b ρ₁)) r-a₁b₁
+⟦ s `∨ t ⟧tm w {γₛ}{γₙ} γ₁-γ₂ =
+  let-bindR w (S.⟦ s ⟧tm γₛ) (N.⟦ s ⟧tm γₙ)
+    (λ a → a ∨ S.⟦ t ⟧tm γₛ)
+    _
+    (⟦ s ⟧tm w γ₁-γ₂)
+    λ w' ρ a b r-ab →
+      let-bindR w' (S.⟦ t ⟧tm γₛ) (N.⟦ t ⟧tm (N.rename-ctxt (ρ .ren) γₙ))
+        (λ b → a ∨ b)
+        _
+        (⟦ t ⟧tm w' (ext-ctxt _ ρ γ₁-γ₂))
+        λ w'' ρ₁ a₁ b₁ r-a₁b₁ →
+        cong₂ _∨_ (trans r-ab (ext-evalConstraint b ρ₁)) r-a₁b₁
+
+
+  -- FIXME: lemmas for unary and binary operators?
   -- FIXME: would be easier to uncurry and have a lift2 operation:
   ---   lift2 : (A × B ⇒ₖ C) → LetLift A → LetLift B → LetLift C

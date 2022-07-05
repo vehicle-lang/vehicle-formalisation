@@ -1,8 +1,12 @@
 module norm-expr where
 
 open import Data.Bool using (Bool; true; false; _∧_; _∨_; if_then_else_; not)
+open import Data.Bool.Properties using (not-involutive)
+open import Algebra.Properties.BooleanAlgebra (Data.Bool.Properties.∨-∧-booleanAlgebra) using (deMorgan₁; deMorgan₂)
 open import Data.Rational as ℚ using (ℚ; 1ℚ; _*_; _+_; _≤ᵇ_; _≟_)
+open import Data.Rational.Properties using (*-assoc; *-distribˡ-+)
 open import Relation.Nullary using (does)
+open import Relation.Binary.PropositionalEquality using (_≡_; refl; sym; trans)
 
 ------------------------------------------------------------------------------
 -- Linear variable contexts and renaming
@@ -103,6 +107,12 @@ eval-LinExp (const q)  η = q
 eval-LinExp (var q x)  η = q * η x
 eval-LinExp (e₁ `+ e₂) η = eval-LinExp e₁ η + eval-LinExp e₂ η
 
+eval-⊛ : ∀ {Δ} q (e : LinExp Δ) η → q * eval-LinExp e η ≡ eval-LinExp (q ⊛ e) η
+eval-⊛ q (const x) η = refl
+eval-⊛ q (var r x) η = sym (*-assoc q r (η x))
+eval-⊛ q (e₁ `+ e₂) η rewrite sym (eval-⊛ q e₁ η) rewrite sym (eval-⊛ q e₂ η) =
+  *-distribˡ-+ q (eval-LinExp e₁ η) (eval-LinExp e₂ η)
+
 eval-ConstraintExp : ∀ {Δ} → ConstraintExp Δ → Env Δ → Bool
 eval-ConstraintExp (e₁ `≤` e₂) η = eval-LinExp e₁ η ≤ᵇ eval-LinExp e₂ η
 eval-ConstraintExp (e₁ `>` e₂) η = not (eval-LinExp e₁ η ≤ᵇ eval-LinExp e₂ η)
@@ -111,7 +121,17 @@ eval-ConstraintExp (e₁ `≠` e₂) η = not ((eval-LinExp e₁ η ≟ eval-Lin
 eval-ConstraintExp (p and q)   η = eval-ConstraintExp p η ∧ eval-ConstraintExp q η
 eval-ConstraintExp (p or q)    η = eval-ConstraintExp p η ∨ eval-ConstraintExp q η
 
--- TODO operations above commute with evaluation
+eval-negate : ∀ {Δ} (p : ConstraintExp Δ) η → not (eval-ConstraintExp p η) ≡ eval-ConstraintExp (negate p) η
+eval-negate (x `≤` x₁) η = refl
+eval-negate (x `>` x₁) η = not-involutive _
+eval-negate (x `=` x₁) η = refl
+eval-negate (x `≠` x₁) η = not-involutive _
+eval-negate (p and q)  η rewrite sym (eval-negate p η)
+                         rewrite sym (eval-negate q η) =
+                            deMorgan₁ (eval-ConstraintExp p η) (eval-ConstraintExp q η)
+eval-negate (p or q)   η rewrite sym (eval-negate p η)
+                         rewrite sym (eval-negate q η) =
+                            deMorgan₂ (eval-ConstraintExp p η) (eval-ConstraintExp q η)
 
 ------------------------------------------------------------------------------
 -- Part III : Let/If lifting monad
@@ -124,7 +144,7 @@ data LetLift (A : LinVarCtxt → Set) : LinVarCtxt → Set where
   let-exp : ∀ {Δ} → LinExp Δ → LetLift A (Δ ,∙) → LetLift A Δ
 
 -- Interprets 'if' as an actual if-then-else, and 'let' as extending
--- the environment.
+-- the environment by the value of an expression.
 eval-Let : ∀ {X : Set}{A} →
            (∀ {Δ} → A Δ → Env Δ → X) →
            ∀ {Δ} → LetLift A Δ → Env Δ → X
