@@ -1,3 +1,5 @@
+{-# OPTIONS --postfix-projections --safe #-}
+
 module MiniVehicle where
 
 open import Data.Rational using (ℚ)

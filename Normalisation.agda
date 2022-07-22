@@ -1,3 +1,5 @@
+{-# OPTIONS --postfix-projections --safe #-}
+
 module Normalisation where
 
 open import Data.Product using (_×_; proj₁; proj₂; _,_)

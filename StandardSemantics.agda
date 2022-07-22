@@ -1,3 +1,5 @@
+{-# OPTIONS --postfix-projections --safe #-}
+
 module StandardSemantics where
 
 open import Data.Bool using (true; false; _∧_; _∨_; not)

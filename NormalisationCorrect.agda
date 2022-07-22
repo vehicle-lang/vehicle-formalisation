@@ -1,4 +1,5 @@
-{-# OPTIONS --postfix-projections #-}
+{-# OPTIONS --postfix-projections --safe #-}
+
 module NormalisationCorrect where
 
 open import Data.Bool using (not; _∧_; _∨_; true; false) renaming (Bool to 𝔹; if_then_else_ to ifᵇ_then_else_)
