@@ -10,7 +10,7 @@ open import Relation.Binary.PropositionalEquality using (_≡_; refl; sym; trans
 open import Relation.Nullary using (does)
 
 open import MiniVehicle
-open import norm-expr
+open import NormalisedExpr
 import StandardSemantics as S
 import Normalisation as N
 

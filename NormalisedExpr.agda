@@ -1,6 +1,6 @@
 {-# OPTIONS --postfix-projections --safe #-}
 
-module norm-expr where
+module NormalisedExpr where
 
 open import Data.Bool using (Bool; true; false; _∧_; _∨_; if_then_else_; not)
 open import Data.Bool.Properties using (not-involutive)

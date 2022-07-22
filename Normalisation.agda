@@ -6,7 +6,7 @@ open import Data.Product using (_×_; proj₁; proj₂; _,_)
 open import Data.Rational using (ℚ)
 open import Data.Unit using (⊤; tt)
 open import MiniVehicle
-open import norm-expr
+open import NormalisedExpr
 
 ⟦_⟧ty : Type → LinVarCtxt → Set
 ⟦ Bool constraint ⟧ty = ConstraintExp
