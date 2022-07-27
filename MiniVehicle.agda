@@ -44,8 +44,8 @@ data _⊢_ : Context → Type → Set where
   ƛ      : ∀ {Γ A B} → (Γ ,- A) ⊢ B → Γ ⊢ (A ⇒ B)
   _∙_    : ∀ {Γ A B} → Γ ⊢ (A ⇒ B) → Γ ⊢ A → Γ ⊢ B
 
-  -- FIXME: named functions
---  func   : ∀ {Γ} → Γ ⊢ Num linear → Γ ⊢ Num linear
+  -- External functions
+  func   : ∀ {Γ} → Γ ⊢ Num linear → Γ ⊢ Num linear
 
   const  : ∀ {Γ} → ℚ → Γ ⊢ Num const
   lift   : ∀ {Γ} → Γ ⊢ Num const → Γ ⊢ Num linear

@@ -65,9 +65,10 @@ data ConstraintExp (Δ : LinVarCtxt) : Set where
   _`>`_ : LinExp Δ → LinExp Δ → ConstraintExp Δ
   _`=`_ : LinExp Δ → LinExp Δ → ConstraintExp Δ
   _`≠`_ : LinExp Δ → LinExp Δ → ConstraintExp Δ
+  _`=`f_ : Var Δ → Var Δ → ConstraintExp Δ
+  _`≠`f_ : Var Δ → Var Δ → ConstraintExp Δ
   _and_ : ConstraintExp Δ → ConstraintExp Δ → ConstraintExp Δ
   _or_  : ConstraintExp Δ → ConstraintExp Δ → ConstraintExp Δ
--- FIXME: add function (dis)equations
 
 rename-LinExp : Renameable LinExp
 rename-LinExp ρ (const q)  = const q
@@ -81,6 +82,8 @@ rename-ConstraintExp ρ (p and q)   = (rename-ConstraintExp ρ p) and (rename-Co
 rename-ConstraintExp ρ (p or q)    = (rename-ConstraintExp ρ p) or (rename-ConstraintExp ρ q)
 rename-ConstraintExp ρ (e₁ `=` e₂) = rename-LinExp ρ e₁ `=` rename-LinExp ρ e₂
 rename-ConstraintExp ρ (e₁ `≠` e₂) = rename-LinExp ρ e₁ `≠` rename-LinExp ρ e₂
+rename-ConstraintExp ρ (x₁ `=`f x₂) = ρ x₁ `=`f ρ x₂
+rename-ConstraintExp ρ (x₁ `≠`f x₂) = ρ x₁ `≠`f ρ x₂
 
 ------------------------------------------------------------------------------
 -- Operations
@@ -97,6 +100,8 @@ negate (p and q) = negate p or negate q
 negate (p or q) = negate p and negate q
 negate (e₁ `=` e₂) = e₁ `≠` e₂
 negate (e₁ `≠` e₂) = e₁ `=` e₂
+negate (x₁ `=`f x₂) = x₁ `≠`f x₂
+negate (x₁ `≠`f x₂) = x₁ `=`f x₂
 
 ------------------------------------------------------------------------------
 -- Evaluation
@@ -115,25 +120,32 @@ eval-⊛ q (var r x) η = sym (*-assoc q r (η x))
 eval-⊛ q (e₁ `+ e₂) η rewrite sym (eval-⊛ q e₁ η) rewrite sym (eval-⊛ q e₂ η) =
   *-distribˡ-+ q (eval-LinExp e₁ η) (eval-LinExp e₂ η)
 
-eval-ConstraintExp : ∀ {Δ} → ConstraintExp Δ → Env Δ → Bool
-eval-ConstraintExp (e₁ `≤` e₂) η = eval-LinExp e₁ η ≤ᵇ eval-LinExp e₂ η
-eval-ConstraintExp (e₁ `>` e₂) η = not (eval-LinExp e₁ η ≤ᵇ eval-LinExp e₂ η)
-eval-ConstraintExp (e₁ `=` e₂) η = (eval-LinExp e₁ η ≟ eval-LinExp e₂ η) .does
-eval-ConstraintExp (e₁ `≠` e₂) η = not ((eval-LinExp e₁ η ≟ eval-LinExp e₂ η) .does)
-eval-ConstraintExp (p and q)   η = eval-ConstraintExp p η ∧ eval-ConstraintExp q η
-eval-ConstraintExp (p or q)    η = eval-ConstraintExp p η ∨ eval-ConstraintExp q η
+module _ (extFunc : ℚ → ℚ) where
 
-eval-negate : ∀ {Δ} (p : ConstraintExp Δ) η → not (eval-ConstraintExp p η) ≡ eval-ConstraintExp (negate p) η
-eval-negate (x `≤` x₁) η = refl
-eval-negate (x `>` x₁) η = not-involutive _
-eval-negate (x `=` x₁) η = refl
-eval-negate (x `≠` x₁) η = not-involutive _
-eval-negate (p and q)  η rewrite sym (eval-negate p η)
-                         rewrite sym (eval-negate q η) =
-                            deMorgan₁ (eval-ConstraintExp p η) (eval-ConstraintExp q η)
-eval-negate (p or q)   η rewrite sym (eval-negate p η)
-                         rewrite sym (eval-negate q η) =
-                            deMorgan₂ (eval-ConstraintExp p η) (eval-ConstraintExp q η)
+  eval-ConstraintExp : ∀ {Δ} → ConstraintExp Δ → Env Δ → Bool
+  eval-ConstraintExp (e₁ `≤` e₂)  η = eval-LinExp e₁ η ≤ᵇ eval-LinExp e₂ η
+  eval-ConstraintExp (e₁ `>` e₂)  η = not (eval-LinExp e₁ η ≤ᵇ eval-LinExp e₂ η)
+  eval-ConstraintExp (e₁ `=` e₂)  η = (eval-LinExp e₁ η ≟ eval-LinExp e₂ η) .does
+  eval-ConstraintExp (e₁ `≠` e₂)  η = not ((eval-LinExp e₁ η ≟ eval-LinExp e₂ η) .does)
+  eval-ConstraintExp (p and q)    η = eval-ConstraintExp p η ∧ eval-ConstraintExp q η
+  eval-ConstraintExp (p or q)     η = eval-ConstraintExp p η ∨ eval-ConstraintExp q η
+  eval-ConstraintExp (x₁ `=`f x₂) η = (η x₁ ≟ extFunc (η x₂)) .does
+  eval-ConstraintExp (x₁ `≠`f x₂) η = not ((η x₁ ≟ extFunc (η x₂)) .does)
+
+
+  eval-negate : ∀ {Δ} (p : ConstraintExp Δ) η → not (eval-ConstraintExp p η) ≡ eval-ConstraintExp (negate p) η
+  eval-negate (x `≤` x₁) η = refl
+  eval-negate (x `>` x₁) η = not-involutive _
+  eval-negate (x `=` x₁) η = refl
+  eval-negate (x `≠` x₁) η = not-involutive _
+  eval-negate (p and q)  η rewrite sym (eval-negate p η)
+                           rewrite sym (eval-negate q η) =
+                              deMorgan₁ (eval-ConstraintExp p η) (eval-ConstraintExp q η)
+  eval-negate (p or q)   η rewrite sym (eval-negate p η)
+                           rewrite sym (eval-negate q η) =
+                              deMorgan₂ (eval-ConstraintExp p η) (eval-ConstraintExp q η)
+  eval-negate (x₁ `=`f x₂) η = refl
+  eval-negate (x₁ `≠`f x₂) η = not-involutive _
 
 ------------------------------------------------------------------------------
 -- Part III : Let/If lifting monad
@@ -141,41 +153,32 @@ eval-negate (p or q)   η rewrite sym (eval-negate p η)
 -- NOTE: the □ is needed on the second argument of 'if' to satisfy the
 -- termination checker in the definition of expand.
 data LetLift (A : LinVarCtxt → Set) : LinVarCtxt → Set where
-  return  : ∀ {Δ} → A Δ → LetLift A Δ
-  if      : ∀ {Δ} → ConstraintExp Δ → LetLift A Δ → □ (LetLift A) Δ → LetLift A Δ
-  let-exp : ∀ {Δ} → LinExp Δ → LetLift A (Δ ,∙) → LetLift A Δ
-
--- Interprets 'if' as an actual if-then-else, and 'let' as extending
--- the environment by the value of an expression.
-eval-Let : ∀ {X : Set}{A} →
-           (∀ {Δ} → A Δ → Env Δ → X) →
-           ∀ {Δ} → LetLift A Δ → Env Δ → X
-eval-Let evalA (return x)    η = evalA x η
-eval-Let evalA (if p k₁ k₂)  η =
-  if (eval-ConstraintExp p η)
-  then (eval-Let evalA k₁ η)
-  else (eval-Let evalA (k₂ (λ v → v)) η)
-eval-Let evalA (let-exp e k) η =
-  eval-Let evalA k (λ { zero → eval-LinExp e η ; (succ x) → η x })
+  return     : ∀ {Δ} → A Δ → LetLift A Δ
+  if         : ∀ {Δ} → ConstraintExp Δ → LetLift A Δ → □ (LetLift A) Δ → LetLift A Δ
+  let-linexp : ∀ {Δ} → LinExp Δ → LetLift A (Δ ,∙) → LetLift A Δ
+  let-funexp : ∀ {Δ} → {- fsymb → -} Var Δ → LetLift A (Δ ,∙) → LetLift A Δ
 
 rename-lift : ∀ {A} → Renameable A → Renameable (LetLift A)
 rename-lift rA ρ (return x) =
   return (rA ρ x)
 rename-lift rA ρ (if p k₁ k₂) =
   if (rename-ConstraintExp ρ p) (rename-lift rA ρ k₁) (rename-□ ρ k₂)
-rename-lift rA ρ (let-exp e k) =
-  let-exp (rename-LinExp ρ e) (rename-lift rA (under ρ) k)
+rename-lift rA ρ (let-linexp e k) =
+  let-linexp (rename-LinExp ρ e) (rename-lift rA (under ρ) k)
+rename-lift rA ρ (let-funexp v k) =
+  let-funexp (ρ v) (rename-lift rA (under ρ) k)
 
 `if : ∀ {Δ} → ConstraintExp Δ → LetLift (λ _ → Bool) Δ
 `if e = if e (return true) (λ ρ → return false)
 
-`let : ∀ {Δ} → LinExp Δ → LetLift LinExp Δ
-`let e = let-exp e (return (var 1ℚ zero))
+-- `let : ∀ {Δ} → LinExp Δ → LetLift LinExp Δ
+-- `let e = let-exp e (return (var 1ℚ zero))
 
 bind-let : ∀ {Δ A B} → LetLift A Δ → (A ⇒ₖ LetLift B) Δ → LetLift B Δ
-bind-let (return x)    f = f _ (λ x → x) x
-bind-let (if e kt kf)  f = if e (bind-let kt f) λ ρ → bind-let (kf ρ) (rename-⇒ₖ ρ f)
-bind-let (let-exp x k) f = let-exp x (bind-let k (rename-⇒ₖ succ f))
+bind-let (return x)       f = f _ (λ x → x) x
+bind-let (if e kt kf)     f = if e (bind-let kt f) λ ρ → bind-let (kf ρ) (rename-⇒ₖ ρ f)
+bind-let (let-linexp e k) f = let-linexp e (bind-let k (rename-⇒ₖ succ f))
+bind-let (let-funexp x k) f = let-funexp x (bind-let k (rename-⇒ₖ succ f))
 
 ------------------------------------------------------------------------------
 -- Existential Quantification monad
@@ -197,6 +200,9 @@ expand (if e kt kf) =
   return ((negate e and rename-ConstraintExp ρ' xt)
           or
           (e and xf))
-expand (let-exp x p) =
+expand (let-linexp e p) =
   ex (bind-ex (expand p) λ Δ' ρ p' →
-      return (((var 1ℚ (ρ zero)) `=` rename-LinExp (λ v → ρ (succ v)) x) and p'))
+      return ((var 1ℚ (ρ zero) `=` rename-LinExp (λ x → ρ (succ x)) e) and p'))
+expand (let-funexp x p) =
+  ex (bind-ex (expand p) λ Δ' ρ p' →
+      return ((ρ zero `=`f ρ (succ x)) and p'))

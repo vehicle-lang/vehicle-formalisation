@@ -3,7 +3,7 @@
 module Normalisation where
 
 open import Data.Product using (_×_; proj₁; proj₂; _,_)
-open import Data.Rational using (ℚ)
+open import Data.Rational using (ℚ; 1ℚ)
 open import Data.Unit using (⊤; tt)
 open import MiniVehicle
 open import NormalisedExpr
@@ -43,6 +43,9 @@ rename-ctxt {Γ ,- A} ρ (γ , a) = rename-ctxt {Γ} ρ γ , rename-ty A ρ a
   bind-let (⟦ s ⟧tm γ) λ Δ' ρ f →
   bind-let (⟦ t ⟧tm (rename-ctxt ρ γ)) λ Δ'' ρ' a →
   f _ ρ' a
+⟦ func t ⟧tm γ =
+  bind-let (⟦ t ⟧tm γ) λ Δ' ρ e →
+  let-linexp e (let-funexp {- f -} zero (return (var 1ℚ zero)))
 ⟦ const x ⟧tm γ =
   return x
 ⟦ lift t ⟧tm γ =
