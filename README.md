@@ -13,23 +13,20 @@ Agda modules:
 - `StandardSemantics` : The standard semantics of Vehicle, where
   numbers are interpreted as rationals and constraints as boolean
   valued predicates.
-- `norm-expr` : The expressions in "normal form" suitable for sending
-  to an SMT solver. This includes the special `let` and `if` lifting
-  monad used for normalisation.
+- `NormalisedExpr` : The expressions in "normal form" suitable for
+  sending to an SMT solver. This includes the special `let` and `if`
+  lifting monad used for normalisation.
 - `Normalisation` : A Normalisation-by-Evaluation procedure for
   normalising MiniVehicle to SMT expressions.
-
-and
-
-- `vehicle` : the old development, which also includes the logical
-  relation proof relating the standard and normalised semantics. This
-  needs to be ported to the new development.
+- `NormalisationCorrect` : A proof that the semantics of the
+  normalised expressions agrees with the standard semantics. This
+  proof is accomplished using a Kripke logical relation.
 
 ## TODO
 
-- [ ] Port the proof that the two semantics agree on closed terms of
+- [X] Port the proof that the two semantics agree on closed terms of
       type `Bool constraint`
 - [ ] Add quantifiers to MiniVehicle
-- [ ] Add uninterpreted functions to MiniVehicle
+- [-] Add uninterpreted functions to MiniVehicle
 - [ ] Add tuple types to MiniVehicle
 - [ ] Add array types to MiniVehicle
