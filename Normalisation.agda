@@ -51,32 +51,32 @@ rename-ctxt {Γ ,- A} ρ (γ , a) = rename-ctxt {Γ} ρ γ , rename-ty A ρ a
 ⟦ lift t ⟧tm γ =
   bind-let (⟦ t ⟧tm γ) λ Δ' ρ q →
   return (const q)
-⟦ s `+ t ⟧tm γ =
-  bind-let (⟦ s ⟧tm γ) λ Δ' ρ x →
-  bind-let (⟦ t ⟧tm (rename-ctxt ρ γ)) λ Δ'' ρ' y →
-  return (rename-LinExp ρ' x `+ y)
-⟦ s `* t ⟧tm γ =
-  bind-let (⟦ s ⟧tm γ) λ Δ' ρ x →
-  bind-let (⟦ t ⟧tm (rename-ctxt ρ γ)) λ Δ'' ρ' y →
-  return (x ⊛ y)
-⟦ s `≤ t ⟧tm γ =
-  bind-let (⟦ s ⟧tm γ) λ Δ' ρ x →
-  bind-let (⟦ t ⟧tm (rename-ctxt ρ γ)) λ Δ'' ρ' y →
-  return (rename-LinExp ρ' x `≤` y)
+⟦ t₁ `+ t₂ ⟧tm γ =
+  bind-let (⟦ t₁ ⟧tm γ) λ Δ' ρ e₁ →
+  bind-let (⟦ t₂ ⟧tm (rename-ctxt ρ γ)) λ Δ'' ρ' e₂ →
+  return (rename-LinExp ρ' e₁ `+ e₂)
+⟦ t₁ `* t₂ ⟧tm γ =
+  bind-let (⟦ t₁ ⟧tm γ) λ Δ' ρ e₁ →
+  bind-let (⟦ t₂ ⟧tm (rename-ctxt ρ γ)) λ Δ'' ρ' e₂ →
+  return (e₁ ⊛ e₂)
+⟦ t₁ `≤ t₂ ⟧tm γ =
+  bind-let (⟦ t₁ ⟧tm γ) λ Δ' ρ e₁ →
+  bind-let (⟦ t₂ ⟧tm (rename-ctxt ρ γ)) λ Δ'' ρ' e₂ →
+  return (rename-LinExp ρ' e₁ `≤` e₂)
 ⟦ if s then t else u ⟧tm γ =
   bind-let (⟦ s ⟧tm γ) λ Δ' ρ e →
   if e (⟦ t ⟧tm (rename-ctxt ρ γ)) (λ ρ' → ⟦ u ⟧tm (rename-ctxt (ρ ∘ ρ') γ))
 ⟦ `¬ t ⟧tm γ =
-  bind-let (⟦ t ⟧tm γ) λ Δ' ρ x →
-  return (negate x)
-⟦ s `∧ t ⟧tm γ =
-  bind-let (⟦ s ⟧tm γ) λ Δ' ρ x →
-  bind-let (⟦ t ⟧tm (rename-ctxt ρ γ)) λ Δ'' ρ' y →
-  return (rename-ConstraintExp ρ' x and y)
-⟦ s `∨ t ⟧tm γ =
-  bind-let (⟦ s ⟧tm γ) λ Δ' ρ x →
-  bind-let (⟦ t ⟧tm (rename-ctxt ρ γ)) λ Δ'' ρ' y →
-  return (rename-ConstraintExp ρ' x or y)
+  bind-let (⟦ t ⟧tm γ) λ Δ' ρ ϕ →
+  return (negate ϕ)
+⟦ t₁ `∧ t₂ ⟧tm γ =
+  bind-let (⟦ t₁ ⟧tm γ) λ Δ' ρ ϕ₁ →
+  bind-let (⟦ t₂ ⟧tm (rename-ctxt ρ γ)) λ Δ'' ρ' ϕ₂ →
+  return (rename-ConstraintExp ρ' ϕ₁ and ϕ₂)
+⟦ t₁ `∨ t₂ ⟧tm γ =
+  bind-let (⟦ t₁ ⟧tm γ) λ Δ' ρ ϕ₁ →
+  bind-let (⟦ t₂ ⟧tm (rename-ctxt ρ γ)) λ Δ'' ρ' ϕ₂ →
+  return (rename-ConstraintExp ρ' ϕ₁ or ϕ₂)
 
 normalise : ε ⊢ Bool constraint → Ex ConstraintExp ε
 normalise t = expand (bind-let (⟦ t ⟧tm tt) λ Δ' ρ c → return (return c))
