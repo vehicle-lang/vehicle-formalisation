@@ -31,6 +31,9 @@ under : ∀ {Δ Δ'} → Δ ⇒ᵣ Δ' → (Δ ,∙) ⇒ᵣ (Δ' ,∙)
 under ρ zero     = zero
 under ρ (succ x) = succ (ρ x)
 
+-- FIXME: make a Renamble record to combine the family and the
+-- Renameable part
+
 Renameable : (LinVarCtxt → Set) → Set
 Renameable A = ∀ {Δ Δ'} → (Δ ⇒ᵣ Δ') → A Δ' → A Δ
 

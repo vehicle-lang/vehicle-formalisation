@@ -19,50 +19,65 @@ queryKind universal   = universal
 queryKind existential = existential
 -}
 
-data Type : Set where
-  Bool   : BoolKind → Type
-  Num    : Linearity → Type
-  _⇒_   : Type → Type → Type
+data Kind : Set where
+  Nat Type : Kind
+
+data KindContext : Set where
+  ε     : KindContext
+  _,-ℕ : KindContext → KindContext
+
+data _⊢T_ : KindContext → Kind → Set where
+  Bool   : ∀ {Δ} → BoolKind → Δ ⊢T Type
+  Num    : ∀ {Δ} → Linearity → Δ ⊢T Type
+  _⇒_   : ∀ {Δ} → Δ ⊢T Type → Δ ⊢T Type → Δ ⊢T Type
 {- TODO:
   Array  : ℕ → Type → Type
   Index  : ℕ → Type
 -}
 
-data Context : Set where
-  ε    : Context
-  _,-_ : Context → Type → Context
+data Context : KindContext → Set where
+  ε    : ∀ {Δ} → Context Δ
+  _,-_ : ∀ {Δ} → Context Δ → Δ ⊢T Type → Context Δ
 
-data _∋_ : Context → Type → Set where
-  zero : ∀ {Γ A}   →         (Γ ,- A) ∋ A
-  succ : ∀ {Γ A B} → Γ ∋ A → (Γ ,- B) ∋ A
+data _⊢_∋_ : (Δ : KindContext) → Context Δ → Δ ⊢T Type → Set where
+  zero : ∀ {Δ Γ A}   →             Δ ⊢ (Γ ,- A) ∋ A
+  succ : ∀ {Δ Γ A B} → Δ ⊢ Γ ∋ A → Δ ⊢ (Γ ,- B) ∋ A
 
-data _⊢_ : Context → Type → Set where
+data _/_⊢_ : (Δ : KindContext) → Context Δ → Δ ⊢T Type → Set where
   -- Variables
-  var    : ∀ {Γ A} → Γ ∋ A → Γ ⊢ A
+  var    : ∀ {Δ Γ A} → Δ ⊢ Γ ∋ A → Δ / Γ ⊢ A
 
   -- Functions
-  ƛ      : ∀ {Γ A B} → (Γ ,- A) ⊢ B → Γ ⊢ (A ⇒ B)
-  _∙_    : ∀ {Γ A B} → Γ ⊢ (A ⇒ B) → Γ ⊢ A → Γ ⊢ B
+  ƛ      : ∀ {Δ Γ A B} →
+           Δ / (Γ ,- A) ⊢ B →
+           Δ / Γ ⊢ (A ⇒ B)
+  _∙_    : ∀ {Δ Γ A B} →
+           Δ / Γ ⊢ (A ⇒ B) →
+           Δ / Γ ⊢ A →
+           Δ / Γ ⊢ B
 
   -- External functions
-  func   : ∀ {Γ} → Γ ⊢ Num linear → Γ ⊢ Num linear
+  func   : ∀ {Δ Γ} →
+           Δ / Γ ⊢ Num linear →
+           Δ / Γ ⊢ Num linear
 
-  const  : ∀ {Γ} → ℚ → Γ ⊢ Num const
-  lift   : ∀ {Γ} → Γ ⊢ Num const → Γ ⊢ Num linear
-  _`+_   : ∀ {Γ} → Γ ⊢ Num linear → Γ ⊢ Num linear → Γ ⊢ Num linear
-  _`*_   : ∀ {Γ} → Γ ⊢ Num const → Γ ⊢ Num linear → Γ ⊢ Num linear
+  const  : ∀ {Δ Γ} → ℚ → Δ / Γ ⊢ Num const
+  lift   : ∀ {Δ Γ} → Δ / Γ ⊢ Num const → Δ / Γ ⊢ Num linear
+  _`+_   : ∀ {Δ Γ} → Δ / Γ ⊢ Num linear → Δ / Γ ⊢ Num linear → Δ / Γ ⊢ Num linear
+  _`*_   : ∀ {Δ Γ} → Δ / Γ ⊢ Num const → Δ / Γ ⊢ Num linear → Δ / Γ ⊢ Num linear
 
   -- Comparisons
-  _`≤_   : ∀ {Γ} → Γ ⊢ Num linear → Γ ⊢ Num linear → Γ ⊢ Bool constraint
+  _`≤_   : ∀ {Δ Γ} → Δ / Γ ⊢ Num linear → Δ / Γ ⊢ Num linear → Δ / Γ ⊢ Bool constraint
 
-  if_then_else_ : ∀ {Γ A}
-     (cond : Γ ⊢ Bool constraint) (on-true on-false : Γ ⊢ A) →
-     Γ ⊢ A
+  if_then_else_ : ∀ {Δ Γ A}
+     (cond : Δ / Γ ⊢ Bool constraint)
+     (on-true on-false : Δ / Γ ⊢ A) →
+     Δ / Γ ⊢ A
 
   -- Logic
-  `¬_     : ∀ {Γ} → Γ ⊢ Bool constraint → Γ ⊢ Bool constraint
-  _`∧_    : ∀ {Γ} → Γ ⊢ Bool constraint → Γ ⊢ Bool constraint → Γ ⊢ Bool constraint
-  _`∨_    : ∀ {Γ} → Γ ⊢ Bool constraint → Γ ⊢ Bool constraint → Γ ⊢ Bool constraint
+  `¬_     : ∀ {Δ Γ} → Δ / Γ ⊢ Bool constraint → Δ / Γ ⊢ Bool constraint
+  _`∧_    : ∀ {Δ Γ} → Δ / Γ ⊢ Bool constraint → Δ / Γ ⊢ Bool constraint → Δ / Γ ⊢ Bool constraint
+  _`∨_    : ∀ {Δ Γ} → Δ / Γ ⊢ Bool constraint → Δ / Γ ⊢ Bool constraint → Δ / Γ ⊢ Bool constraint
 
 {-
   universal   : ∀ {Γ} → Γ ⊢ Bool constraint → Γ ⊢ Bool universal

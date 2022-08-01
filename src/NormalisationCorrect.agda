@@ -2,8 +2,10 @@
 
 module NormalisationCorrect where
 
+open import Level using (Lift; lift)
 open import Data.Bool using (not; _∧_; _∨_; true; false)
                    renaming (Bool to 𝔹; if_then_else_ to ifᵇ_then_else_)
+open import Data.Nat using (ℕ)
 open import Data.Product using (_×_; _,_; proj₁; proj₂)
 open import Data.Unit using (⊤; tt)
 open import Data.Rational using (ℚ; _+_; _*_; _≤ᵇ_; _≟_)
@@ -121,157 +123,172 @@ module _ (extFunc : ℚ → ℚ) where
   ext-evalConstraint (x `≠`f y)  ρ rewrite ρ .presv x rewrite ρ .presv y = refl
 
   ------------------------------------------------------------------------------
-  -- Relatedness for types
-  ⟦_⟧ty : ∀ A → WRel S.⟦ A ⟧ty N.⟦ A ⟧ty
-  ⟦ Bool constraint ⟧ty w x y = x ≡ eval-ConstraintExp extFunc y (w .env)
-  ⟦ Num const ⟧ty       w x y = x ≡ y
-  ⟦ Num linear ⟧ty      w x y = x ≡ eval-LinExp y (w .env)
-  ⟦ A ⇒ B ⟧ty          w f g =
-    ∀ w' (ρ : w' ⇒w w) x y →
-      ⟦ A ⟧ty w' x y →
-      LetLiftR ⟦ B ⟧ty w' (f x) (g (w' .ctxt) (ρ .ren) y)
+  ⟦_⟧kind : (κ : Kind) → S.⟦ κ ⟧kind → N.⟦ κ ⟧kind → Set₁
+  ⟦ Nat ⟧kind  = _≡_
+  ⟦ Type ⟧kind = WRel
 
-  ext-ty : ∀ A {w₁ w₂} → (ρ : w₂ ⇒w w₁) → ∀ {x y} →
-           ⟦ A ⟧ty w₁ x y →
-           ⟦ A ⟧ty w₂ x (N.rename-ty A (ρ .ren) y)
-  ext-ty (Bool constraint) ρ {x}{y} r =
+  ⟦_⟧kctxt : (Δ : KindContext) → S.⟦ Δ ⟧kctxt → N.⟦ Δ ⟧kctxt → Set
+  ⟦ ε ⟧kctxt tt tt = ⊤
+  ⟦ Δ ,-ℕ ⟧kctxt (δ₁ , n₁) (δ₂ , n₂) = (⟦ Δ ⟧kctxt δ₁ δ₂) × (n₁ ≡ n₂)
+
+  ⟦_⟧ty : ∀ {Δ} (A : Δ ⊢T Type) → ∀ {δ₁ δ₂} → ⟦ Δ ⟧kctxt δ₁ δ₂ → WRel (S.⟦ A ⟧ty δ₁) (N.⟦ A ⟧ty δ₂)
+  ⟦ Bool constraint ⟧ty δ₁-δ₂ w x y = x ≡ eval-ConstraintExp extFunc y (w .env)
+  ⟦ Num const ⟧ty       δ₁-δ₂ w x y = x ≡ y
+  ⟦ Num linear ⟧ty      δ₁-δ₂ w x y = x ≡ eval-LinExp y (w .env)
+  ⟦ A ⇒ B ⟧ty          δ₁-δ₂ w f g =
+    ∀ w' (ρ : w' ⇒w w) x y →
+      ⟦ A ⟧ty δ₁-δ₂ w' x y →
+      LetLiftR (⟦ B ⟧ty δ₁-δ₂ ) w' (f x) (g (w' .ctxt) (ρ .ren) y)
+
+  ext-ty : ∀ {Δ} (A : Δ ⊢T Type) {δ₁ δ₂} →
+           (δ₁-δ₂ : ⟦ Δ ⟧kctxt δ₁ δ₂) →
+           ∀ {w₁ w₂} → (ρ : w₂ ⇒w w₁) → ∀ {x y} →
+           ⟦ A ⟧ty δ₁-δ₂ w₁ x y →
+           ⟦ A ⟧ty δ₁-δ₂ w₂ x (N.rename-ty A δ₂ (ρ .ren) y)
+  ext-ty (Bool constraint) δ₁-δ₂ ρ {x}{y} r =
     trans r (ext-evalConstraint y ρ)
-  ext-ty (Num const) ρ r = r
-  ext-ty (Num linear) ρ {x}{y} r = trans r (ext-evalLinExp y ρ)
-  ext-ty (A ⇒ B) ρ r =
+  ext-ty (Num const) δ₁-δ₂ ρ r = r
+  ext-ty (Num linear) δ₁-δ₂ ρ {x}{y} r = trans r (ext-evalLinExp y ρ)
+  ext-ty (A ⇒ B) δ₁-δ₂ ρ r =
     λ w₃ ρ₁ x₁ y₁ r₂ → r w₃ (ρ ∘w ρ₁) x₁ y₁ r₂
 
   -- Relatedness for contexts
-  ⟦_⟧ctxt : ∀ Γ → WRel S.⟦ Γ ⟧ctxt N.⟦ Γ ⟧ctxt
-  ⟦ ε ⟧ctxt      w tt      tt       = ⊤
-  ⟦ Γ ,- A ⟧ctxt w (γₛ , x) (γₙ , y) = ⟦ Γ ⟧ctxt w γₛ γₙ × ⟦ A ⟧ty w x y
+  ⟦_⟧ctxt : ∀ {Δ} (Γ : Context Δ) {δ₁ δ₂} → ⟦ Δ ⟧kctxt δ₁ δ₂ → WRel (S.⟦ Γ ⟧ctxt δ₁) (N.⟦ Γ ⟧ctxt δ₂)
+  ⟦ ε ⟧ctxt      δ₁-δ₂ w tt      tt       = ⊤
+  ⟦ Γ ,- A ⟧ctxt δ₁-δ₂ w (γₛ , x) (γₙ , y) = ⟦ Γ ⟧ctxt δ₁-δ₂ w γₛ γₙ × ⟦ A ⟧ty δ₁-δ₂ w x y
 
-  ext-ctxt : ∀ Γ {w₁ w₂} (ρ : w₂ ⇒w w₁) → ∀ {x y} →
-             ⟦ Γ ⟧ctxt w₁ x y →
-             ⟦ Γ ⟧ctxt w₂ x (N.rename-ctxt (ρ .ren) y)
-  ext-ctxt ε ρ r = tt
-  ext-ctxt (Γ ,- A) ρ (γ₁γ₂ , a₁a₂) =
-    (ext-ctxt Γ ρ γ₁γ₂) , (ext-ty A ρ a₁a₂)
+  ext-ctxt : ∀ {Δ} (Γ : Context Δ) {δ₁ δ₂} →
+             (δ₁-δ₂ : ⟦ Δ ⟧kctxt δ₁ δ₂) →
+             ∀ {w₁ w₂} (ρ : w₂ ⇒w w₁) → ∀ {x y} →
+             ⟦ Γ ⟧ctxt δ₁-δ₂ w₁ x y →
+             ⟦ Γ ⟧ctxt δ₁-δ₂ w₂ x (N.rename-ctxt δ₂ (ρ .ren) y)
+  ext-ctxt ε δ₁-δ₂ ρ r = tt
+  ext-ctxt (Γ ,- A) δ₁-δ₂ ρ (γ₁γ₂ , a₁a₂) =
+    (ext-ctxt Γ δ₁-δ₂ ρ γ₁γ₂) , (ext-ty A δ₁-δ₂ ρ a₁a₂)
+
 
   -- Variables' interpretations are related
-  ⟦_⟧var : ∀ {Γ A} (x : Γ ∋ A) w {γₛ γₙ} →
-          ⟦ Γ ⟧ctxt w γₛ γₙ →
-          ⟦ A ⟧ty w (S.⟦ x ⟧var γₛ) (N.⟦ x ⟧var γₙ)
-  ⟦ zero ⟧var   w (_    , x-y) = x-y
-  ⟦ succ x ⟧var w (γₛ-γₙ , _  ) = ⟦ x ⟧var w γₛ-γₙ
+  ⟦_⟧var : ∀ {Δ Γ A} (x : Δ ⊢ Γ ∋ A)
+             {δ₁ δ₂} (δ₁-δ₂ : ⟦ Δ ⟧kctxt δ₁ δ₂) w {γₛ γₙ} →
+          ⟦ Γ ⟧ctxt δ₁-δ₂ w γₛ γₙ →
+          ⟦ A ⟧ty δ₁-δ₂ w (S.⟦ x ⟧var δ₁ γₛ) (N.⟦ x ⟧var δ₂ γₙ)
+  ⟦ zero ⟧var   δ₁-δ₂ w (_    , x-y) = x-y
+  ⟦ succ x ⟧var δ₁-δ₂ w (γₛ-γₙ , _  ) = ⟦ x ⟧var δ₁-δ₂ w γₛ-γₙ
 
   module ST = S.TermSem (extFunc)
 
   -- Terms' interpretations are related
-  ⟦_⟧tm : ∀ {Γ A} (x : Γ ⊢ A) w {γₛ γₙ} →
-          ⟦ Γ ⟧ctxt w γₛ γₙ →
-          LetLiftR ⟦ A ⟧ty w (ST.⟦ x ⟧tm γₛ) (N.⟦ x ⟧tm γₙ)
-  ⟦ var x ⟧tm w γ₁-γ₂ = ⟦ x ⟧var w γ₁-γ₂
-  ⟦ ƛ t ⟧tm w γ₁-γ₂ =
-    λ w' ρ x y x-y → ⟦ t ⟧tm w' (ext-ctxt _ ρ γ₁-γ₂ , x-y)
-  ⟦ s ∙ t ⟧tm w {γₛ}{γₙ} γ₁-γ₂ =
-    let-bindR w (ST.⟦ s ⟧tm γₛ) (N.⟦ s ⟧tm γₙ)
+  ⟦_⟧tm : ∀ {Δ Γ A} (x : Δ / Γ ⊢ A) {δ₁ δ₂} (δ₁-δ₂ : ⟦ Δ ⟧kctxt δ₁ δ₂) w {γₛ γₙ} →
+          ⟦ Γ ⟧ctxt δ₁-δ₂ w γₛ γₙ →
+          LetLiftR (⟦ A ⟧ty δ₁-δ₂) w (ST.⟦ x ⟧tm δ₁ γₛ) (N.⟦ x ⟧tm δ₂ γₙ)
+  ⟦ var x ⟧tm δ₁-δ₂ w γ₁-γ₂ = ⟦ x ⟧var δ₁-δ₂ w γ₁-γ₂
+  ⟦ ƛ t ⟧tm δ₁-δ₂ w γ₁-γ₂ =
+    λ w' ρ x y x-y → ⟦ t ⟧tm δ₁-δ₂ w' (ext-ctxt _ δ₁-δ₂ ρ γ₁-γ₂ , x-y)
+  ⟦ s ∙ t ⟧tm δ₁-δ₂ w {γₛ}{γₙ} γ₁-γ₂ =
+    let-bindR w (ST.⟦ s ⟧tm _ γₛ) (N.⟦ s ⟧tm _ γₙ)
       _ -- (λ a → a (S.⟦ t ⟧tm γₛ))
       _
-      (⟦ s ⟧tm w γ₁-γ₂)
+      (⟦ s ⟧tm δ₁-δ₂ w γ₁-γ₂)
       λ w' ρ a b r-ab →
-        let-bindR w' (ST.⟦ t ⟧tm γₛ) (N.⟦ t ⟧tm (N.rename-ctxt (ρ .ren) γₙ))
+        let-bindR w' (ST.⟦ t ⟧tm _ γₛ) (N.⟦ t ⟧tm _ (N.rename-ctxt _ (ρ .ren) γₙ))
           _ -- (λ a' → a a')
           _
-          (⟦ t ⟧tm w' (ext-ctxt _ ρ γ₁-γ₂))
+          (⟦ t ⟧tm δ₁-δ₂ w' (ext-ctxt _ δ₁-δ₂ ρ γ₁-γ₂))
           r-ab
-  ⟦ func t ⟧tm w {γₛ}{γₙ} γ₁-γ₂ =
-    let-bindR w (ST.⟦ t ⟧tm γₛ) (N.⟦ t ⟧tm γₙ)
+  ⟦ func t ⟧tm δ₁-δ₂ w {γₛ}{γₙ} γ₁-γ₂ =
+    let-bindR w (ST.⟦ t ⟧tm _ γₛ) (N.⟦ t ⟧tm _ γₙ)
       extFunc
       _
-      (⟦ t ⟧tm w γ₁-γ₂)
+      (⟦ t ⟧tm δ₁-δ₂ w γ₁-γ₂)
       λ { w' ρ a b refl → sym (*-identityˡ _) }
-  ⟦ const x ⟧tm w γ₁-γ₂ = refl
-  ⟦ lift t ⟧tm w {γₛ}{γₙ} γ₁-γ₂ =
-    let-bindR w (ST.⟦ t ⟧tm γₛ) (N.⟦ t ⟧tm γₙ)
+
+  ⟦ const x ⟧tm δ₁-δ₂ w γ₁-γ₂ = refl
+  ⟦ lift t ⟧tm δ₁-δ₂ w {γₛ}{γₙ} γ₁-γ₂ =
+    let-bindR w (ST.⟦ t ⟧tm _ γₛ) (N.⟦ t ⟧tm _ γₙ)
      (λ a → a)
      (λ _ _ q → return (const q))
-     (⟦ t ⟧tm w γ₁-γ₂)
+     (⟦ t ⟧tm δ₁-δ₂ w γ₁-γ₂)
      λ w' ρ a b a≡b → a≡b
-  ⟦ s `+ t ⟧tm w {γₛ}{γₙ} γ₁-γ₂ =
-    let-bindR w (ST.⟦ s ⟧tm γₛ) (N.⟦ s ⟧tm γₙ)
-      (λ a → a + ST.⟦ t ⟧tm γₛ)
+
+  ⟦ s `+ t ⟧tm δ₁-δ₂ w {γₛ}{γₙ} γ₁-γ₂ =
+    let-bindR w (ST.⟦ s ⟧tm _ γₛ) (N.⟦ s ⟧tm _ γₙ)
+      (λ a → a + ST.⟦ t ⟧tm _ γₛ)
       _
-      (⟦ s ⟧tm w γ₁-γ₂)
+      (⟦ s ⟧tm δ₁-δ₂ w γ₁-γ₂)
       λ w' ρ a b r-ab →
-        let-bindR w' (ST.⟦ t ⟧tm γₛ) (N.⟦ t ⟧tm (N.rename-ctxt (ρ .ren) γₙ))
+        let-bindR w' (ST.⟦ t ⟧tm _ γₛ) (N.⟦ t ⟧tm _ (N.rename-ctxt _ (ρ .ren) γₙ))
           (λ b → a + b)
           _
-          (⟦ t ⟧tm w' (ext-ctxt _ ρ γ₁-γ₂))
+          (⟦ t ⟧tm δ₁-δ₂ w' (ext-ctxt _ δ₁-δ₂ ρ γ₁-γ₂))
           λ w'' ρ₁ a₁ b₁ r-a₁b₁ →
             cong₂ _+_ (trans r-ab (ext-evalLinExp b ρ₁)) r-a₁b₁
-  ⟦ s `* t ⟧tm w {γₛ}{γₙ} γ₁-γ₂ =
-    let-bindR w (ST.⟦ s ⟧tm γₛ) (N.⟦ s ⟧tm γₙ)
-      (λ a → a * ST.⟦ t ⟧tm γₛ)
+  ⟦ s `* t ⟧tm δ₁-δ₂ w {γₛ}{γₙ} γ₁-γ₂ =
+    let-bindR w (ST.⟦ s ⟧tm _ γₛ) (N.⟦ s ⟧tm _ γₙ)
+      (λ a → a * ST.⟦ t ⟧tm _ γₛ)
       _
-      (⟦ s ⟧tm w γ₁-γ₂)
+      (⟦ s ⟧tm δ₁-δ₂ w γ₁-γ₂)
       λ w' ρ a b r-ab →
-        let-bindR w' (ST.⟦ t ⟧tm γₛ) (N.⟦ t ⟧tm (N.rename-ctxt (ρ .ren) γₙ))
+        let-bindR w' (ST.⟦ t ⟧tm _ γₛ) (N.⟦ t ⟧tm _ (N.rename-ctxt _ (ρ .ren) γₙ))
           (λ b → a * b)
           _
-          (⟦ t ⟧tm w' (ext-ctxt _ ρ γ₁-γ₂))
+          (⟦ t ⟧tm δ₁-δ₂ w' (ext-ctxt _ δ₁-δ₂ ρ γ₁-γ₂))
           λ w'' ρ₁ a₁ b₁ r-a₁b₁ →
             trans (cong₂ _*_ r-ab r-a₁b₁)
                   (eval-⊛ b b₁ (w'' .env))
-  ⟦ s `≤ t ⟧tm w {γₛ}{γₙ} γ₁-γ₂ =
-    let-bindR w (ST.⟦ s ⟧tm γₛ) (N.⟦ s ⟧tm γₙ)
-      (λ a → a ≤ᵇ ST.⟦ t ⟧tm γₛ)
+  ⟦ s `≤ t ⟧tm δ₁-δ₂ w {γₛ}{γₙ} γ₁-γ₂ =
+    let-bindR w (ST.⟦ s ⟧tm _ γₛ) (N.⟦ s ⟧tm _ γₙ)
+      (λ a → a ≤ᵇ ST.⟦ t ⟧tm _ γₛ)
       _
-      (⟦ s ⟧tm w γ₁-γ₂)
+      (⟦ s ⟧tm δ₁-δ₂ w γ₁-γ₂)
       λ w' ρ a b r-ab →
-        let-bindR w' (ST.⟦ t ⟧tm γₛ) (N.⟦ t ⟧tm (N.rename-ctxt (ρ .ren) γₙ))
+        let-bindR w' (ST.⟦ t ⟧tm _ γₛ) (N.⟦ t ⟧tm _ (N.rename-ctxt _ (ρ .ren) γₙ))
           (λ b → a ≤ᵇ b)
           _
-          (⟦ t ⟧tm w' (ext-ctxt _ ρ γ₁-γ₂))
+          (⟦ t ⟧tm δ₁-δ₂ w' (ext-ctxt _ δ₁-δ₂ ρ γ₁-γ₂))
           λ w'' ρ₁ a₁ b₁ r-a₁b₁ →
             cong₂ _≤ᵇ_ (trans r-ab (ext-evalLinExp b ρ₁)) r-a₁b₁
-  ⟦ if s then t else u ⟧tm w {γₛ}{γₙ} γ₁-γ₂ =
-    let-bindR w (ST.⟦ s ⟧tm γₛ) (N.⟦ s ⟧tm γₙ)
-      (λ a → ifᵇ a then ST.⟦ t ⟧tm γₛ else ST.⟦ u ⟧tm γₛ)
+  ⟦ if s then t else u ⟧tm {δ₂ = δ₂} δ₁-δ₂ w {γₛ}{γₙ} γ₁-γ₂ =
+    let-bindR w (ST.⟦ s ⟧tm _ γₛ) (N.⟦ s ⟧tm _ γₙ)
+      (λ a → ifᵇ a then ST.⟦ t ⟧tm _ γₛ else ST.⟦ u ⟧tm _ γₛ)
       _
-      (⟦ s ⟧tm w γ₁-γ₂)
+      (⟦ s ⟧tm δ₁-δ₂ w γ₁-γ₂)
       r
     where r : ∀ w' (ρ : w' ⇒w w) a b →
-              ⟦ Bool constraint ⟧ty w' a b →
-              LetLiftR ⟦ _ ⟧ty w'
-                (ifᵇ a then ST.⟦ t ⟧tm γₛ else ST.⟦ u ⟧tm γₛ)
-                (if b (N.⟦ t ⟧tm (N.rename-ctxt (ρ .ren) γₙ))
-                      (λ ρ' → N.⟦ u ⟧tm (N.rename-ctxt (ρ .ren ∘ ρ') γₙ)))
-          r w' ρ false b eq rewrite sym eq = ⟦ u ⟧tm w' (ext-ctxt _ ρ γ₁-γ₂)
-          r w' ρ true b eq rewrite sym eq = ⟦ t ⟧tm w' (ext-ctxt _ ρ γ₁-γ₂)
-  ⟦ `¬ t ⟧tm w {γₛ}{γₙ} γ₁-γ₂ =
-    let-bindR w (ST.⟦ t ⟧tm γₛ) (N.⟦ t ⟧tm γₙ)
+              ⟦ Bool constraint ⟧ty δ₁-δ₂ w' a b →
+              LetLiftR (⟦ _ ⟧ty δ₁-δ₂) w'
+                (ifᵇ a then ST.⟦ t ⟧tm _ γₛ else ST.⟦ u ⟧tm _ γₛ)
+                (if b (N.⟦ t ⟧tm _ (N.rename-ctxt _ (ρ .ren) γₙ))
+                      (λ ρ' → N.⟦ u ⟧tm δ₂ (N.rename-ctxt δ₂ (ρ .ren ∘ ρ') γₙ)))
+          r w' ρ false b eq rewrite sym eq = ⟦ u ⟧tm δ₁-δ₂ w' (ext-ctxt _ δ₁-δ₂ ρ γ₁-γ₂)
+          r w' ρ true b eq rewrite sym eq = ⟦ t ⟧tm δ₁-δ₂ w' (ext-ctxt _ δ₁-δ₂ ρ γ₁-γ₂)
+  ⟦ `¬ t ⟧tm δ₁-δ₂ w {γₛ}{γₙ} γ₁-γ₂ =
+    let-bindR w (ST.⟦ t ⟧tm _ γₛ) (N.⟦ t ⟧tm _ γₙ)
       not
       (λ _ _ x → return (negate x))
-      (⟦ t ⟧tm w γ₁-γ₂)
+      (⟦ t ⟧tm δ₁-δ₂ w γ₁-γ₂)
       λ { w' ρ a b refl → eval-negate extFunc b (w' .env) }
-  ⟦ s `∧ t ⟧tm w {γₛ}{γₙ} γ₁-γ₂ =
-    let-bindR w (ST.⟦ s ⟧tm γₛ) (N.⟦ s ⟧tm γₙ)
-      (λ a → a ∧ ST.⟦ t ⟧tm γₛ)
+  ⟦ s `∧ t ⟧tm δ₁-δ₂ w {γₛ}{γₙ} γ₁-γ₂ =
+    let-bindR w (ST.⟦ s ⟧tm _ γₛ) (N.⟦ s ⟧tm _ γₙ)
+      (λ a → a ∧ ST.⟦ t ⟧tm _ γₛ)
       _
-      (⟦ s ⟧tm w γ₁-γ₂)
+      (⟦ s ⟧tm δ₁-δ₂ w γ₁-γ₂)
       λ w' ρ a b r-ab →
-        let-bindR w' (ST.⟦ t ⟧tm γₛ) (N.⟦ t ⟧tm (N.rename-ctxt (ρ .ren) γₙ))
+        let-bindR w' (ST.⟦ t ⟧tm _ γₛ) (N.⟦ t ⟧tm _ (N.rename-ctxt _ (ρ .ren) γₙ))
           (λ b → a ∧ b)
           _
-          (⟦ t ⟧tm w' (ext-ctxt _ ρ γ₁-γ₂))
+          (⟦ t ⟧tm δ₁-δ₂ w' (ext-ctxt _ δ₁-δ₂ ρ γ₁-γ₂))
           λ w'' ρ₁ a₁ b₁ r-a₁b₁ →
           cong₂ _∧_ (trans r-ab (ext-evalConstraint b ρ₁)) r-a₁b₁
-  ⟦ s `∨ t ⟧tm w {γₛ}{γₙ} γ₁-γ₂ =
-    let-bindR w (ST.⟦ s ⟧tm γₛ) (N.⟦ s ⟧tm γₙ)
-      (λ a → a ∨ ST.⟦ t ⟧tm γₛ)
+  ⟦ s `∨ t ⟧tm δ₁-δ₂ w {γₛ}{γₙ} γ₁-γ₂ =
+    let-bindR w (ST.⟦ s ⟧tm _ γₛ) (N.⟦ s ⟧tm _ γₙ)
+      (λ a → a ∨ ST.⟦ t ⟧tm _ γₛ)
       _
-      (⟦ s ⟧tm w γ₁-γ₂)
+      (⟦ s ⟧tm δ₁-δ₂ w γ₁-γ₂)
       λ w' ρ a b r-ab →
-        let-bindR w' (ST.⟦ t ⟧tm γₛ) (N.⟦ t ⟧tm (N.rename-ctxt (ρ .ren) γₙ))
+        let-bindR w' (ST.⟦ t ⟧tm _ γₛ) (N.⟦ t ⟧tm _ (N.rename-ctxt _ (ρ .ren) γₙ))
           (λ b → a ∨ b)
           _
-          (⟦ t ⟧tm w' (ext-ctxt _ ρ γ₁-γ₂))
+          (⟦ t ⟧tm δ₁-δ₂ w' (ext-ctxt _ δ₁-δ₂ ρ γ₁-γ₂))
           λ w'' ρ₁ a₁ b₁ r-a₁b₁ →
           cong₂ _∨_ (trans r-ab (ext-evalConstraint b ρ₁)) r-a₁b₁
 
