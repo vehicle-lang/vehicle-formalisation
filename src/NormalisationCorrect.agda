@@ -67,7 +67,9 @@ module _ (extFunc : ℚ → ℚ) where
   LetLiftR R w a (let-funexp x k) =
     LetLiftR R (((w .ctxt ,∙) , extend-env (w .env) (extFunc (w .env x)))) a k
 
-  let-bindR : ∀ {A A' B B'}{RA : WRel A A'}{RB : WRel B B'} w x y (f : A → B) g →
+  let-bindR : ∀ {A A' B B'}{RA : WRel A A'}{RB : WRel B B'} w x y
+    (f : A → B)
+    (g : (A' ⇒ₖ LetLift B') (w .ctxt)) →
     LetLiftR RA w x y →
     (∀ w' (ρ : w' ⇒w w) a b → RA w' a b → LetLiftR RB w' (f a) (g (w' .ctxt) (ρ .ren) b)) →
     LetLiftR RB w (f x) (bind-let y g)
@@ -105,9 +107,9 @@ module _ (extFunc : ℚ → ℚ) where
   ext-evalLinExp :
     ∀ {w₁ w₂} e (ρ : w₂ ⇒w w₁) →
       eval-LinExp e (w₁ .env) ≡ eval-LinExp (rename-LinExp (ρ .ren) e) (w₂ .env)
-  ext-evalLinExp (const q)  ρ = refl
-  ext-evalLinExp (var q x)  ρ = cong (λ □ → q * □) (sym (ρ .presv x))
-  ext-evalLinExp (e₁ `+ e₂) ρ = cong₂ _+_ (ext-evalLinExp e₁ ρ) (ext-evalLinExp e₂ ρ)
+  ext-evalLinExp (const q)   ρ = refl
+  ext-evalLinExp (var q x)   ρ = cong (λ □ → q * □) (sym (ρ .presv x))
+  ext-evalLinExp (e₁ `+` e₂) ρ = cong₂ _+_ (ext-evalLinExp e₁ ρ) (ext-evalLinExp e₂ ρ)
 
   ext-evalConstraint :
     ∀ {w₁ w₂} p (ρ : w₂ ⇒w w₁) →
@@ -138,7 +140,7 @@ module _ (extFunc : ℚ → ℚ) where
   ⟦ A ⇒ B ⟧ty          δ₁-δ₂ w f g =
     ∀ w' (ρ : w' ⇒w w) x y →
       ⟦ A ⟧ty δ₁-δ₂ w' x y →
-      LetLiftR (⟦ B ⟧ty δ₁-δ₂ ) w' (f x) (g (w' .ctxt) (ρ .ren) y)
+      LetLiftR (⟦ B ⟧ty δ₁-δ₂) w' (f x) (g (w' .ctxt) (ρ .ren) y)
 
   ext-ty : ∀ {Δ} (A : Δ ⊢T Type) {δ₁ δ₂} →
            (δ₁-δ₂ : ⟦ Δ ⟧kctxt δ₁ δ₂) →

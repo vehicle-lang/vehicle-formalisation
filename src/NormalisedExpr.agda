@@ -31,7 +31,7 @@ under : ∀ {Δ Δ'} → Δ ⇒ᵣ Δ' → (Δ ,∙) ⇒ᵣ (Δ' ,∙)
 under ρ zero     = zero
 under ρ (succ x) = succ (ρ x)
 
--- FIXME: make a Renamble record to combine the family and the
+-- FIXME: make a Renameable record to combine the family and the
 -- Renameable part
 
 Renameable : (LinVarCtxt → Set) → Set
@@ -60,8 +60,8 @@ rename-□ ρ a ρ' = a (λ x → ρ' (ρ x))
 -- Linear and Constraint Expressions in a normal form
 data LinExp (Δ : LinVarCtxt) : Set where
   const : ℚ → LinExp Δ
-  var   : ℚ → Var Δ → LinExp Δ
-  _`+_  : LinExp Δ → LinExp Δ → LinExp Δ
+  var   : ℚ → Var Δ → LinExp Δ --- FIXME: rename to _`*`var_
+  _`+`_ : LinExp Δ → LinExp Δ → LinExp Δ
 
 data ConstraintExp (Δ : LinVarCtxt) : Set where
   _`≤`_ : LinExp Δ → LinExp Δ → ConstraintExp Δ
@@ -74,9 +74,9 @@ data ConstraintExp (Δ : LinVarCtxt) : Set where
   _or_  : ConstraintExp Δ → ConstraintExp Δ → ConstraintExp Δ
 
 rename-LinExp : Renameable LinExp
-rename-LinExp ρ (const q)  = const q
-rename-LinExp ρ (var r x)  = var r (ρ x)
-rename-LinExp ρ (e₁ `+ e₂) = (rename-LinExp ρ e₁) `+ (rename-LinExp ρ e₂)
+rename-LinExp ρ (const q)   = const q
+rename-LinExp ρ (var r x)   = var r (ρ x)
+rename-LinExp ρ (e₁ `+` e₂) = (rename-LinExp ρ e₁) `+` (rename-LinExp ρ e₂)
 
 rename-ConstraintExp : Renameable ConstraintExp
 rename-ConstraintExp ρ (e₁ `≤` e₂) = rename-LinExp ρ e₁ `≤` rename-LinExp ρ e₂
@@ -92,9 +92,9 @@ rename-ConstraintExp ρ (x₁ `≠`f x₂) = ρ x₁ `≠`f ρ x₂
 -- Operations
 
 _⊛_ : ∀ {Δ} → ℚ → LinExp Δ → LinExp Δ
-q ⊛ const x    = const (q ℚ.* x)
-q ⊛ var r v    = var (q ℚ.* r) v
-q ⊛ (e₁ `+ e₂) = (q ⊛ e₁) `+ (q ⊛ e₂)
+q ⊛ const x     = const (q ℚ.* x)
+q ⊛ var r v     = var (q ℚ.* r) v
+q ⊛ (e₁ `+` e₂) = (q ⊛ e₁) `+` (q ⊛ e₂)
 
 negate : ∀ {Δ} → ConstraintExp Δ → ConstraintExp Δ
 negate (e₁ `≤` e₂) = e₁ `>` e₂
@@ -113,14 +113,14 @@ Env : LinVarCtxt → Set
 Env Δ = Var Δ → ℚ
 
 eval-LinExp : ∀ {Δ} → LinExp Δ → Env Δ → ℚ
-eval-LinExp (const q)  η = q
-eval-LinExp (var q x)  η = q * η x
-eval-LinExp (e₁ `+ e₂) η = eval-LinExp e₁ η + eval-LinExp e₂ η
+eval-LinExp (const q)   η = q
+eval-LinExp (var q x)   η = q * η x
+eval-LinExp (e₁ `+` e₂) η = eval-LinExp e₁ η + eval-LinExp e₂ η
 
 eval-⊛ : ∀ {Δ} q (e : LinExp Δ) η → q * eval-LinExp e η ≡ eval-LinExp (q ⊛ e) η
 eval-⊛ q (const x) η = refl
 eval-⊛ q (var r x) η = sym (*-assoc q r (η x))
-eval-⊛ q (e₁ `+ e₂) η rewrite sym (eval-⊛ q e₁ η) rewrite sym (eval-⊛ q e₂ η) =
+eval-⊛ q (e₁ `+` e₂) η rewrite sym (eval-⊛ q e₁ η) rewrite sym (eval-⊛ q e₂ η) =
   *-distribˡ-+ q (eval-LinExp e₁ η) (eval-LinExp e₂ η)
 
 module _ (extFunc : ℚ → ℚ) where
@@ -171,8 +171,8 @@ rename-lift rA ρ (let-linexp e k) =
 rename-lift rA ρ (let-funexp v k) =
   let-funexp (ρ v) (rename-lift rA (under ρ) k)
 
-`if : ∀ {Δ} → ConstraintExp Δ → LetLift (λ _ → Bool) Δ
-`if e = if e (return true) (λ ρ → return false)
+-- `if : ∀ {Δ} → ConstraintExp Δ → LetLift (λ _ → Bool) Δ
+-- `if e = if e (return true) (λ ρ → return false)
 
 -- `let : ∀ {Δ} → LinExp Δ → LetLift LinExp Δ
 -- `let e = let-exp e (return (var 1ℚ zero))
@@ -200,9 +200,9 @@ expand (if e kt kf) =
   bind-ex (expand kt) λ Δ' ρ xt →
   bind-ex (expand (kf ρ)) λ Δ'' ρ' xf →
   let e = rename-ConstraintExp (λ v → ρ' (ρ v)) e in
-  return ((negate e and rename-ConstraintExp ρ' xt)
+  return ((e and rename-ConstraintExp ρ' xt)
           or
-          (e and xf))
+          (negate e and xf))
 expand (let-linexp e p) =
   ex (bind-ex (expand p) λ Δ' ρ p' →
       return ((var 1ℚ (ρ zero) `=` rename-LinExp (λ x → ρ (succ x)) e) and p'))

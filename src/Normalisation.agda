@@ -67,7 +67,7 @@ rename-ctxt {_}{Γ ,- A} δ ρ (γ , a) = rename-ctxt {_}{Γ} δ ρ γ , rename-
 ⟦ t₁ `+ t₂ ⟧tm δ γ =
   bind-let (⟦ t₁ ⟧tm δ γ) λ Δ' ρ e₁ →
   bind-let (⟦ t₂ ⟧tm δ (rename-ctxt δ ρ γ)) λ Δ'' ρ' e₂ →
-  return (rename-LinExp ρ' e₁ `+ e₂)
+  return (rename-LinExp ρ' e₁ `+` e₂)
 ⟦ t₁ `* t₂ ⟧tm δ γ =
   bind-let (⟦ t₁ ⟧tm δ γ) λ Δ' ρ e₁ →
   bind-let (⟦ t₂ ⟧tm δ (rename-ctxt δ ρ γ)) λ Δ'' ρ' e₂ →
