@@ -155,8 +155,14 @@ module _ (extFunc : ℚ → ℚ) where
   ⟦ ε ⟧kctxt tt tt = ⊤
   ⟦ Δ ,-ℕ ⟧kctxt (δ₁ , n₁) (δ₂ , n₂) = (⟦ Δ ⟧kctxt δ₁ δ₂) × (n₁ ≡ n₂)
 
+  ⟦_⟧tyvar : ∀ {Δ} (x : Δ ⊢Tv) →
+             ∀ {δ₁ δ₂} → ⟦ Δ ⟧kctxt δ₁ δ₂ → ⟦ Nat ⟧kind (S.⟦ x ⟧tyvar δ₁) (N.⟦ x ⟧tyvar δ₂)
+  ⟦ zero ⟧tyvar δ₁-δ₂ = lift (δ₁-δ₂ .proj₂)
+  ⟦ succ x ⟧tyvar δ₁-δ₂ = ⟦ x ⟧tyvar (δ₁-δ₂ .proj₁)
+
   ⟦_⟧ty : ∀ {Δ κ} (A : Δ ⊢T κ) →
          ∀ {δ₁ δ₂} → ⟦ Δ ⟧kctxt δ₁ δ₂ → ⟦ κ ⟧kind (S.⟦ A ⟧ty δ₁) (N.⟦ A ⟧ty δ₂)
+  ⟦ var x ⟧ty = ⟦ x ⟧tyvar
   ⟦ Bool constraint ⟧ty δ₁-δ₂ w x y = x ≡ eval-ConstraintExp extFunc y (w .env)
   ⟦ Num const ⟧ty       δ₁-δ₂ w x y = x ≡ y
   ⟦ Num linear ⟧ty      δ₁-δ₂ w x y = x ≡ eval-LinExp y (w .env)
@@ -185,6 +191,7 @@ module _ (extFunc : ℚ → ℚ) where
     λ idx₁ idx₂ idx₁-idx₂ →
        ext-lift (N.rename-ty A δ₂) (ext-ty A δ₁-δ₂) ρ
            (x idx₁) (y idx₂) (r idx₁ idx₂ idx₁-idx₂)
+  ext-ty (Index n) δ₁-δ₂ ρ refl = refl
 
   -- Relatedness for contexts
   ⟦_⟧ctxt : ∀ {Δ} (Γ : Context Δ) {δ₁ δ₂} → ⟦ Δ ⟧kctxt δ₁ δ₂ → WRel (S.⟦ Γ ⟧ctxt δ₁) (N.⟦ Γ ⟧ctxt δ₂)
@@ -300,7 +307,7 @@ module _ (extFunc : ℚ → ℚ) where
           (⟦ t ⟧tm δ₁-δ₂ w' (ext-ctxt _ δ₁-δ₂ ρ γ₁-γ₂))
           λ w'' ρ₁ a₁ b₁ r-a₁b₁ →
             cong₂ _≤ᵇ_ (trans r-ab (ext-evalLinExp b ρ₁)) r-a₁b₁
-  ⟦ if s then t else u ⟧tm {δ₂ = δ₂} δ₁-δ₂ w {γₛ}{γₙ} γ₁-γ₂ =
+  ⟦_⟧tm {A = A} (if s then t else u) {δ₂ = δ₂} δ₁-δ₂ w {γₛ}{γₙ} γ₁-γ₂ =
     let-bindR w (ST.⟦ s ⟧tm _ γₛ) (N.⟦ s ⟧tm _ γₙ)
       (λ a → ifᵇ a then ST.⟦ t ⟧tm _ γₛ else ST.⟦ u ⟧tm _ γₛ)
       _
@@ -308,7 +315,7 @@ module _ (extFunc : ℚ → ℚ) where
       r
     where r : ∀ w' (ρ : w' ⇒w w) a b →
               ⟦ Bool constraint ⟧ty δ₁-δ₂ w' a b →
-              LetLiftR (⟦ _ ⟧ty δ₁-δ₂) w'
+              LetLiftR (⟦ A ⟧ty δ₁-δ₂) w'
                 (ifᵇ a then ST.⟦ t ⟧tm _ γₛ else ST.⟦ u ⟧tm _ γₛ)
                 (if b (N.⟦ t ⟧tm δ₂ (N.rename-ctxt δ₂ (ρ .ren) γₙ))
                       (N.⟦ u ⟧tm δ₂ (N.rename-ctxt δ₂ (ρ .ren) γₙ)))

@@ -20,7 +20,12 @@ open import NormalisedExpr
 ⟦ ε ⟧kctxt      = ⊤
 ⟦ Δ ,-ℕ ⟧kctxt = ⟦ Δ ⟧kctxt × ℕ
 
+⟦_⟧tyvar : ∀ {Δ} → Δ ⊢Tv → ⟦ Δ ⟧kctxt → ⟦ Nat ⟧kind
+⟦ zero ⟧tyvar   (_ , n) = lift n
+⟦ succ x ⟧tyvar (δ , _) = ⟦ x ⟧tyvar δ
+
 ⟦_⟧ty : ∀ {Δ κ} → Δ ⊢T κ → ⟦ Δ ⟧kctxt → ⟦ κ ⟧kind
+⟦ var x ⟧ty           δ = ⟦ x ⟧tyvar δ
 ⟦ Bool constraint ⟧ty δ = ConstraintExp
 ⟦ Num const ⟧ty       δ = K ℚ
 ⟦ Num linear ⟧ty      δ = LinExp

@@ -26,13 +26,18 @@ data KindContext : Set where
   ε     : KindContext
   _,-ℕ : KindContext → KindContext
 
+data _⊢Tv : KindContext → Set where
+  zero : ∀ {Δ} → (Δ ,-ℕ) ⊢Tv
+  succ : ∀ {Δ} → Δ ⊢Tv → (Δ ,-ℕ) ⊢Tv
+
 data _⊢T_ : KindContext → Kind → Set where
+  var    : ∀ {Δ} → Δ ⊢Tv → Δ ⊢T Nat
   Bool   : ∀ {Δ} → BoolKind → Δ ⊢T Type
   Num    : ∀ {Δ} → Linearity → Δ ⊢T Type
   _⇒_   : ∀ {Δ} → Δ ⊢T Type → Δ ⊢T Type → Δ ⊢T Type
   Index  : ∀ {Δ} → Δ ⊢T Nat → Δ ⊢T Type
   Array  : ∀ {Δ} → Δ ⊢T Nat → Δ ⊢T Type → Δ ⊢T Type
-  -- FIXME: Nat constants, and variables
+  -- FIXME: Nat constants, and foralls
 
 data Context : KindContext → Set where
   ε    : ∀ {Δ} → Context Δ
