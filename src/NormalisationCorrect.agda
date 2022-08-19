@@ -45,15 +45,28 @@ _∘w_ : ∀ {w₁ w₂ w₃} → w₂ ⇒w w₃ → w₁ ⇒w w₂ → w₁ ⇒
 (f ∘w g) .ren x = g .ren (f .ren x)
 (f ∘w g) .presv x = trans (g .presv (f .ren x)) (f .presv x)
 
-------------------------------------------------------------------------------
-
-WRel : Set → (LinVarCtxt → Set) → Set₁
-WRel A B = ∀ (w : World) → A → B (w .ctxt) → Set
-
 -- FIXME: move to NormalisationExpr
 extend-env : ∀ {Δ} → Env Δ → ℚ → Env (Δ ,∙)
 extend-env η q zero     = q
 extend-env η q (succ x) = η x
+
+extend-w : World → ℚ → World
+extend-w w q .ctxt = w .ctxt ,∙
+extend-w w q .env = extend-env (w .env) q
+
+under-w : ∀ {w₁ w₂ q} → (w₁ ⇒w w₂) → (extend-w w₁ q ⇒w extend-w w₂ q)
+under-w ρ .ren = under (ρ .ren)
+under-w ρ .presv zero = refl
+under-w ρ .presv (succ x) = ρ .presv x
+
+wk : ∀ {w q} → extend-w w q ⇒w w
+wk .ren = succ
+wk .presv x = refl
+
+------------------------------------------------------------------------------
+
+WRel : Set → (LinVarCtxt → Set) → Set₁
+WRel A B = ∀ (w : World) → A → B (w .ctxt) → Set
 
 module _ (extFunc : ℚ → ℚ) where
 
@@ -85,9 +98,9 @@ module _ (extFunc : ℚ → ℚ) where
      then LetLiftR R w a k₁
      else LetLiftR R w a k₂
   LetLiftR R w a (let-linexp e k) =
-    LetLiftR R ((w .ctxt ,∙) , extend-env (w .env) (eval-LinExp e (w .env))) a k
+    LetLiftR R (extend-w w (eval-LinExp e (w .env))) a k
   LetLiftR R w a (let-funexp x k) =
-    LetLiftR R (((w .ctxt ,∙) , extend-env (w .env) (extFunc (w .env x)))) a k
+    LetLiftR R (extend-w w (extFunc (w .env x))) a k
 
   ext-lift : ∀ {A B} {R : WRel A B} →
              (ren-B : ∀ {Δ₁ Δ₂} (ρ : Δ₂ ⇒ᵣ Δ₁) → B Δ₁ → B Δ₂) →
@@ -116,29 +129,22 @@ module _ (extFunc : ℚ → ℚ) where
   ... | false = let-bindR w x y₂ f g r-xy r-fg
   let-bindR w x (let-linexp e y) f g r-xy r-fg =
     let-bindR
-      ((w .ctxt ,∙) , extend-env (w .env) (eval-LinExp e (w .env)))
+      (extend-w w (eval-LinExp e (w .env)))
       x
       y
       f
       (λ Δ' ρ a' → g Δ' (λ x₁ → ρ (succ x₁)) a')
       r-xy
-      λ w' ρ a b r-ab →
-        r-fg
-          w' (record { ren = λ x₁ → ρ .ren (succ x₁) ; presv = λ x₁ → ρ .presv (succ x₁) })
-          a b r-ab
-          -- FIXME: tidy up this 'record' bit
+      λ w' ρ a b r-ab → r-fg w' (wk ∘w ρ) a b r-ab
   let-bindR w x (let-funexp v y) f g r-xy r-fg =
     let-bindR
-      ((w .ctxt ,∙) , extend-env (w .env) (extFunc (w .env v)))
+      (extend-w w (extFunc (w .env v)))
       x
       y
       f
       (λ Δ' ρ a' → g Δ' (λ x₁ → ρ (succ x₁)) a')
       r-xy
-      λ w' ρ a b r-ab →
-        r-fg w' (record { ren = λ x₁ → ρ .ren (succ x₁) ; presv = λ x₁ → ρ .presv (succ x₁) })
-        a b r-ab
-
+      λ w' ρ a b r-ab → r-fg w' (wk ∘w ρ) a b r-ab
 
   ------------------------------------------------------------------------------
   ⟦_⟧kind : (κ : Kind) → S.⟦ κ ⟧kind → N.⟦ κ ⟧kind → Set₁
