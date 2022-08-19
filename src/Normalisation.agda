@@ -2,7 +2,8 @@
 
 module Normalisation where
 
-open import Level using (Lift; lift)
+open import Level using (Lift; lift; lower)
+open import Data.Fin using (Fin)
 open import Data.Nat using (ℕ)
 open import Data.Product using (_×_; proj₁; proj₂; _,_)
 open import Data.Rational using (ℚ; 1ℚ)
@@ -24,12 +25,16 @@ open import NormalisedExpr
 ⟦ Num const ⟧ty       δ = K ℚ
 ⟦ Num linear ⟧ty      δ = LinExp
 ⟦ A ⇒ B ⟧ty          δ = ⟦ A ⟧ty δ ⇒ₖ LetLift (⟦ B ⟧ty δ)
+⟦ Index n ⟧ty         δ = K (Fin (⟦ n ⟧ty δ .lower))
+⟦ Array n A ⟧ty       δ = λ Δ → Fin (⟦ n ⟧ty δ .lower) → LetLift (⟦ A ⟧ty δ) Δ
 
 rename-ty : ∀ {Δ} → (A : Δ ⊢T Type) → ∀ δ → Renameable (⟦ A ⟧ty δ)
 rename-ty (Bool constraint) δ = rename-ConstraintExp
 rename-ty (Num const)       δ = rename-K
 rename-ty (Num linear)      δ = rename-LinExp
-rename-ty (A ⇒ A₁)         δ = rename-⇒ₖ
+rename-ty (A ⇒ B)          δ = rename-⇒ₖ
+rename-ty (Index n)         δ = rename-K
+rename-ty (Array n A)       δ = λ ρ x idx → rename-lift (rename-ty A δ) ρ (x idx)
 
 ⟦_⟧ctxt : ∀ {Δ} → Context Δ → ⟦ Δ ⟧kctxt → LinVarCtxt → Set
 ⟦ ε ⟧ctxt      δ Δ = ⊤
@@ -72,13 +77,27 @@ rename-ctxt {_}{Γ ,- A} δ ρ (γ , a) = rename-ctxt {_}{Γ} δ ρ γ , rename-
   bind-let (⟦ t₁ ⟧tm δ γ) λ Δ' ρ e₁ →
   bind-let (⟦ t₂ ⟧tm δ (rename-ctxt δ ρ γ)) λ Δ'' ρ' e₂ →
   return (e₁ ⊛ e₂)
+⟦ array n A t ⟧tm δ γ =
+  -- FIXME: two choices here:
+  -- 1. Lazily do the let- and if- lifting so that it gets replicated every time we index
+  --    into the array (this is what is implemented here)
+  -- 2. Do all the lifting at the creation point, so it gets shared
+  --
+  -- The difference is manifest in the different possible
+  -- implementation types for Array, specifically whether or not it
+  -- includes a use of the LetLift monad.
+  return (λ idx → ⟦ t ⟧tm δ (γ , idx))
+⟦ index n A s t ⟧tm δ γ =
+  bind-let (⟦ s ⟧tm δ γ) λ Δ' ρ arr →
+  bind-let (⟦ t ⟧tm δ (rename-ctxt δ ρ γ)) λ Δ'' ρ' idx →
+  rename-lift (rename-ty A δ) ρ' (arr idx)
 ⟦ t₁ `≤ t₂ ⟧tm δ γ =
   bind-let (⟦ t₁ ⟧tm δ γ) λ Δ' ρ e₁ →
   bind-let (⟦ t₂ ⟧tm δ (rename-ctxt δ ρ γ)) λ Δ'' ρ' e₂ →
   return (rename-LinExp ρ' e₁ `≤` e₂)
 ⟦ if s then t else u ⟧tm δ γ =
   bind-let (⟦ s ⟧tm δ γ) λ Δ' ρ e →
-  if e (⟦ t ⟧tm δ (rename-ctxt δ ρ γ)) (λ ρ' → ⟦ u ⟧tm δ (rename-ctxt δ (ρ ∘ ρ') γ))
+  if e (⟦ t ⟧tm δ (rename-ctxt δ ρ γ)) (⟦ u ⟧tm δ (rename-ctxt δ ρ γ))
 ⟦ `¬ t ⟧tm δ γ =
   bind-let (⟦ t ⟧tm δ γ) λ Δ' ρ ϕ →
   return (negate ϕ)
@@ -92,4 +111,4 @@ rename-ctxt {_}{Γ ,- A} δ ρ (γ , a) = rename-ctxt {_}{Γ} δ ρ γ , rename-
   return (rename-ConstraintExp ρ' ϕ₁ or ϕ₂)
 
 normalise : ε / ε ⊢ Bool constraint → Ex ConstraintExp ε
-normalise t = expand (bind-let (⟦ t ⟧tm tt tt) λ Δ' ρ c → return (return c))
+normalise t = expand (bind-let (⟦ t ⟧tm tt tt) λ Δ' ρ c → return (return c)) (λ x → x)

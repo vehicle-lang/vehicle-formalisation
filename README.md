@@ -27,6 +27,11 @@ Agda modules:
 - [X] Port the proof that the two semantics agree on closed terms of
       type `Bool constraint`
 - [ ] Add quantifiers to MiniVehicle
-- [-] Add uninterpreted functions to MiniVehicle
+  - [ ] Add quantifiers over container types, reduced to nested quantification
+- [X] Add uninterpreted functions to MiniVehicle
 - [ ] Add tuple types to MiniVehicle
 - [ ] Add array types to MiniVehicle
+  - [X] Add basic array types and indexes
+  - [ ] Add size and index constants
+  - [ ] Add `reduce` (a.k.a. `Foldable.fold`)
+- [ ] Add quantification over Indexes (via `reduce`)

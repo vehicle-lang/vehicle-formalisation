@@ -135,8 +135,8 @@ module _ (extFunc : ℚ → ℚ) where
   eval-ConstraintExp (x₁ `=`f x₂) η = (η x₁ ≟ extFunc (η x₂)) .does
   eval-ConstraintExp (x₁ `≠`f x₂) η = not ((η x₁ ≟ extFunc (η x₂)) .does)
 
-
-  eval-negate : ∀ {Δ} (p : ConstraintExp Δ) η → not (eval-ConstraintExp p η) ≡ eval-ConstraintExp (negate p) η
+  eval-negate : ∀ {Δ} (p : ConstraintExp Δ) η →
+                not (eval-ConstraintExp p η) ≡ eval-ConstraintExp (negate p) η
   eval-negate (x `≤` x₁) η = refl
   eval-negate (x `>` x₁) η = not-involutive _
   eval-negate (x `=` x₁) η = refl
@@ -151,61 +151,54 @@ module _ (extFunc : ℚ → ℚ) where
   eval-negate (x₁ `≠`f x₂) η = not-involutive _
 
 ------------------------------------------------------------------------------
--- Part III : Let/If lifting monad
-
--- NOTE: the □ is needed on the second argument of 'if' to satisfy the
--- termination checker in the definition of expand.
-data LetLift (A : LinVarCtxt → Set) : LinVarCtxt → Set where
-  return     : ∀ {Δ} → A Δ → LetLift A Δ
-  if         : ∀ {Δ} → ConstraintExp Δ → LetLift A Δ → □ (LetLift A) Δ → LetLift A Δ
-  let-linexp : ∀ {Δ} → LinExp Δ → LetLift A (Δ ,∙) → LetLift A Δ
-  let-funexp : ∀ {Δ} → {- fsymb → -} Var Δ → LetLift A (Δ ,∙) → LetLift A Δ
-
-rename-lift : ∀ {A} → Renameable A → Renameable (LetLift A)
-rename-lift rA ρ (return x) =
-  return (rA ρ x)
-rename-lift rA ρ (if p k₁ k₂) =
-  if (rename-ConstraintExp ρ p) (rename-lift rA ρ k₁) (rename-□ ρ k₂)
-rename-lift rA ρ (let-linexp e k) =
-  let-linexp (rename-LinExp ρ e) (rename-lift rA (under ρ) k)
-rename-lift rA ρ (let-funexp v k) =
-  let-funexp (ρ v) (rename-lift rA (under ρ) k)
-
--- `if : ∀ {Δ} → ConstraintExp Δ → LetLift (λ _ → Bool) Δ
--- `if e = if e (return true) (λ ρ → return false)
-
--- `let : ∀ {Δ} → LinExp Δ → LetLift LinExp Δ
--- `let e = let-exp e (return (var 1ℚ zero))
-
-bind-let : ∀ {Δ A B} → LetLift A Δ → (A ⇒ₖ LetLift B) Δ → LetLift B Δ
-bind-let (return x)       f = f _ (λ x → x) x
-bind-let (if e kt kf)     f = if e (bind-let kt f) λ ρ → bind-let (kf ρ) (rename-⇒ₖ ρ f)
-bind-let (let-linexp e k) f = let-linexp e (bind-let k (rename-⇒ₖ succ f))
-bind-let (let-funexp x k) f = let-funexp x (bind-let k (rename-⇒ₖ succ f))
-
-------------------------------------------------------------------------------
--- Existential Quantification monad
-
+-- Part III: Existential Quantification monad
 data Ex (A : LinVarCtxt → Set) : LinVarCtxt → Set where
   ex      : ∀ {Δ} → Ex A (Δ ,∙) → Ex A Δ
   return  : ∀ {Δ} → A Δ → Ex A Δ
+
+rename-Ex : ∀ {A} → Renameable A → Renameable (Ex A)
+rename-Ex ren-A ρ (ex e)     = ex (rename-Ex ren-A (under ρ) e)
+rename-Ex ren-A ρ (return x) = return (ren-A ρ x)
 
 bind-ex : ∀ {Δ A B} → Ex A Δ → (A ⇒ₖ Ex B) Δ → Ex B Δ
 bind-ex (ex x) f = ex (bind-ex x (rename-⇒ₖ succ f))
 bind-ex (return x) f = f _ (λ x → x) x
 
-expand : ∀ {Δ} → LetLift (Ex ConstraintExp) Δ → Ex ConstraintExp Δ
-expand (return x) = x
-expand (if e kt kf) =
-  bind-ex (expand kt) λ Δ' ρ xt →
-  bind-ex (expand (kf ρ)) λ Δ'' ρ' xf →
-  let e = rename-ConstraintExp (λ v → ρ' (ρ v)) e in
-  return ((e and rename-ConstraintExp ρ' xt)
-          or
-          (negate e and xf))
-expand (let-linexp e p) =
-  ex (bind-ex (expand p) λ Δ' ρ p' →
-      return ((var 1ℚ (ρ zero) `=` rename-LinExp (λ x → ρ (succ x)) e) and p'))
-expand (let-funexp x p) =
-  ex (bind-ex (expand p) λ Δ' ρ p' →
-      return ((ρ zero `=`f ρ (succ x)) and p'))
+------------------------------------------------------------------------
+-- Part IV : Let/If lifting monad
+data LetLift (A : LinVarCtxt → Set) : LinVarCtxt → Set where
+  return     : ∀ {Δ} → A Δ → LetLift A Δ
+  if         : ∀ {Δ} → ConstraintExp Δ → LetLift A Δ → LetLift A Δ → LetLift A Δ
+  let-linexp : ∀ {Δ} → LinExp Δ → LetLift A (Δ ,∙) → LetLift A Δ
+  let-funexp : ∀ {Δ} → {- fsymb → -} Var Δ → LetLift A (Δ ,∙) → LetLift A Δ
+
+expand : ∀ {Δ} → LetLift (Ex ConstraintExp) Δ → □ (Ex ConstraintExp) Δ
+expand (return x) ρ =
+  rename-Ex rename-ConstraintExp ρ x
+expand (if e kt kf) ρ =
+  bind-ex (expand kt ρ) λ Δ'' ρ' xt →
+  bind-ex (expand kf (ρ ∘ ρ')) λ Δ''' ρ'' xf →
+  let e = rename-ConstraintExp (ρ ∘ (ρ' ∘ ρ'')) e in
+  return ((e and (rename-ConstraintExp ρ'' xt)) or ((negate e) and xf))
+expand (let-linexp e p) ρ =
+  ex (bind-ex (expand p (under ρ)) λ Δ' ρ' p' →
+      return ((var 1ℚ (ρ' zero) `=` rename-LinExp (λ x → ρ' (succ (ρ x))) e) and p'))
+expand (let-funexp x p) ρ =
+  ex (bind-ex (expand p (under ρ)) λ Δ' ρ' p' →
+      return ((ρ' zero `=`f ρ' (succ (ρ x))) and p'))
+
+rename-lift : ∀ {A} → Renameable A → Renameable (LetLift A)
+rename-lift rA ρ (return x) =
+  return (rA ρ x)
+rename-lift rA ρ (if p k₁ k₂) =
+  if (rename-ConstraintExp ρ p) (rename-lift rA ρ k₁) (rename-lift rA ρ k₂)
+rename-lift rA ρ (let-linexp e k) =
+  let-linexp (rename-LinExp ρ e) (rename-lift rA (under ρ) k)
+rename-lift rA ρ (let-funexp v k) =
+  let-funexp (ρ v) (rename-lift rA (under ρ) k)
+
+bind-let : ∀ {Δ A B} → LetLift A Δ → (A ⇒ₖ LetLift B) Δ → LetLift B Δ
+bind-let (return x)       f = f _ (λ x → x) x
+bind-let (if e kt kf)     f = if e (bind-let kt f) (bind-let kf f)
+bind-let (let-linexp e k) f = let-linexp e (bind-let k (rename-⇒ₖ succ f))
+bind-let (let-funexp x k) f = let-funexp x (bind-let k (rename-⇒ₖ succ f))

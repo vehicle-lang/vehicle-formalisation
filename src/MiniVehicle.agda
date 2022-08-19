@@ -30,10 +30,9 @@ data _⊢T_ : KindContext → Kind → Set where
   Bool   : ∀ {Δ} → BoolKind → Δ ⊢T Type
   Num    : ∀ {Δ} → Linearity → Δ ⊢T Type
   _⇒_   : ∀ {Δ} → Δ ⊢T Type → Δ ⊢T Type → Δ ⊢T Type
-{- TODO:
-  Array  : ℕ → Type → Type
-  Index  : ℕ → Type
--}
+  Index  : ∀ {Δ} → Δ ⊢T Nat → Δ ⊢T Type
+  Array  : ∀ {Δ} → Δ ⊢T Nat → Δ ⊢T Type → Δ ⊢T Type
+  -- FIXME: Nat constants, and variables
 
 data Context : KindContext → Set where
   ε    : ∀ {Δ} → Context Δ
@@ -65,6 +64,11 @@ data _/_⊢_ : (Δ : KindContext) → Context Δ → Δ ⊢T Type → Set where
   lift   : ∀ {Δ Γ} → Δ / Γ ⊢ Num const → Δ / Γ ⊢ Num linear
   _`+_   : ∀ {Δ Γ} → Δ / Γ ⊢ Num linear → Δ / Γ ⊢ Num linear → Δ / Γ ⊢ Num linear
   _`*_   : ∀ {Δ Γ} → Δ / Γ ⊢ Num const → Δ / Γ ⊢ Num linear → Δ / Γ ⊢ Num linear
+
+  -- Arrays
+  array   : ∀ {Δ Γ} → (n : Δ ⊢T Nat) (A : Δ ⊢T Type) → Δ / (Γ ,- Index n) ⊢ A → Δ / Γ ⊢ Array n A
+  index   : ∀ {Δ Γ} → (n : Δ ⊢T Nat) (A : Δ ⊢T Type) → Δ / Γ ⊢ Array n A → Δ / Γ ⊢ Index n → Δ / Γ ⊢ A
+  -- FIXME: index constants; crush
 
   -- Comparisons
   _`≤_   : ∀ {Δ Γ} → Δ / Γ ⊢ Num linear → Δ / Γ ⊢ Num linear → Δ / Γ ⊢ Bool constraint
