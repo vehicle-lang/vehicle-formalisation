@@ -29,6 +29,11 @@ Agda modules:
 - [ ] Add quantifiers to MiniVehicle
   - [ ] Add quantifiers over container types, reduced to nested quantification
 - [X] Add uninterpreted functions to MiniVehicle
+- [ ] Add quantification over array sizes
+  - [X] Syntax
+  - [X] Standard Semantics
+  - [X] Normalising Semantics
+  - [ ] Correctness Relation
 - [ ] Add tuple types to MiniVehicle
 - [ ] Add array types to MiniVehicle
   - [X] Add basic array types and indexes

@@ -1,4 +1,4 @@
-{-# OPTIONS --postfix-projections --safe #-}
+{-# OPTIONS --postfix-projections --allow-unsolved-metas #-}
 
 module NormalisationCorrect where
 
@@ -14,7 +14,7 @@ open import Data.Rational.Properties using (*-identityˡ)
 open import Relation.Binary.PropositionalEquality using (_≡_; refl; sym; trans; cong; cong₂; subst)
 open import Relation.Nullary using (does)
 
-open import MiniVehicle
+open import MiniVehicle renaming (_⇒ᵣ_ to _⇒K_)
 open import NormalisedExpr
 import StandardSemantics as S
 import Normalisation as N
@@ -55,13 +55,13 @@ extend-w w q .ctxt = w .ctxt ,∙
 extend-w w q .env = extend-env (w .env) q
 
 under-w : ∀ {w₁ w₂ q} → (w₁ ⇒w w₂) → (extend-w w₁ q ⇒w extend-w w₂ q)
-under-w ρ .ren = under (ρ .ren)
+under-w ρ .ren = NormalisedExpr.under (ρ .ren)
 under-w ρ .presv zero = refl
 under-w ρ .presv (succ x) = ρ .presv x
 
-wk : ∀ {w q} → extend-w w q ⇒w w
-wk .ren = succ
-wk .presv x = refl
+wk-w : ∀ {w q} → extend-w w q ⇒w w
+wk-w .ren = succ
+wk-w .presv x = refl
 
 ------------------------------------------------------------------------------
 
@@ -113,9 +113,9 @@ module _ (extFunc : ℚ → ℚ) where
   ... | false = ext-lift ren-B ext-R ρ a fal
   ... | true  = ext-lift ren-B ext-R ρ a tru
   ext-lift ren-B ext-R ρ a (let-linexp x lb) =
-    ext-lift ren-B ext-R (record { ren = under (ρ .ren) ; presv = λ { zero → sym (ext-evalLinExp x ρ) ; (succ x₁) → ρ .presv x₁ } }) a lb
+    ext-lift ren-B ext-R (record { ren = NormalisedExpr.under (ρ .ren) ; presv = λ { zero → sym (ext-evalLinExp x ρ) ; (succ x₁) → ρ .presv x₁ } }) a lb
   ext-lift ren-B ext-R ρ a (let-funexp x lb) =
-    ext-lift ren-B ext-R (record { ren = under (ρ .ren) ; presv = λ { zero → cong extFunc (ρ .presv x) ; (succ x₁) → ρ .presv x₁ } }) a lb
+    ext-lift ren-B ext-R (record { ren = NormalisedExpr.under (ρ .ren) ; presv = λ { zero → cong extFunc (ρ .presv x) ; (succ x₁) → ρ .presv x₁ } }) a lb
 
   let-bindR : ∀ {A A' B B'}{RA : WRel A A'}{RB : WRel B B'} w x y
     (f : A → B)
@@ -135,7 +135,7 @@ module _ (extFunc : ℚ → ℚ) where
       f
       (λ Δ' ρ a' → g Δ' (λ x₁ → ρ (succ x₁)) a')
       r-xy
-      λ w' ρ a b r-ab → r-fg w' (wk ∘w ρ) a b r-ab
+      λ w' ρ a b r-ab → r-fg w' (wk-w ∘w ρ) a b r-ab
   let-bindR w x (let-funexp v y) f g r-xy r-fg =
     let-bindR
       (extend-w w (extFunc (w .env v)))
@@ -144,7 +144,7 @@ module _ (extFunc : ℚ → ℚ) where
       f
       (λ Δ' ρ a' → g Δ' (λ x₁ → ρ (succ x₁)) a')
       r-xy
-      λ w' ρ a b r-ab → r-fg w' (wk ∘w ρ) a b r-ab
+      λ w' ρ a b r-ab → r-fg w' (wk-w ∘w ρ) a b r-ab
 
   ------------------------------------------------------------------------------
   ⟦_⟧kind : (κ : Kind) → S.⟦ κ ⟧kind → N.⟦ κ ⟧kind → Set₁
@@ -175,6 +175,7 @@ module _ (extFunc : ℚ → ℚ) where
                   LetLiftR (⟦ A ⟧ty δ₁-δ₂) w (a₁ idx₁) (a₂ idx₂)
   ⟦ Index n ⟧ty δ₁-δ₂ w idx₁ idx₂ =
     subst Fin (⟦ n ⟧ty δ₁-δ₂ .lower) idx₁ ≡ idx₂
+  ⟦ Forall A ⟧ty K₁-K₂ w x y = (n : ℕ) → LetLiftR (⟦ A ⟧ty (K₁-K₂ , refl)) w (x n) (y n)
 
   ext-ty : ∀ {Δ} (A : Δ ⊢T Type) {δ₁ δ₂} →
            (δ₁-δ₂ : ⟦ Δ ⟧kctxt δ₁ δ₂) →
@@ -192,6 +193,8 @@ module _ (extFunc : ℚ → ℚ) where
        ext-lift (N.rename-ty A δ₂) (ext-ty A δ₁-δ₂) ρ
            (x idx₁) (y idx₂) (r idx₁ idx₂ idx₁-idx₂)
   ext-ty (Index n) δ₁-δ₂ ρ refl = refl
+  ext-ty (Forall A) {δ₁}{δ₂} δ₁-δ₂ ρ {x}{y} r n =
+    ext-lift (N.rename-ty A (δ₂ , n)) (ext-ty A (δ₁-δ₂ , refl)) ρ (x n) (y n) (r n)
 
   -- Relatedness for contexts
   ⟦_⟧ctxt : ∀ {Δ} (Γ : Context Δ) {δ₁ δ₂} → ⟦ Δ ⟧kctxt δ₁ δ₂ → WRel (S.⟦ Γ ⟧ctxt δ₁) (N.⟦ Γ ⟧ctxt δ₂)
@@ -236,6 +239,12 @@ module _ (extFunc : ℚ → ℚ) where
           _
           (⟦ t ⟧tm δ₁-δ₂ w' (ext-ctxt _ δ₁-δ₂ ρ γ₁-γ₂))
           r-ab
+  ⟦ Λ t ⟧tm δ₁-δ₂ w {γₛ}{γₙ} γₛ-γₙ =
+    λ n → ⟦ t ⟧tm (δ₁-δ₂ , refl) w {!!}
+  ⟦ _•_ {A = A} t N ⟧tm δ₁-δ₂ w {γₛ}{γₙ} γₛ-γₙ =
+    {!!}
+
+  -- Uninterpreted Functions
   ⟦ func t ⟧tm δ₁-δ₂ w {γₛ}{γₙ} γ₁-γ₂ =
     let-bindR w (ST.⟦ t ⟧tm _ γₛ) (N.⟦ t ⟧tm _ γₙ)
       extFunc
