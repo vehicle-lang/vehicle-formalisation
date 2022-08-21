@@ -2,10 +2,11 @@
 
 module Isomorphism where
 
+-- open import Level
 open import Relation.Binary.PropositionalEquality using (_≡_; refl; trans; cong)
 
 postulate
-  fext : ∀ {A : Set}{B : A → Set}{f g : (a : A) → B a} →
+  fext : ∀ {ℓ₁ ℓ₂}{A : Set ℓ₁}{B : A → Set ℓ₂}{f g : (a : A) → B a} →
          ((a : A) → f a ≡ g a) → f ≡ g
 
 record _↔_ (A B : Set) : Set where

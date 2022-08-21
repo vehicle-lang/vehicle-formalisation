@@ -2,6 +2,7 @@
 
 module MiniVehicle where
 
+open import Data.Nat using (ℕ)
 open import Data.Rational using (ℚ)
 
 data Linearity : Set where
@@ -48,7 +49,7 @@ data _⊢T_ : KindContext → Kind → Set where
   Index  : ∀ {Δ} → Δ ⊢T Nat → Δ ⊢T Type
   Array  : ∀ {Δ} → Δ ⊢T Nat → Δ ⊢T Type → Δ ⊢T Type
   Forall : ∀ {Δ} → (Δ ,-ℕ) ⊢T Type → Δ ⊢T Type
-  -- FIXME: Nat constants
+  [_]    : ∀ {Δ} → ℕ → Δ ⊢T Nat
 
 ren-Type : ∀ {K₁ K₂ κ} → (K₂ ⇒ᵣ K₁) → K₁ ⊢T κ → K₂ ⊢T κ
 ren-Type ρ (var x) = var (ρ x)
@@ -58,6 +59,7 @@ ren-Type ρ (A ⇒ B) = (ren-Type ρ A) ⇒ (ren-Type ρ B)
 ren-Type ρ (Index A) = Index (ren-Type ρ A)
 ren-Type ρ (Array A B) = Array (ren-Type ρ A) (ren-Type ρ B)
 ren-Type ρ (Forall A) = Forall (ren-Type (under ρ) A)
+ren-Type ρ [ n ] = [ n ]
 
 binder : ∀ {K₁ K₂} → (K₁ ⊢Tv → K₂ ⊢T Nat) → ((K₁ ,-ℕ)  ⊢Tv → (K₂ ,-ℕ) ⊢T Nat)
 binder σ zero     = var zero
@@ -71,6 +73,7 @@ subst-Type σ (A ⇒ B) = (subst-Type σ A) ⇒ (subst-Type σ B)
 subst-Type σ (Index A) = Index (subst-Type σ A)
 subst-Type σ (Array A B) = Array (subst-Type σ A) (subst-Type σ B)
 subst-Type σ (Forall A) = Forall (subst-Type (binder σ) A)
+subst-Type σ [ n ] = [ n ]
 
 single-sub : ∀ {K} → K ⊢T Nat → (K ,-ℕ) ⊢Tv → K ⊢T Nat
 single-sub N zero = N
@@ -128,6 +131,7 @@ data _/_⊢_ : (Δ : KindContext) → Context Δ → Δ ⊢T Type → Set where
   -- Comparisons
   _`≤_   : ∀ {Δ Γ} → Δ / Γ ⊢ Num linear → Δ / Γ ⊢ Num linear → Δ / Γ ⊢ Bool constraint
 
+  -- Polymorphic if-then-else
   if_then_else_ : ∀ {Δ Γ A}
      (cond : Δ / Γ ⊢ Bool constraint)
      (on-true on-false : Δ / Γ ⊢ A) →

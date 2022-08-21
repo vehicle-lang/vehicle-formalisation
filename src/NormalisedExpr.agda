@@ -31,17 +31,14 @@ under : ∀ {Δ Δ'} → Δ ⇒ᵣ Δ' → (Δ ,∙) ⇒ᵣ (Δ' ,∙)
 under ρ zero     = zero
 under ρ (succ x) = succ (ρ x)
 
+wk-r : ∀ {Δ} → (Δ ,∙) ⇒ᵣ Δ
+wk-r = succ
+
 -- FIXME: make a Renameable record to combine the family and the
 -- Renameable part
 
 Renameable : (LinVarCtxt → Set) → Set
 Renameable A = ∀ {Δ Δ'} → (Δ ⇒ᵣ Δ') → A Δ' → A Δ
-
-K : Set → LinVarCtxt → Set
-K A Δ = A
-
-rename-K : ∀ {A} → Renameable (K A)
-rename-K _ a = a
 
 _⇒ₖ_ : (LinVarCtxt → Set) → (LinVarCtxt → Set) → LinVarCtxt → Set
 (X ⇒ₖ Y) Δ = ∀ Δ' → Δ' ⇒ᵣ Δ → X Δ' → Y Δ'
