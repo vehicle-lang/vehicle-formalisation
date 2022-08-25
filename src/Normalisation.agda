@@ -2,7 +2,7 @@
 
 module Normalisation where
 
-open import Level using (Lift; lift; lower)
+open import Level using (Lift; lift; lower; suc; 0ℓ)
 open import Data.Fin using (Fin)
 open import Data.Nat using (ℕ)
 open import Data.Product using (_×_; proj₁; proj₂; _,_)
@@ -11,6 +11,7 @@ open import Data.Unit using (⊤; tt)
 
 open import MiniVehicle hiding (_⇒ᵣ_)
 open import NormalisedExpr
+open import Interpretation
 
 record Syn : Set₁ where
   field
@@ -124,3 +125,41 @@ extend {X} f .mor (x , ly) =
 
 ⟦if⟧ : ∀ {X} → ((LiftM X ⟦×⟧ LiftM X) ⟦×⟧ ⟦Bool⟧ constraint) ==> LiftM X
 ⟦if⟧ .mor ((tr , fa) , ϕ)= if ϕ tr fa
+
+⟦Index⟧ : ℕ → Syn
+⟦Index⟧ n = K (Fin n)
+
+ℳ : Model (suc 0ℓ) 0ℓ
+ℳ .Model.⟦Type⟧ = Syn
+ℳ .Model._==>_ = _==>_
+ℳ .Model.⟦id⟧ = ⟦id⟧
+ℳ .Model._∘_ = _∘S_
+ℳ .Model._⟦×⟧_ = _⟦×⟧_
+ℳ .Model.⟦⊤⟧ = ⟦⊤⟧
+ℳ .Model.⟦terminal⟧ = ⟦terminal⟧
+ℳ .Model.⟦proj₁⟧ = ⟦proj₁⟧
+ℳ .Model.⟦proj₂⟧ = ⟦proj₂⟧
+ℳ .Model.⟨_,_⟩ = ⟨_,_⟩
+ℳ .Model._⟦⇒⟧_ = _⟦⇒⟧_
+ℳ .Model.⟦Λ⟧ = ⟦Λ⟧
+ℳ .Model.⟦eval⟧ = ⟦eval⟧
+ℳ .Model.⟦∀⟧ = ⟦∀⟧
+ℳ .Model.⟦∀-intro⟧ = ⟦∀-intro⟧
+ℳ .Model.⟦∀-elim⟧ = ⟦∀-elim⟧
+ℳ .Model.Mon = LiftM
+ℳ .Model.⟦return⟧ = ⟦return⟧
+ℳ .Model.⟦extend⟧ = extend
+ℳ .Model.⟦Num⟧ = ⟦Num⟧
+ℳ .Model.⟦add⟧ = ⟦add⟧
+ℳ .Model.⟦mul⟧ = ⟦mul⟧
+ℳ .Model.⟦num⟧ = ⟦num⟧
+ℳ .Model.⟦const⟧ = ⟦const⟧
+ℳ .Model.⟦extFunc⟧ = ⟦extFunc⟧
+ℳ .Model.⟦Bool⟧ = ⟦Bool⟧
+ℳ .Model.⟦not⟧ = ⟦not⟧
+ℳ .Model.⟦and⟧ = ⟦and⟧
+ℳ .Model.⟦or⟧ = ⟦or⟧
+ℳ .Model.⟦≤⟧ = ⟦≤⟧
+ℳ .Model.⟦if⟧ = ⟦if⟧
+ℳ .Model.⟦Index⟧ = ⟦Index⟧
+ℳ .Model.⟦idx⟧ n i .mor _ = i
