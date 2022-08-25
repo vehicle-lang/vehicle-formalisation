@@ -3,6 +3,7 @@
 module Interpretation where
 
 open import Level using (suc; 0ℓ; _⊔_; Lift; lift; lower)
+open import Data.Fin using (Fin)
 open import Data.Nat using (ℕ)
 open import Data.Rational using (ℚ)
 open import Data.Unit using (⊤; tt)
@@ -62,6 +63,7 @@ record Model ℓ m : Set (suc ℓ ⊔ suc m) where
 
     -- Indexes and Arrays
     ⟦Index⟧ : ℕ → ⟦Type⟧
+    ⟦idx⟧   : (n : ℕ)(i : Fin n) → ∀ {X} → X ==> ⟦Index⟧ n
 
 module Interpret {ℓ}{m} (ℳ : Model ℓ m) where
 
@@ -234,6 +236,7 @@ module Interpret {ℓ}{m} (ℳ : Model ℓ m) where
     -- implementation types for Array, specifically whether or not it
     -- includes a use of the LetLift monad.
   ⟦ index n A s t ⟧tm δ = binaryM ⟦eval⟧ ∘ ⟨ ⟦ s ⟧tm δ , ⟦ t ⟧tm δ ⟩
+  ⟦ idx i ⟧tm δ = ⟦return⟧ ∘ ⟦idx⟧ _ i
   ⟦ t₁ `≤ t₂ ⟧tm δ = binary ⟦≤⟧ ∘ ⟨ ⟦ t₁ ⟧tm δ , ⟦ t₂ ⟧tm δ ⟩
   ⟦ if s then t else u ⟧tm δ = ⟦extend⟧ ⟦if⟧ ∘ ⟨ ⟨ ⟦ t ⟧tm δ , ⟦ u ⟧tm δ ⟩ , ⟦ s ⟧tm δ ⟩
   ⟦ `¬ t ⟧tm δ = unary ⟦not⟧ ∘ ⟦ t ⟧tm δ

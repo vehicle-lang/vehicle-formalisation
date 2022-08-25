@@ -399,6 +399,9 @@ module _ (extFunc : ℚ → ℚ) where
     ℳ .Model.⟦≤⟧ = ⟦≤⟧R
     ℳ .Model.⟦if⟧ = ⟦if⟧R
     ℳ .⟦Index⟧ = ⟦Index⟧R
+    ℳ .⟦idx⟧ n i .left = λ x → i
+    ℳ .⟦idx⟧ n i .right .mor x = i
+    ℳ .⟦idx⟧ n i .rel-mor w _ _ _ = refl
 
   module ℐ = Interpret ℳ
 

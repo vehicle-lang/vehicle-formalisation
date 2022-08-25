@@ -52,6 +52,7 @@ module _ (extFunc : ℚ → ℚ) where
   ℳ .⟦if⟧ ((tr , fa) , false) = fa
   ℳ .⟦if⟧ ((tr , fa) , true) = tr
   ℳ .⟦Index⟧ = Fin
+  ℳ .⟦idx⟧ _ i _ = i
 
   module ℐ = Interpret ℳ
 

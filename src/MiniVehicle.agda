@@ -2,6 +2,7 @@
 
 module MiniVehicle where
 
+open import Data.Fin using (Fin)
 open import Data.Nat using (ℕ)
 open import Data.Rational using (ℚ)
 
@@ -126,7 +127,8 @@ data _/_⊢_ : (Δ : KindContext) → Context Δ → Δ ⊢T Type → Set where
   -- Arrays
   array   : ∀ {Δ Γ} → (n : Δ ⊢T Nat) (A : Δ ⊢T Type) → Δ / (Γ ,- Index n) ⊢ A → Δ / Γ ⊢ Array n A
   index   : ∀ {Δ Γ} → (n : Δ ⊢T Nat) (A : Δ ⊢T Type) → Δ / Γ ⊢ Array n A → Δ / Γ ⊢ Index n → Δ / Γ ⊢ A
-  -- FIXME: index constants; crush
+  idx     : ∀ {Δ Γ n} → (i : Fin n) → Δ / Γ ⊢ Index [ n ]
+  -- FIXME: crush/fold/reduce
 
   -- Comparisons
   _`≤_   : ∀ {Δ Γ} → Δ / Γ ⊢ Num linear → Δ / Γ ⊢ Num linear → Δ / Γ ⊢ Bool constraint
