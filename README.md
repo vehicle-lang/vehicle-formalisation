@@ -33,7 +33,7 @@ Agda modules:
   - [X] Syntax
   - [X] Standard Semantics
   - [X] Normalising Semantics
-  - [ ] Correctness Relation
+  - [X] Correctness Relation
 - [ ] Add tuple types to MiniVehicle
 - [ ] Add array types to MiniVehicle
   - [X] Add basic array types and indexes
