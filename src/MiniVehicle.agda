@@ -10,16 +10,7 @@ data Linearity : Set where
   const linear : Linearity
 
 data BoolKind : Set where
-  constraint {- universal existential query -} : BoolKind
-
-{-
-data QueryKind : Set where
-  universal existential : QueryKind
-
-queryKind : QueryKind → BoolKind
-queryKind universal   = universal
-queryKind existential = existential
--}
+  constraint query : BoolKind
 
 data Kind : Set where
   Nat Type : Kind

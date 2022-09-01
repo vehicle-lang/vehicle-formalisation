@@ -2,26 +2,35 @@
 
 module NormalisationCorrect where
 
-open import Level using (0ℓ; suc)
+open import Level using (0ℓ; suc) -- ; Lift; lift; lower)
 
 open import Data.Bool using (not; _∧_; _∨_; true; false)
-                   renaming (Bool to 𝔹; if_then_else_ to ifᵇ_then_else_)
+                   renaming (Bool to 𝔹; T to True; if_then_else_ to ifᵇ_then_else_)
+open import Data.Bool.Properties using (∨-identityʳ)
 open import Data.Fin using (Fin)
 open import Data.Nat using (ℕ)
-open import Data.Product using (_×_; _,_; proj₁; proj₂)
-open import Data.Rational using (ℚ; _+_; _*_; _≤ᵇ_; _≟_)
+open import Data.Product using (_×_; _,_; proj₁; proj₂; Σ-syntax)
+open import Data.Rational using (ℚ; _+_; _*_; _≤ᵇ_; _≟_; 1ℚ)
 open import Data.Rational.Properties using (*-identityˡ)
+open import Data.Sum using (_⊎_; inj₁; inj₂)
 open import Data.Unit using (⊤; tt)
 
 open import Relation.Binary.PropositionalEquality
-  using (_≡_; refl; trans; cong; sym; cong₂)
+  using (_≡_; refl; trans; cong; sym; cong₂; subst; module ≡-Reasoning)
+open ≡-Reasoning
 
 open import MiniVehicle hiding (_⇒ᵣ_)
 open import NormalisedExpr
 open import Interpretation
+open import Isomorphism
 
 import StandardSemantics as S
 import Normalisation as N
+
+is-true-or-false : ∀ b → (b ≡ true) ⊎ (b ≡ false)
+is-true-or-false false = inj₂ refl
+is-true-or-false true = inj₁ refl
+
 
 ------------------------------------------------------------------------------
 record World : Set where
@@ -29,6 +38,9 @@ record World : Set where
     ctxt : LinVarCtxt
     env  : Env ctxt
 open World
+
+empty : World
+empty .ctxt = ε
 
 -- World morphisms extend the context whilst making sure that the
 -- environment is preserved.
@@ -60,6 +72,11 @@ under-w ρ .ren = NormalisedExpr.under (ρ .ren)
 under-w ρ .presv zero = refl
 under-w ρ .presv (succ x) = ρ .presv x
 
+under-w' : ∀ {w₁ w₂ q₁ q₂} → (q₁ ≡ q₂) → (w₁ ⇒w w₂) → (extend-w w₁ q₁ ⇒w extend-w w₂ q₂)
+under-w' eq ρ .ren = NormalisedExpr.under (ρ .ren)
+under-w' eq ρ .presv zero = eq
+under-w' eq ρ .presv (succ x) = ρ .presv x
+
 wk-w : ∀ {w q} → extend-w w q ⇒w w
 wk-w .ren = succ
 wk-w .presv x = refl
@@ -71,9 +88,9 @@ wk-w .presv x = refl
 module 𝒩 = Model N.ℳ
 
 
-record WRel : Set₁ where
+record WRel : Set (suc 0ℓ) where
   field
-    Left  : Set
+    Left  : Set 0ℓ
     Right : 𝒩.⟦Type⟧
     rel   : (w : World) → Left → Right .N.Carrier (w .ctxt) → Set
     ext   : ∀ {w w'} (ρ : w' ⇒w w) a b → rel w a b → rel w' a (Right .N.rename (ρ .ren) b)
@@ -105,7 +122,7 @@ _∘R_ : ∀ {X Y Z} → (Y ===> Z) → (X ===> Y) → (X ===> Z)
 ⟦⊤⟧R .Left = ⊤
 ⟦⊤⟧R .Right = 𝒩.⟦⊤⟧
 ⟦⊤⟧R .rel w tt tt = ⊤
-⟦⊤⟧R .ext ρ tt tt tt = tt
+⟦⊤⟧R .ext ρ tt tt x = x
 
 ⟦terminal⟧R : ∀ {X} → X ===> ⟦⊤⟧R
 ⟦terminal⟧R .left _ = tt
@@ -185,13 +202,15 @@ _⟦⇒⟧R_ : WRel → WRel → WRel
 KR : Set → WRel
 KR X .Left = X
 KR X .Right = N.K X
-KR X .rel w = _≡_
+KR X .rel w x y = x ≡ y
 KR X .ext ρ x y eq = eq
 
 ⟦Index⟧R : ℕ → WRel
 ⟦Index⟧R n = KR (Fin n)
 
 module _ (extFunc : ℚ → ℚ) where
+
+  module 𝒮 = Model (S.ℳ extFunc)
 
   ext-evalLinExp :
     ∀ {w₁ w₂} e (ρ : w₂ ⇒w w₁) →
@@ -221,7 +240,6 @@ module _ (extFunc : ℚ → ℚ) where
   ⟦Num⟧R linear .Right = 𝒩.⟦Num⟧ linear
   ⟦Num⟧R linear .rel w x exp = x ≡ eval-LinExp exp (w .env)
   ⟦Num⟧R linear .ext ρ x exp eq = trans eq (ext-evalLinExp exp ρ)
-  -- FIXME: more cases
 
   ⟦num⟧R : ∀ {X} → ℚ → X ===> ⟦Num⟧R const
   ⟦num⟧R q .left _ = q
@@ -229,49 +247,100 @@ module _ (extFunc : ℚ → ℚ) where
   ⟦num⟧R q .rel-mor w _ _ _ = refl
 
   ⟦add⟧R : (⟦Num⟧R linear ⟦×⟧R ⟦Num⟧R linear) ===> ⟦Num⟧R linear
-  ⟦add⟧R .left (x , y) = x + y
+  ⟦add⟧R .left = 𝒮.⟦add⟧
   ⟦add⟧R .right = 𝒩.⟦add⟧
-  ⟦add⟧R .rel-mor w (x₁ , y₁) (x₂ , y₂) (r-x₁x₂ , r-y₁y₂) = cong₂ _+_ r-x₁x₂ r-y₁y₂
+  ⟦add⟧R .rel-mor w (x₁ , y₁) (x₂ , y₂) (r-x₁x₂ , r-y₁y₂) =
+    cong₂ _+_ r-x₁x₂ r-y₁y₂
 
   ⟦mul⟧R : (⟦Num⟧R const ⟦×⟧R ⟦Num⟧R linear) ===> ⟦Num⟧R linear
-  ⟦mul⟧R .left (x , y) = x * y
+  ⟦mul⟧R .left = 𝒮.⟦mul⟧
   ⟦mul⟧R .right = 𝒩.⟦mul⟧
   ⟦mul⟧R .rel-mor w (x₁ , y₁) (x₂ , y₂) (r-x₁x₂ , r-y₁y₂) =
     trans (cong₂ _*_ r-x₁x₂ r-y₁y₂) (eval-⊛ x₂ y₂ (w .env))
 
   ⟦const⟧R : ⟦Num⟧R const ===> ⟦Num⟧R linear
-  ⟦const⟧R .left q = q
+  ⟦const⟧R .left = 𝒮.⟦const⟧
   ⟦const⟧R .right = 𝒩.⟦const⟧
   ⟦const⟧R .rel-mor w _ _ eq = eq
 
   ------------------------------------------------------------------------------
   -- Booleans and constraints
+  Constraint-WRel : WRel
+  Constraint-WRel .Left = 𝒮.⟦Bool⟧ constraint
+  Constraint-WRel .Right = 𝒩.⟦Bool⟧ constraint
+  Constraint-WRel .rel w b ϕ = b ≡ eval-ConstraintExp extFunc ϕ (w .env)
+  Constraint-WRel .ext ρ b ϕ eq = trans eq (ext-evalConstraint ϕ ρ)
+
+  module _ (X : WRel) where
+    data ExR : ∀ w → S.Ex (X .Left) → Ex (X .Right .N.Carrier) (w .ctxt) → Set where
+      return    : ∀ {w x₁ x₂} →
+                  X .rel w x₁ x₂ →
+                  ExR w (S.return x₁) (return x₂)
+      ex        : ∀ {w k₁ k₂} →
+                  (∀ q → ExR (extend-w w q) (k₁ q) k₂) →
+                  ExR w (S.ex k₁) (ex k₂)
+      if-true   : ∀ {w} {x₁} cond x₂₁ x₂₂ →
+                  eval-ConstraintExp extFunc cond (w .env) ≡ true →
+                  ExR w x₁ x₂₁ →
+                  ExR w x₁ (if cond x₂₁ x₂₂)
+      if-false  : ∀ {w} {x₁} cond x₂₁ x₂₂ →
+                  eval-ConstraintExp extFunc cond (w .env) ≡ false →
+                  ExR w x₁ x₂₂ →
+                  ExR w x₁ (if cond x₂₁ x₂₂)
+      ex-linexp : ∀ {w e₁ k₂} e →
+                  ExR (extend-w w (eval-LinExp e (w .env))) e₁ k₂ →
+                  ExR w e₁ (linexp e k₂)
+      ex-funexp : ∀ {w e₁ k₂} x →
+                  ExR (extend-w w (extFunc (w .env x))) e₁ k₂ →
+                  ExR w e₁ (funexp x k₂)
+
+    ext-ExR : ∀ {w₁ w₂} (ρ : w₂ ⇒w w₁) x₁ x₂ →
+              ExR w₁ x₁ x₂ →
+              ExR w₂ x₁ (rename-Ex (X .Right .N.rename) (ρ .ren) x₂)
+    ext-ExR ρ _ _ (return r) = return (X .ext ρ _ _ r)
+    ext-ExR ρ _ _ (if-true cond tr fa eq r) =
+      if-true (rename-ConstraintExp (ρ .ren) cond) _ _
+              (trans (sym (ext-evalConstraint cond ρ)) eq)
+              (ext-ExR ρ _ _ r)
+    ext-ExR ρ _ _ (if-false cond tr fa eq r) =
+      if-false (rename-ConstraintExp (ρ .ren) cond) _ _
+               (trans (sym (ext-evalConstraint cond ρ)) eq)
+               (ext-ExR ρ _ _ r)
+    ext-ExR ρ _ _ (ex r)     = ex (λ q → ext-ExR (under-w ρ) _ _ (r q))
+    ext-ExR ρ _ _ (ex-linexp e k) =
+      ex-linexp (rename-LinExp (ρ .ren) e)
+                (ext-ExR (under-w' (sym (ext-evalLinExp e ρ)) ρ) _ _ k)
+    ext-ExR ρ _ _ (ex-funexp x k) =
+      ex-funexp (ρ .ren x)
+                (ext-ExR (under-w' (cong extFunc (ρ .presv x)) ρ) _ _ k)
+
   ⟦Bool⟧R : BoolKind → WRel
-  ⟦Bool⟧R constraint .Left = 𝔹
-  ⟦Bool⟧R constraint .Right = 𝒩.⟦Bool⟧ constraint
-  ⟦Bool⟧R constraint .rel w b ϕ = b ≡ eval-ConstraintExp extFunc ϕ (w .env)
-  ⟦Bool⟧R constraint .ext ρ b ϕ eq = trans eq (ext-evalConstraint ϕ ρ)
+  ⟦Bool⟧R constraint = Constraint-WRel
+  ⟦Bool⟧R query .Left = 𝒮.⟦Bool⟧ query
+  ⟦Bool⟧R query .Right = 𝒩.⟦Bool⟧ query
+  ⟦Bool⟧R query .rel = ExR Constraint-WRel
+  ⟦Bool⟧R query .ext = ext-ExR Constraint-WRel
 
   ⟦≤⟧R : (⟦Num⟧R linear ⟦×⟧R ⟦Num⟧R linear) ===> ⟦Bool⟧R constraint
-  ⟦≤⟧R .left (x , y) = x ≤ᵇ y
-  ⟦≤⟧R .right        = 𝒩.⟦≤⟧
+  ⟦≤⟧R .left = 𝒮.⟦≤⟧
+  ⟦≤⟧R .right = 𝒩.⟦≤⟧
   ⟦≤⟧R .rel-mor w (x₁ , y₁) (x₂ , y₂) (r-x₁x₂ , r-y₁y₂) =
     cong₂ _≤ᵇ_ r-x₁x₂ r-y₁y₂
 
   ⟦and⟧R : (⟦Bool⟧R constraint ⟦×⟧R ⟦Bool⟧R constraint) ===> ⟦Bool⟧R constraint
-  ⟦and⟧R .left (x , y) = x ∧ y
+  ⟦and⟧R .left = 𝒮.⟦and⟧
   ⟦and⟧R .right = 𝒩.⟦and⟧
   ⟦and⟧R .rel-mor w (x₁ , y₁) (x₂ , y₂) (r-x₁x₂ , r-y₁y₂) =
     cong₂ _∧_ r-x₁x₂ r-y₁y₂
 
   ⟦or⟧R : (⟦Bool⟧R constraint ⟦×⟧R ⟦Bool⟧R constraint) ===> ⟦Bool⟧R constraint
-  ⟦or⟧R .left (x , y) = x ∨ y
+  ⟦or⟧R .left = 𝒮.⟦or⟧
   ⟦or⟧R .right = 𝒩.⟦or⟧
   ⟦or⟧R .rel-mor w (x₁ , y₁) (x₂ , y₂) (r-x₁x₂ , r-y₁y₂) =
     cong₂ _∨_ r-x₁x₂ r-y₁y₂
 
   ⟦not⟧R : ⟦Bool⟧R constraint ===> ⟦Bool⟧R constraint
-  ⟦not⟧R .left = not
+  ⟦not⟧R .left = 𝒮.⟦not⟧
   ⟦not⟧R .right = 𝒩.⟦not⟧
   ⟦not⟧R .rel-mor w x₁ x₂ r-x₁x₂ =
     trans (cong not r-x₁x₂) (eval-negate extFunc x₂ (w .env))
@@ -312,6 +381,20 @@ module _ (extFunc : ℚ → ℚ) where
     LiftMR .rel = LetLiftR
     LiftMR .ext = ext-lift
 
+  eval-Lift : ∀ {Δ} → LetLift (𝒩.⟦Bool⟧ constraint .N.Carrier) Δ → Env Δ → 𝔹
+  eval-Lift (return x) η = eval-ConstraintExp extFunc x η
+  eval-Lift (if x x₁ x₂) η = ifᵇ (eval-ConstraintExp extFunc x η) then eval-Lift x₁ η else eval-Lift x₂ η
+  eval-Lift (let-linexp x x₁) η = eval-Lift x₁ (extend-env η (eval-LinExp x η))
+  eval-Lift (let-funexp x x₁) η = eval-Lift x₁ (extend-env η (extFunc (η x)))
+
+  lift-correct : ∀ {w b} e → LetLiftR Constraint-WRel w b e → b ≡ eval-Lift e (w .env)
+  lift-correct (return x) r = r
+  lift-correct {w} (if x e e₁) r with eval-ConstraintExp extFunc x (w .env)
+  ... | true = lift-correct e r
+  ... | false = lift-correct e₁ r
+  lift-correct (let-linexp x e) r = lift-correct e r
+  lift-correct (let-funexp x e) r = lift-correct e r
+
   let-bindR : ∀ {X Y} w x y →
     (f : X .Left → Y .Left)
     (g : (X .Right .N.Carrier ⇒ₖ LetLift (Y .Right .N.Carrier)) (w .ctxt)) →
@@ -339,7 +422,7 @@ module _ (extFunc : ℚ → ℚ) where
   ⟦return⟧R .rel-mor w x₁ x₂ r-x₁x₂ = r-x₁x₂
 
   ⟦extFunc⟧R : ⟦Num⟧R linear ===> LiftMR (⟦Num⟧R linear)
-  ⟦extFunc⟧R .left = extFunc
+  ⟦extFunc⟧R .left = 𝒮.⟦extFunc⟧
   ⟦extFunc⟧R .right = 𝒩.⟦extFunc⟧
   ⟦extFunc⟧R .rel-mor w x₁ x₂ r-x₁x₂ =
     trans (cong extFunc r-x₁x₂) (sym (*-identityˡ _))
@@ -361,6 +444,27 @@ module _ (extFunc : ℚ → ℚ) where
       ly₁-ly₂
       λ w' ρ y₁ y₂ y₁y₂ →
         f .rel-mor w' (x₁ , y₁) (X .Right .N.rename (ρ .ren) x₂ , y₂) (X .ext ρ x₁ x₂ x₁x₂ , y₁y₂)
+
+  ⟦constraint⟧ : ⟦Bool⟧R constraint ===> ⟦Bool⟧R query
+  ⟦constraint⟧ .left = 𝒮.⟦constraint⟧
+  ⟦constraint⟧ .right = 𝒩.⟦constraint⟧
+  ⟦constraint⟧ .rel-mor w _ _ r = return r
+
+  expand-lemma : ∀ w x₁ x₂ → LetLiftR (⟦Bool⟧R query) w x₁ x₂ → ExR Constraint-WRel w x₁ (expand x₂)
+  expand-lemma w x₁ (return x) r = r
+  expand-lemma w x₁ (if x x₂ x₃) r with is-true-or-false (eval-ConstraintExp extFunc x (w .env))
+  ... | inj₁ is-true = if-true _ _ _ is-true (expand-lemma _ x₁ x₂ (subst (λ □ → ifᵇ □ then _ else _) is-true r))
+  ... | inj₂ is-false = if-false _ _ _ is-false (expand-lemma _ x₁ x₃ (subst (λ □ → ifᵇ □ then _ else _) is-false r))
+  expand-lemma w x₁ (let-linexp e k) r = ex-linexp e (expand-lemma _ x₁ k r)
+  expand-lemma w x₁ (let-funexp x k) r = ex-funexp x (expand-lemma _ x₁ k r)
+
+  ⟦∃⟧ : (⟦Num⟧R linear ⟦⇒⟧R LiftMR (⟦Bool⟧R query)) ===> ⟦Bool⟧R query
+  ⟦∃⟧ .left = 𝒮.⟦∃⟧
+  ⟦∃⟧ .right = 𝒩.⟦∃⟧
+  ⟦∃⟧ .rel-mor w tm₁ tm₂ r =
+    ex λ q → expand-lemma _ _ (tm₂ (w .ctxt ,∙) succ (var 1ℚ zero)) (h q)
+    where h : ∀ q → LetLiftR (⟦Bool⟧R query) (extend-w w q) (tm₁ q) (tm₂ (w .ctxt ,∙) succ (var 1ℚ zero))
+          h q = r (extend-w w q) wk-w q (var 1ℚ zero) (sym (*-identityˡ q))
 
   ℳ : Model (suc 0ℓ) 0ℓ
   ℳ .Model.⟦Type⟧ = WRel
@@ -395,15 +499,47 @@ module _ (extFunc : ℚ → ℚ) where
   ℳ .Model.⟦≤⟧ = ⟦≤⟧R
   ℳ .Model.⟦if⟧ = ⟦if⟧R
   ℳ .Model.⟦Index⟧ = ⟦Index⟧R
-  ℳ .Model.⟦idx⟧ n i .left = λ x → i
+  ℳ .Model.⟦idx⟧ n i .left = 𝒮.⟦idx⟧ n i
   ℳ .Model.⟦idx⟧ n i .right = 𝒩.⟦idx⟧ n i
   ℳ .Model.⟦idx⟧ n i .rel-mor w _ _ _ = refl
+  ℳ .Model.⟦constraint⟧ = ⟦constraint⟧
+  ℳ .Model.⟦∃⟧ = ⟦∃⟧
 
   module ℐ = Interpret ℳ
 
-  standard : ε / ε ⊢ Bool constraint → 𝔹
+  standard : ε / ε ⊢ Bool query → S.Ex 𝔹
   standard t = ℐ.⟦ t ⟧tm tt .left tt
 
-  normalise : ε / ε ⊢ Bool constraint → Ex ConstraintExp ε
-  normalise t =
-    expand (bind-let (ℐ.⟦ t ⟧tm tt .right .N.mor tt) λ Δ' ρ c → return (return c)) (λ x → x)
+  normalise : ε / ε ⊢ Bool query → Ex ConstraintExp ε
+  normalise t = expand (ℐ.⟦ t ⟧tm tt .right .N.mor tt)
+
+  related : (t : ε / ε ⊢ Bool query) →
+            ExR Constraint-WRel empty (standard t) (normalise t)
+  related t = expand-lemma empty _ (ℐ.⟦ t ⟧tm tt .right .N.mor tt)
+                           (ℐ.⟦ t ⟧tm tt .rel-mor empty tt tt tt)
+
+  eval-Ex : ∀ {A} → (∀ {Δ} → A Δ → Env Δ → Set) → ∀ {Δ} → Ex A Δ → Env Δ → Set
+  eval-Ex eval (return x)   η = eval x η
+  eval-Ex eval (ex e)       η = Σ[ q ∈ ℚ ] eval-Ex eval e (extend-env η q)
+  eval-Ex eval (if c tr fa) η =
+    ((True (eval-ConstraintExp extFunc c η)) × (eval-Ex eval tr η))
+     ⊎
+    (True (not (eval-ConstraintExp extFunc c η))) × (eval-Ex eval fa η)
+  eval-Ex eval (linexp e k) η = Σ[ q ∈ ℚ ] (q ≡ eval-LinExp e η × eval-Ex eval k (extend-env η q))
+  eval-Ex eval (funexp x k) η = Σ[ q ∈ ℚ ] (q ≡ extFunc (η x) × eval-Ex eval k (extend-env η q))
+
+  correctness : ∀ w {x₁ x₂} →
+                  ExR Constraint-WRel w x₁ x₂ →
+                  S.eval-Ex x₁ True ↔ eval-Ex (λ e η → True (eval-ConstraintExp extFunc e η)) x₂ (w .env)
+  correctness w (return refl) =
+    ↔-refl
+  correctness w (ex x) =
+    cong-Σ-snd (λ q → correctness (extend-w w q) (x q))
+  correctness w (if-true cond x₂₁ x₂₂ x r) rewrite x =
+    ↔-trans (correctness w r) (↔-trans or-left (⊎-cong ⊤-fst ⊥-fst))
+  correctness w (if-false cond x₂₁ x₂₂ x r) rewrite x =
+    ↔-trans (correctness w r) (↔-trans or-right (⊎-cong ⊥-fst ⊤-fst))
+  correctness w (ex-linexp e r) =
+    ↔-trans (correctness _ r) (known (eval-LinExp e (w .env)))
+  correctness w (ex-funexp x r) =
+    ↔-trans (correctness _ r) (known (extFunc (w .env x)))

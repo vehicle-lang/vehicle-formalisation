@@ -60,10 +60,21 @@ record Model ℓ m : Set (suc ℓ ⊔ suc m) where
     ⟦or⟧   : (⟦Bool⟧ constraint ⟦×⟧ ⟦Bool⟧ constraint) ==> ⟦Bool⟧ constraint
     ⟦≤⟧    : (⟦Num⟧ linear ⟦×⟧ ⟦Num⟧ linear) ==> ⟦Bool⟧ constraint
     ⟦if⟧   : ∀ {X} → ((Mon X ⟦×⟧ Mon X) ⟦×⟧ ⟦Bool⟧ constraint) ==> Mon X
+    ⟦constraint⟧ : ⟦Bool⟧ constraint ==> ⟦Bool⟧ query
+    ⟦∃⟧    : (⟦Num⟧ linear ⟦⇒⟧ Mon (⟦Bool⟧ query)) ==> ⟦Bool⟧ query
 
     -- Indexes and Arrays
     ⟦Index⟧ : ℕ → ⟦Type⟧
     ⟦idx⟧   : (n : ℕ)(i : Fin n) → ∀ {X} → X ==> ⟦Index⟧ n
+
+{-
+    -- presumably, this can all be derived from isomorphisms?
+    _≃_ : ⟦Type⟧ → ⟦Type⟧ → Set
+    ≃-refl : ∀ {X} → X ≃ X
+    coe : ∀ {X Y} → X ≃ Y → X ==> Y
+    _,_⊢_≃m_ : ∀ {X X' Y Y'} → X ≃ X' → Y ≃ Y' → X ==> Y → X' ==> Y' → Set
+    coh : ∀ {X Y} (e : X ≃ Y) → e , ≃-refl ⊢ coe e ≃m ⟦id⟧
+-}
 
 module Interpret {ℓ}{m} (ℳ : Model ℓ m) where
 
@@ -102,7 +113,8 @@ module Interpret {ℓ}{m} (ℳ : Model ℓ m) where
   ⟦_succ⟧ren : ∀ {K K'} (ρ : K' ⇒ᵣ K) →
               ∀ {ks n} → ⟦ (λ x → succ (ρ x)) ⟧ren (ks , n) ≡ ⟦ ρ ⟧ren ks
   ⟦_succ⟧ren {ε} ρ = refl
-  ⟦_succ⟧ren {K ,-ℕ} ρ {ks}{n} rewrite ⟦ (λ x → ρ (succ x)) succ⟧ren {ks}{n} = refl
+  ⟦_succ⟧ren {K ,-ℕ} ρ {ks} =
+    cong (λ □ → (□ , ⟦ ρ zero ⟧tyvar ks .lower)) ⟦ (λ x → ρ (succ x)) succ⟧ren
 
   ren-⟦tyvar⟧ : ∀ {K K'} (ρ : K' ⇒ᵣ K) (x : K ⊢Tv) →
                ∀ {ks} → ⟦ ρ x ⟧tyvar ks ≡ ⟦ x ⟧tyvar (⟦ ρ ⟧ren ks)
@@ -135,9 +147,12 @@ module Interpret {ℓ}{m} (ℳ : Model ℓ m) where
   ren-⟦Type⟧ ρ (var x) = ren-⟦tyvar⟧ ρ x
   ren-⟦Type⟧ ρ (Bool x) = refl
   ren-⟦Type⟧ ρ (Num x) = refl
-  ren-⟦Type⟧ ρ (A ⇒ B) {ks} rewrite ren-⟦Type⟧ ρ A {ks} rewrite ren-⟦Type⟧ ρ B {ks} = refl
-  ren-⟦Type⟧ ρ (Index N) {ks} rewrite ren-⟦Type⟧ ρ N {ks} = refl
-  ren-⟦Type⟧ ρ (Array N A) {ks} rewrite ren-⟦Type⟧ ρ N {ks} rewrite ren-⟦Type⟧ ρ A {ks} = refl
+  ren-⟦Type⟧ ρ (A ⇒ B) =
+    cong₂ (λ □₁ □₂ → □₁ ⟦⇒⟧ (Mon □₂)) (ren-⟦Type⟧ ρ A) (ren-⟦Type⟧ ρ B)
+  ren-⟦Type⟧ ρ (Index N) =
+    cong (λ □ → ⟦Index⟧ (□ .lower)) (ren-⟦Type⟧ ρ N)
+  ren-⟦Type⟧ ρ (Array N A) =
+    cong₂ (λ □₁ □₂ → ⟦Index⟧ (□₁ .lower) ⟦⇒⟧ (Mon □₂)) (ren-⟦Type⟧ ρ N) (ren-⟦Type⟧ ρ A)
   ren-⟦Type⟧ ρ (Forall A) {ks} =
     cong ⟦∀⟧ (fext λ n → trans (cong Mon (ren-⟦Type⟧ (under ρ) A)) (cong (λ □ → Mon (⟦ A ⟧ty (□ , n))) ⟦ ρ succ⟧ren))
   ren-⟦Type⟧ ρ [ n ] = refl

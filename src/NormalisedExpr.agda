@@ -5,6 +5,7 @@ module NormalisedExpr where
 open import Data.Bool using (Bool; true; false; _∧_; _∨_; if_then_else_; not)
 open import Data.Bool.Properties using (not-involutive)
 open import Algebra.Properties.BooleanAlgebra (Data.Bool.Properties.∨-∧-booleanAlgebra) using (deMorgan₁; deMorgan₂)
+open import Data.Product using (Σ-syntax)
 open import Data.Rational as ℚ using (ℚ; 1ℚ; _*_; _+_; _≤ᵇ_; _≟_)
 open import Data.Rational.Properties using (*-assoc; *-distribˡ-+)
 open import Relation.Nullary using (does)
@@ -120,6 +121,8 @@ eval-⊛ q (var r x) η = sym (*-assoc q r (η x))
 eval-⊛ q (e₁ `+` e₂) η rewrite sym (eval-⊛ q e₁ η) rewrite sym (eval-⊛ q e₂ η) =
   *-distribˡ-+ q (eval-LinExp e₁ η) (eval-LinExp e₂ η)
 
+-- FIXME: Make this a non-anonymous module so that we don't end up
+-- parameterising every use with extFunc
 module _ (extFunc : ℚ → ℚ) where
 
   eval-ConstraintExp : ∀ {Δ} → ConstraintExp Δ → Env Δ → Bool
@@ -150,39 +153,44 @@ module _ (extFunc : ℚ → ℚ) where
 ------------------------------------------------------------------------------
 -- Part III: Existential Quantification monad
 data Ex (A : LinVarCtxt → Set) : LinVarCtxt → Set where
-  ex      : ∀ {Δ} → Ex A (Δ ,∙) → Ex A Δ
-  return  : ∀ {Δ} → A Δ → Ex A Δ
+  ex     : ∀ {Δ} → Ex A (Δ ,∙) → Ex A Δ
+  if     : ∀ {Δ} → ConstraintExp Δ → Ex A Δ → Ex A Δ → Ex A Δ
+  linexp : ∀ {Δ} → LinExp Δ → Ex A (Δ ,∙) → Ex A Δ
+  funexp : ∀ {Δ} → {- fsymb → -} Var Δ → Ex A (Δ ,∙) → Ex A Δ
+  return : ∀ {Δ} → A Δ → Ex A Δ
 
 rename-Ex : ∀ {A} → Renameable A → Renameable (Ex A)
-rename-Ex ren-A ρ (ex e)     = ex (rename-Ex ren-A (under ρ) e)
-rename-Ex ren-A ρ (return x) = return (ren-A ρ x)
+rename-Ex ren-A ρ (return a)   = return (ren-A ρ a)
+rename-Ex ren-A ρ (ex e)       = ex (rename-Ex ren-A (under ρ) e)
+rename-Ex ren-A ρ (if c tr fa) = if (rename-ConstraintExp ρ c) (rename-Ex ren-A ρ tr) (rename-Ex ren-A ρ fa)
+rename-Ex ren-A ρ (linexp e k) = linexp (rename-LinExp ρ e) (rename-Ex ren-A (under ρ) k)
+rename-Ex ren-A ρ (funexp x k) = funexp (ρ x) (rename-Ex ren-A (under ρ) k)
 
 bind-ex : ∀ {Δ A B} → Ex A Δ → (A ⇒ₖ Ex B) Δ → Ex B Δ
-bind-ex (ex x) f = ex (bind-ex x (rename-⇒ₖ succ f))
-bind-ex (return x) f = f _ (λ x → x) x
+bind-ex (return x)   f = f _ (λ x → x) x
+bind-ex (if c tr fa) f = if c (bind-ex tr f) (bind-ex fa f)
+bind-ex (ex x)       f = ex (bind-ex x (rename-⇒ₖ succ f))
+bind-ex (linexp e k) f = linexp e (bind-ex k (rename-⇒ₖ succ f))
+bind-ex (funexp x k) f = funexp x (bind-ex k (rename-⇒ₖ succ f))
 
 ------------------------------------------------------------------------
 -- Part IV : Let/If lifting monad
+
+-- FIXME: split this into a separate module because it is specific to
+-- the Normalisation procedure
+
 data LetLift (A : LinVarCtxt → Set) : LinVarCtxt → Set where
   return     : ∀ {Δ} → A Δ → LetLift A Δ
   if         : ∀ {Δ} → ConstraintExp Δ → LetLift A Δ → LetLift A Δ → LetLift A Δ
   let-linexp : ∀ {Δ} → LinExp Δ → LetLift A (Δ ,∙) → LetLift A Δ
   let-funexp : ∀ {Δ} → {- fsymb → -} Var Δ → LetLift A (Δ ,∙) → LetLift A Δ
 
-expand : ∀ {Δ} → LetLift (Ex ConstraintExp) Δ → □ (Ex ConstraintExp) Δ
-expand (return x) ρ =
-  rename-Ex rename-ConstraintExp ρ x
-expand (if e kt kf) ρ =
-  bind-ex (expand kt ρ) λ Δ'' ρ' xt →
-  bind-ex (expand kf (ρ ∘ ρ')) λ Δ''' ρ'' xf →
-  let e = rename-ConstraintExp (ρ ∘ (ρ' ∘ ρ'')) e in
-  return ((e and (rename-ConstraintExp ρ'' xt)) or ((negate e) and xf))
-expand (let-linexp e p) ρ =
-  ex (bind-ex (expand p (under ρ)) λ Δ' ρ' p' →
-      return ((var 1ℚ (ρ' zero) `=` rename-LinExp (λ x → ρ' (succ (ρ x))) e) and p'))
-expand (let-funexp x p) ρ =
-  ex (bind-ex (expand p (under ρ)) λ Δ' ρ' p' →
-      return ((ρ' zero `=`f ρ' (succ (ρ x))) and p'))
+-- FIXME: rename this
+expand : ∀ {A Δ} → LetLift (Ex A) Δ → Ex A Δ
+expand (return x)       = x
+expand (if cond tr fa)  = if cond (expand tr) (expand fa)
+expand (let-linexp e k) = linexp e (expand k)
+expand (let-funexp x k) = funexp x (expand k)
 
 rename-lift : ∀ {A} → Renameable A → Renameable (LetLift A)
 rename-lift rA ρ (return x) =
