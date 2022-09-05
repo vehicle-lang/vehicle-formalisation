@@ -105,6 +105,16 @@ module _ {ℓ} where
 cong-True : ∀ {b₁ b₂ : Bool} → b₁ ≡ b₂ → True b₁ ↔ True b₂
 cong-True refl = ↔-refl
 
+True-∧ : ∀ {b₁ b₂ : Bool} → (True b₁ × True b₂) ↔ True (b₁ ∧ b₂)
+True-∧ {true} {true} .fwd (tt , tt) = tt
+True-∧ {true} {true} .bwd x = tt , tt
+
+True-∨ : ∀ {b₁ b₂ : Bool} → (True b₁ ⊎ True b₂) ↔ True (b₁ ∨ b₂)
+True-∨ {false} {b₂} .fwd (inj₂ y) = y
+True-∨ {true} {b₂} .fwd _ = tt
+True-∨ {false} {b₂} .bwd = inj₂
+True-∨ {true} {b₂} .bwd = inj₁
+
 ⊥-bool : ∀ {b} → b ≡ false → ⊥ ↔ True b
 ⊥-bool refl .fwd ()
 ⊥-bool refl .bwd ()

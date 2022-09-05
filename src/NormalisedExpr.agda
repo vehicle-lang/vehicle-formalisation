@@ -3,9 +3,11 @@
 module NormalisedExpr where
 
 open import Data.Bool using (Bool; true; false; _∧_; _∨_; if_then_else_; not)
+       renaming (T to True)
 open import Data.Bool.Properties using (not-involutive)
 open import Algebra.Properties.BooleanAlgebra (Data.Bool.Properties.∨-∧-booleanAlgebra) using (deMorgan₁; deMorgan₂)
-open import Data.Product using (Σ-syntax)
+open import Data.Product using (Σ-syntax; _×_)
+open import Data.Sum using (_⊎_)
 open import Data.Rational as ℚ using (ℚ; 1ℚ; _*_; _+_; _≤ᵇ_; _≟_)
 open import Data.Rational.Properties using (*-assoc; *-distribˡ-+)
 open import Relation.Nullary using (does)
@@ -121,6 +123,10 @@ rename-negate ρ (ϕ or ϕ₁) = cong₂ _and_ (rename-negate ρ ϕ) (rename-neg
 Env : LinVarCtxt → Set
 Env Δ = Var Δ → ℚ
 
+extend-env : ∀ {Δ} → Env Δ → ℚ → Env (Δ ,∙)
+extend-env η q zero     = q
+extend-env η q (succ x) = η x
+
 eval-LinExp : ∀ {Δ} → LinExp Δ → Env Δ → ℚ
 eval-LinExp (const q)   η = q
 eval-LinExp (var q x)   η = q * η x
@@ -169,11 +175,20 @@ data Query : LinVarCtxt → Set where
   _and_      : ∀ {Δ} → Query Δ → Query Δ → Query Δ
   _or_       : ∀ {Δ} → Query Δ → Query Δ → Query Δ
 
+module _ (extFunc : ℚ → ℚ) where
+  eval-Query : ∀ {Δ} → Query Δ → Env Δ → Set
+  eval-Query (constraint ϕ) η = True (eval-ConstraintExp extFunc ϕ η)
+  eval-Query (ex ϕ) η = Σ[ q ∈ ℚ ] eval-Query ϕ (extend-env η q)
+  eval-Query (ϕ and ψ) η = eval-Query ϕ η × eval-Query ψ η
+  eval-Query (ϕ or ψ) η = eval-Query ϕ η ⊎ eval-Query ψ η
+
 rename-Query : Renameable Query
 rename-Query ρ (constraint ϕ) = constraint (rename-ConstraintExp ρ ϕ)
 rename-Query ρ (ex ϕ)         = ex (rename-Query (under ρ) ϕ)
 rename-Query ρ (ϕ and ψ)      = rename-Query ρ ϕ and rename-Query ρ ψ
 rename-Query ρ (ϕ or ψ)       = rename-Query ρ ϕ or rename-Query ρ ψ
+
+
 
 ------------------------------------------------------------------------
 -- Part IV : Let/If lifting monad

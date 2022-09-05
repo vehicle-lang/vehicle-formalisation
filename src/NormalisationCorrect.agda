@@ -37,7 +37,7 @@ record World : Set where
   field
     ctxt : LinVarCtxt
     env  : Env ctxt
-open World
+open World public
 
 empty : World
 empty .ctxt = ε
@@ -48,7 +48,7 @@ record _⇒w_ (w₁ w₂ : World) : Set where
   field
     ren   : w₁ .ctxt ⇒ᵣ w₂ .ctxt
     presv : ∀ x → w₁ .env (ren x) ≡ w₂ .env x
-open _⇒w_
+open _⇒w_ public
 
 id-w : ∀ {w} → w ⇒w w
 id-w .ren x = x
@@ -57,11 +57,6 @@ id-w .presv x = refl
 _∘w_ : ∀ {w₁ w₂ w₃} → w₂ ⇒w w₃ → w₁ ⇒w w₂ → w₁ ⇒w w₃
 (f ∘w g) .ren x = g .ren (f .ren x)
 (f ∘w g) .presv x = trans (g .presv (f .ren x)) (f .presv x)
-
--- FIXME: move to NormalisationExpr
-extend-env : ∀ {Δ} → Env Δ → ℚ → Env (Δ ,∙)
-extend-env η q zero     = q
-extend-env η q (succ x) = η x
 
 extend-w : World → ℚ → World
 extend-w w q .ctxt = w .ctxt ,∙
@@ -525,15 +520,9 @@ module _ (extFunc : ℚ → ℚ) where
                             (ℐ.⟦ t ⟧tm tt .rel-mor empty tt tt tt)
 
 
-  eval-Query : ∀ {Δ} → Query Δ → Env Δ → Set
-  eval-Query (constraint ϕ) η = True (eval-ConstraintExp extFunc ϕ η)
-  eval-Query (ex ϕ) η = Σ[ q ∈ ℚ ] eval-Query ϕ (extend-env η q)
-  eval-Query (ϕ and ψ) η = eval-Query ϕ η × eval-Query ψ η
-  eval-Query (ϕ or ψ) η = eval-Query ϕ η ⊎ eval-Query ψ η
-
   correctness : ∀ w {x₁ x₂} →
                 QueryR w x₁ x₂ →
-                S.eval-Ex x₁ True ↔ eval-Query x₂ (w .env)
+                S.eval-Ex x₁ True ↔ eval-Query extFunc x₂ (w .env)
   correctness w (q-constraint x) = cong-True (sym x)
   correctness w (q-true {ϕ = ϕ} is-true r) =
     ↔-trans (correctness w r)
@@ -555,3 +544,7 @@ module _ (extFunc : ℚ → ℚ) where
   correctness w (q-ex' q x r) =
     ↔-trans (correctness (extend-w w q) r)
             (↔-trans (known q) (cong-Σ-snd (λ q' → ×-cong (x q') ↔-refl)))
+
+  full-correctness : (t : ε / ε ⊢ Bool query) →
+                     S.eval-Ex (standard t) True ↔ eval-Query extFunc (normalise t) (empty .env)
+  full-correctness t = correctness empty (related t)
