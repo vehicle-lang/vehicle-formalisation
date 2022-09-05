@@ -271,55 +271,43 @@ module _ (extFunc : ℚ → ℚ) where
   Constraint-WRel .rel w b ϕ = b ≡ eval-ConstraintExp extFunc ϕ (w .env)
   Constraint-WRel .ext ρ b ϕ eq = trans eq (ext-evalConstraint ϕ ρ)
 
-  module _ (X : WRel) where
-    data ExR : ∀ w → S.Ex (X .Left) → Ex (X .Right .N.Carrier) (w .ctxt) → Set where
-      return    : ∀ {w x₁ x₂} →
-                  X .rel w x₁ x₂ →
-                  ExR w (S.return x₁) (return x₂)
-      ex        : ∀ {w k₁ k₂} →
-                  (∀ q → ExR (extend-w w q) (k₁ q) k₂) →
-                  ExR w (S.ex k₁) (ex k₂)
-      if-true   : ∀ {w} {x₁} cond x₂₁ x₂₂ →
-                  eval-ConstraintExp extFunc cond (w .env) ≡ true →
-                  ExR w x₁ x₂₁ →
-                  ExR w x₁ (if cond x₂₁ x₂₂)
-      if-false  : ∀ {w} {x₁} cond x₂₁ x₂₂ →
-                  eval-ConstraintExp extFunc cond (w .env) ≡ false →
-                  ExR w x₁ x₂₂ →
-                  ExR w x₁ (if cond x₂₁ x₂₂)
-      ex-linexp : ∀ {w e₁ k₂} e →
-                  ExR (extend-w w (eval-LinExp e (w .env))) e₁ k₂ →
-                  ExR w e₁ (linexp e k₂)
-      ex-funexp : ∀ {w e₁ k₂} x →
-                  ExR (extend-w w (extFunc (w .env x))) e₁ k₂ →
-                  ExR w e₁ (funexp x k₂)
+  data QueryR : ∀ w → S.Ex 𝔹 → Query (w .ctxt) → Set where
+    q-constraint : ∀ {w b ϕ} →
+                   eval-ConstraintExp extFunc ϕ (w .env) ≡ b →
+                   QueryR w (S.return b) (constraint ϕ)
+    q-true       : ∀ {w x ϕ ψ₁ ψ₂} →
+                   eval-ConstraintExp extFunc ϕ (w .env) ≡ true →
+                   QueryR w x ψ₁ →
+                   QueryR w x ((constraint ϕ and ψ₁) or (constraint (negate ϕ) and ψ₂))
+    q-false      : ∀ {w x ϕ ψ₁ ψ₂} →
+                   eval-ConstraintExp extFunc ϕ (w .env) ≡ false →
+                   QueryR w x ψ₂ →
+                   QueryR w x ((constraint ϕ and ψ₁) or (constraint (negate ϕ) and ψ₂))
+    q-ex         : ∀ {w k ϕ}   → (∀ q → QueryR (extend-w w q) (k q) ϕ) → QueryR w (S.ex k) (ex ϕ)
+    q-ex'        : ∀ {w x ϕ ψ} q →
+                   (∀ q' → (q' ≡ q) ↔ True (eval-ConstraintExp extFunc ϕ (extend-env (w .env) q'))) →
+                   QueryR (extend-w w q) x ψ →
+                   QueryR w x (ex (constraint ϕ and ψ))
 
-    ext-ExR : ∀ {w₁ w₂} (ρ : w₂ ⇒w w₁) x₁ x₂ →
-              ExR w₁ x₁ x₂ →
-              ExR w₂ x₁ (rename-Ex (X .Right .N.rename) (ρ .ren) x₂)
-    ext-ExR ρ _ _ (return r) = return (X .ext ρ _ _ r)
-    ext-ExR ρ _ _ (if-true cond tr fa eq r) =
-      if-true (rename-ConstraintExp (ρ .ren) cond) _ _
-              (trans (sym (ext-evalConstraint cond ρ)) eq)
-              (ext-ExR ρ _ _ r)
-    ext-ExR ρ _ _ (if-false cond tr fa eq r) =
-      if-false (rename-ConstraintExp (ρ .ren) cond) _ _
-               (trans (sym (ext-evalConstraint cond ρ)) eq)
-               (ext-ExR ρ _ _ r)
-    ext-ExR ρ _ _ (ex r)     = ex (λ q → ext-ExR (under-w ρ) _ _ (r q))
-    ext-ExR ρ _ _ (ex-linexp e k) =
-      ex-linexp (rename-LinExp (ρ .ren) e)
-                (ext-ExR (under-w' (sym (ext-evalLinExp e ρ)) ρ) _ _ k)
-    ext-ExR ρ _ _ (ex-funexp x k) =
-      ex-funexp (ρ .ren x)
-                (ext-ExR (under-w' (cong extFunc (ρ .presv x)) ρ) _ _ k)
+  ext-Query : ∀ {w₁ w₂} (ρ : w₂ ⇒w w₁) x₁ x₂ →
+              QueryR w₁ x₁ x₂ → QueryR w₂ x₁ (rename-Query (ρ .ren) x₂)
+  ext-Query ρ _ _ (q-constraint {ϕ = ϕ} x) =
+    q-constraint (trans (sym (ext-evalConstraint ϕ ρ)) x)
+  ext-Query ρ _ _ (q-true {ϕ = ϕ} is-true r) rewrite rename-negate (ρ .ren) ϕ =
+    q-true (trans (sym (ext-evalConstraint ϕ ρ)) is-true) (ext-Query ρ _ _ r)
+  ext-Query ρ _ _ (q-false {ϕ = ϕ} is-false r) rewrite rename-negate (ρ .ren) ϕ =
+    q-false (trans (sym (ext-evalConstraint ϕ ρ)) is-false) (ext-Query ρ _ _ r)
+  ext-Query ρ _ _ (q-ex r) = q-ex λ q → ext-Query (under-w ρ) _ _ (r q)
+  ext-Query ρ _ _ (q-ex' {ϕ = ϕ} q uniq r) =
+    q-ex' q (λ q' → ↔-trans (uniq q') (cong-True (ext-evalConstraint ϕ (under-w ρ))))
+          (ext-Query (under-w ρ) _ _ r)
 
   ⟦Bool⟧R : BoolKind → WRel
   ⟦Bool⟧R constraint = Constraint-WRel
   ⟦Bool⟧R query .Left = 𝒮.⟦Bool⟧ query
   ⟦Bool⟧R query .Right = 𝒩.⟦Bool⟧ query
-  ⟦Bool⟧R query .rel = ExR Constraint-WRel
-  ⟦Bool⟧R query .ext = ext-ExR Constraint-WRel
+  ⟦Bool⟧R query .rel = QueryR
+  ⟦Bool⟧R query .ext = ext-Query
 
   ⟦≤⟧R : (⟦Num⟧R linear ⟦×⟧R ⟦Num⟧R linear) ===> ⟦Bool⟧R constraint
   ⟦≤⟧R .left = 𝒮.⟦≤⟧
@@ -448,21 +436,39 @@ module _ (extFunc : ℚ → ℚ) where
   ⟦constraint⟧ : ⟦Bool⟧R constraint ===> ⟦Bool⟧R query
   ⟦constraint⟧ .left = 𝒮.⟦constraint⟧
   ⟦constraint⟧ .right = 𝒩.⟦constraint⟧
-  ⟦constraint⟧ .rel-mor w _ _ r = return r
+  ⟦constraint⟧ .rel-mor w _ _ r = q-constraint (sym r)
 
-  expand-lemma : ∀ w x₁ x₂ → LetLiftR (⟦Bool⟧R query) w x₁ x₂ → ExR Constraint-WRel w x₁ (expand x₂)
-  expand-lemma w x₁ (return x) r = r
-  expand-lemma w x₁ (if x x₂ x₃) r with is-true-or-false (eval-ConstraintExp extFunc x (w .env))
-  ... | inj₁ is-true = if-true _ _ _ is-true (expand-lemma _ x₁ x₂ (subst (λ □ → ifᵇ □ then _ else _) is-true r))
-  ... | inj₂ is-false = if-false _ _ _ is-false (expand-lemma _ x₁ x₃ (subst (λ □ → ifᵇ □ then _ else _) is-false r))
-  expand-lemma w x₁ (let-linexp e k) r = ex-linexp e (expand-lemma _ x₁ k r)
-  expand-lemma w x₁ (let-funexp x k) r = ex-funexp x (expand-lemma _ x₁ k r)
+  compile-lemma : ∀ w x₁ x₂ → LetLiftR (⟦Bool⟧R query) w x₁ x₂ → QueryR w x₁ (compile x₂)
+  compile-lemma w x₁ (return x) r = r
+  compile-lemma w x₁ (if ϕ tr fa) r with is-true-or-false (eval-ConstraintExp extFunc ϕ (w .env))
+  ... | inj₁ is-true =
+         q-true is-true (compile-lemma w _ tr (subst (λ □ → ifᵇ □ then _ else _) is-true r))
+  ... | inj₂ is-false =
+         q-false is-false (compile-lemma w _ fa (subst (λ □ → ifᵇ □ then _ else _) is-false r))
+  compile-lemma w x₁ (let-linexp e k) r =
+    q-ex' q
+          (λ q' →
+            ↔-trans (eq-cong
+                      (sym (*-identityˡ q'))
+                      (ext-evalLinExp e wk-w))
+             (↔-sym (does-cong (1ℚ * q' ≟
+                                eval-LinExp (rename-LinExp succ e) (extend-env (w .env) q')))))
+          (compile-lemma (extend-w w q) x₁ k r)
+    where q : ℚ
+          q = eval-LinExp e (w .env)
+  compile-lemma w x₁ (let-funexp x k) r =
+    q-ex' q
+          (λ q' → ↔-sym (does-cong (q' ≟ extFunc (w .env x))))
+          (compile-lemma (extend-w w q) x₁ k r)
+    where q : ℚ
+          q = extFunc (w .env x)
+
 
   ⟦∃⟧ : (⟦Num⟧R linear ⟦⇒⟧R LiftMR (⟦Bool⟧R query)) ===> ⟦Bool⟧R query
   ⟦∃⟧ .left = 𝒮.⟦∃⟧
   ⟦∃⟧ .right = 𝒩.⟦∃⟧
   ⟦∃⟧ .rel-mor w tm₁ tm₂ r =
-    ex λ q → expand-lemma _ _ (tm₂ (w .ctxt ,∙) succ (var 1ℚ zero)) (h q)
+    q-ex λ q → compile-lemma (extend-w w q) (tm₁ q) (tm₂ (w .ctxt ,∙) succ (var 1ℚ zero)) (h q)
     where h : ∀ q → LetLiftR (⟦Bool⟧R query) (extend-w w q) (tm₁ q) (tm₂ (w .ctxt ,∙) succ (var 1ℚ zero))
           h q = r (extend-w w q) wk-w q (var 1ℚ zero) (sym (*-identityˡ q))
 
@@ -510,36 +516,42 @@ module _ (extFunc : ℚ → ℚ) where
   standard : ε / ε ⊢ Bool query → S.Ex 𝔹
   standard t = ℐ.⟦ t ⟧tm tt .left tt
 
-  normalise : ε / ε ⊢ Bool query → Ex ConstraintExp ε
-  normalise t = expand (ℐ.⟦ t ⟧tm tt .right .N.mor tt)
+  normalise : ε / ε ⊢ Bool query → Query ε
+  normalise t = compile (ℐ.⟦ t ⟧tm tt .right .N.mor tt)
 
   related : (t : ε / ε ⊢ Bool query) →
-            ExR Constraint-WRel empty (standard t) (normalise t)
-  related t = expand-lemma empty _ (ℐ.⟦ t ⟧tm tt .right .N.mor tt)
-                           (ℐ.⟦ t ⟧tm tt .rel-mor empty tt tt tt)
+            QueryR empty (standard t) (normalise t)
+  related t = compile-lemma empty _ (ℐ.⟦ t ⟧tm tt .right .N.mor tt)
+                            (ℐ.⟦ t ⟧tm tt .rel-mor empty tt tt tt)
 
-  eval-Ex : ∀ {A} → (∀ {Δ} → A Δ → Env Δ → Set) → ∀ {Δ} → Ex A Δ → Env Δ → Set
-  eval-Ex eval (return x)   η = eval x η
-  eval-Ex eval (ex e)       η = Σ[ q ∈ ℚ ] eval-Ex eval e (extend-env η q)
-  eval-Ex eval (if c tr fa) η =
-    ((True (eval-ConstraintExp extFunc c η)) × (eval-Ex eval tr η))
-     ⊎
-    (True (not (eval-ConstraintExp extFunc c η))) × (eval-Ex eval fa η)
-  eval-Ex eval (linexp e k) η = Σ[ q ∈ ℚ ] (q ≡ eval-LinExp e η × eval-Ex eval k (extend-env η q))
-  eval-Ex eval (funexp x k) η = Σ[ q ∈ ℚ ] (q ≡ extFunc (η x) × eval-Ex eval k (extend-env η q))
+
+  eval-Query : ∀ {Δ} → Query Δ → Env Δ → Set
+  eval-Query (constraint ϕ) η = True (eval-ConstraintExp extFunc ϕ η)
+  eval-Query (ex ϕ) η = Σ[ q ∈ ℚ ] eval-Query ϕ (extend-env η q)
+  eval-Query (ϕ and ψ) η = eval-Query ϕ η × eval-Query ψ η
+  eval-Query (ϕ or ψ) η = eval-Query ϕ η ⊎ eval-Query ψ η
 
   correctness : ∀ w {x₁ x₂} →
-                  ExR Constraint-WRel w x₁ x₂ →
-                  S.eval-Ex x₁ True ↔ eval-Ex (λ e η → True (eval-ConstraintExp extFunc e η)) x₂ (w .env)
-  correctness w (return refl) =
-    ↔-refl
-  correctness w (ex x) =
-    cong-Σ-snd (λ q → correctness (extend-w w q) (x q))
-  correctness w (if-true cond x₂₁ x₂₂ x r) rewrite x =
-    ↔-trans (correctness w r) (↔-trans or-left (⊎-cong ⊤-fst ⊥-fst))
-  correctness w (if-false cond x₂₁ x₂₂ x r) rewrite x =
-    ↔-trans (correctness w r) (↔-trans or-right (⊎-cong ⊥-fst ⊤-fst))
-  correctness w (ex-linexp e r) =
-    ↔-trans (correctness _ r) (known (eval-LinExp e (w .env)))
-  correctness w (ex-funexp x r) =
-    ↔-trans (correctness _ r) (known (extFunc (w .env x)))
+                QueryR w x₁ x₂ →
+                S.eval-Ex x₁ True ↔ eval-Query x₂ (w .env)
+  correctness w (q-constraint x) = cong-True (sym x)
+  correctness w (q-true {ϕ = ϕ} is-true r) =
+    ↔-trans (correctness w r)
+    (↔-trans or-left
+            (⊎-cong (↔-trans ⊤-fst (×-cong (⊤-bool is-true) ↔-refl))
+                    (↔-trans ⊥-fst (×-cong (⊥-bool (trans (sym (eval-negate extFunc ϕ (w .env))) (cong not is-true)))
+                                           ↔-refl))))
+  correctness w (q-false {ϕ = ϕ} is-false r) =
+    ↔-trans (correctness w r)
+    (↔-trans or-right
+    (⊎-cong
+      (↔-trans ⊥-fst (×-cong
+                       (⊥-bool is-false)
+                       ↔-refl))
+      (↔-trans ⊤-fst (×-cong
+                       (⊤-bool (trans (sym (eval-negate extFunc ϕ (w .env))) (cong not is-false)))
+                       ↔-refl))))
+  correctness w (q-ex x) = cong-Σ-snd (λ q → correctness (extend-w w q) (x q))
+  correctness w (q-ex' q x r) =
+    ↔-trans (correctness (extend-w w q) r)
+            (↔-trans (known q) (cong-Σ-snd (λ q' → ×-cong (x q') ↔-refl)))

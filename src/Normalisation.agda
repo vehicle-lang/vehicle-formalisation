@@ -29,8 +29,8 @@ record _==>_ (X Y : Syn) : Set where
 open _==>_ public
 
 ⟦Bool⟧ : BoolKind → Syn
-⟦Bool⟧ query .Carrier = Ex ConstraintExp
-⟦Bool⟧ query .rename = rename-Ex rename-ConstraintExp
+⟦Bool⟧ query .Carrier = Query
+⟦Bool⟧ query .rename = rename-Query
 ⟦Bool⟧ constraint .Carrier = ConstraintExp
 ⟦Bool⟧ constraint .rename = rename-ConstraintExp
 
@@ -165,5 +165,5 @@ extend {X} f .mor (x , ly) =
 ℳ .Model.⟦if⟧ = ⟦if⟧
 ℳ .Model.⟦Index⟧ = ⟦Index⟧
 ℳ .Model.⟦idx⟧ n i .mor _ = i
-ℳ .Model.⟦constraint⟧ .mor = return
-ℳ .Model.⟦∃⟧ .mor {Δ} f = ex (expand (f (Δ ,∙) succ (var 1ℚ zero)))
+ℳ .Model.⟦constraint⟧ .mor = constraint
+ℳ .Model.⟦∃⟧ .mor {Δ} f = ex (compile (f (Δ ,∙) succ (var 1ℚ zero)))

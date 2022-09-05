@@ -24,6 +24,10 @@ module _ {ℓ} where
       -- bwd∘fwd : ∀ a → bwd (fwd a) ≡ a
   open _↔_ public
 
+  ↔-sym : ∀ {A B} → A ↔ B → B ↔ A
+  ↔-sym ab .fwd = ab .bwd
+  ↔-sym ab .bwd = ab .fwd
+
   ↔-refl : ∀ {A} → A ↔ A
   ↔-refl .fwd = λ a → a
   ↔-refl .bwd = λ a → a
@@ -78,6 +82,12 @@ module _ {ℓ} where
   ⊤-fst .fwd a = tt , a
   ⊤-fst .bwd (tt , a) = a
 
+  eq-cong : ∀ {A : Set ℓ} {a b c d : A} →
+            a ≡ c →
+            b ≡ d →
+            (a ≡ b) ↔ (c ≡ d)
+  eq-cong refl refl = ↔-refl
+
 ⊥-fst : ∀ {A : Set} → ⊥ ↔ (⊥ × A)
 ⊥-fst .fwd ()
 ⊥-fst .bwd ()
@@ -88,5 +98,25 @@ module _ {ℓ} where
 ⊎-cong ac bd .bwd (inj₁ x) = inj₁ (ac .bwd x)
 ⊎-cong ac bd .bwd (inj₂ y) = inj₂ (bd .bwd y)
 
+×-cong : ∀ {a b} {A C : Set a}{B D : Set b} → A ↔ C → B ↔ D → (A × B) ↔ (C × D)
+×-cong ac bd .fwd (a , b) = (ac .fwd a) , (bd .fwd b)
+×-cong ac bd .bwd (c , d) = (ac .bwd c) , (bd .bwd d)
+
 cong-True : ∀ {b₁ b₂ : Bool} → b₁ ≡ b₂ → True b₁ ↔ True b₂
 cong-True refl = ↔-refl
+
+⊥-bool : ∀ {b} → b ≡ false → ⊥ ↔ True b
+⊥-bool refl .fwd ()
+⊥-bool refl .bwd ()
+
+⊤-bool : ∀ {b} → b ≡ true → ⊤ ↔ True b
+⊤-bool refl .fwd tt = tt
+⊤-bool refl .bwd tt = tt
+
+open import Relation.Nullary using (does; Dec; _because_; yes; no)
+
+does-cong : ∀ {P : Set} (x : Dec P) → True (x .does) ↔ P
+does-cong (no p) .fwd ()
+does-cong (no p) .bwd = p
+does-cong (yes p) .fwd tt = p
+does-cong (yes p) .bwd _ = tt
