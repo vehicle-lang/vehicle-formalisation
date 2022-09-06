@@ -75,6 +75,8 @@ data Context : KindContext → Set where
   ε    : ∀ {Δ} → Context Δ
   _,-_ : ∀ {Δ} → Context Δ → Δ ⊢T Type → Context Δ
 
+infixl 10 _,-_
+
 ren-Context : ∀ {K₁ K₂} → (K₂ ⇒ᵣ K₁) → Context K₁ → Context K₂
 ren-Context ρ ε        = ε
 ren-Context ρ (Γ ,- A) = (ren-Context ρ Γ) ,- ren-Type ρ A
@@ -135,11 +137,7 @@ data _/_⊢_ : (Δ : KindContext) → Context Δ → Δ ⊢T Type → Set where
   _`∧_    : ∀ {Δ Γ} → Δ / Γ ⊢ Bool constraint → Δ / Γ ⊢ Bool constraint → Δ / Γ ⊢ Bool constraint
   _`∨_    : ∀ {Δ Γ} → Δ / Γ ⊢ Bool constraint → Δ / Γ ⊢ Bool constraint → Δ / Γ ⊢ Bool constraint
 
-{-
-  universal   : ∀ {Γ} → Γ ⊢ Bool constraint → Γ ⊢ Bool universal
-  existential : ∀ {Γ} → Γ ⊢ Bool constraint → Γ ⊢ Bool existential
+  constraint : ∀ {Δ Γ} → Δ / Γ ⊢ Bool constraint → Δ / Γ ⊢ Bool query
+  ∃          : ∀ {Δ Γ} → Δ / Γ ⊢ (Num linear ⇒ Bool query) → Δ / Γ ⊢ Bool query
 
-  forAll  : ∀ {Γ} → (Γ ,- Num linear) ⊢ Bool universal   → Γ ⊢ Bool universal
-  exists  : ∀ {Γ} → (Γ ,- Num linear) ⊢ Bool existential → Γ ⊢ Bool existential
-  query   : ∀ {Γ} → (k : QueryKind) → Γ ⊢ Bool (queryKind k) → Γ ⊢ Bool query
--}
+  -- FIXME: 'and' and 'or' work on queries too

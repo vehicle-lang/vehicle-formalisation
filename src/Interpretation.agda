@@ -252,8 +252,11 @@ module Interpret {ℓ}{m} (ℳ : Model ℓ m) where
     -- includes a use of the LetLift monad.
   ⟦ index n A s t ⟧tm δ = binaryM ⟦eval⟧ ∘ ⟨ ⟦ s ⟧tm δ , ⟦ t ⟧tm δ ⟩
   ⟦ idx i ⟧tm δ = ⟦return⟧ ∘ ⟦idx⟧ _ i
+
   ⟦ t₁ `≤ t₂ ⟧tm δ = binary ⟦≤⟧ ∘ ⟨ ⟦ t₁ ⟧tm δ , ⟦ t₂ ⟧tm δ ⟩
   ⟦ if s then t else u ⟧tm δ = ⟦extend⟧ ⟦if⟧ ∘ ⟨ ⟨ ⟦ t ⟧tm δ , ⟦ u ⟧tm δ ⟩ , ⟦ s ⟧tm δ ⟩
   ⟦ `¬ t ⟧tm δ = unary ⟦not⟧ ∘ ⟦ t ⟧tm δ
   ⟦ t₁ `∧ t₂ ⟧tm δ = binary ⟦and⟧ ∘ ⟨ ⟦ t₁ ⟧tm δ , ⟦ t₂ ⟧tm δ ⟩
   ⟦ t₁ `∨ t₂ ⟧tm δ = binary ⟦or⟧ ∘ ⟨ ⟦ t₁ ⟧tm δ , ⟦ t₂ ⟧tm δ ⟩
+  ⟦ constraint t ⟧tm δ = unary ⟦constraint⟧ ∘ ⟦ t ⟧tm δ
+  ⟦ ∃ t ⟧tm δ = unary ⟦∃⟧ ∘ ⟦ t ⟧tm δ
