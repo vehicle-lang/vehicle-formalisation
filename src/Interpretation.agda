@@ -8,7 +8,8 @@ open import Data.Nat using (ℕ)
 open import Data.Rational using (ℚ)
 open import Data.Unit using (⊤; tt)
 open import Data.Product using (_×_; _,_; proj₁)
-open import Relation.Binary.PropositionalEquality using (_≡_; refl; cong; trans; cong₂; sym)
+open import Relation.Binary.PropositionalEquality
+            using (_≡_; refl; cong; trans; cong₂; sym)
 
 open import Isomorphism using (fext)
 
@@ -66,15 +67,6 @@ record Model ℓ m : Set (suc ℓ ⊔ suc m) where
     -- Indexes and Arrays
     ⟦Index⟧ : ℕ → ⟦Type⟧
     ⟦idx⟧   : (n : ℕ)(i : Fin n) → ∀ {X} → X ==> ⟦Index⟧ n
-
-{-
-    -- presumably, this can all be derived from isomorphisms?
-    _≃_ : ⟦Type⟧ → ⟦Type⟧ → Set
-    ≃-refl : ∀ {X} → X ≃ X
-    coe : ∀ {X Y} → X ≃ Y → X ==> Y
-    _,_⊢_≃m_ : ∀ {X X' Y Y'} → X ≃ X' → Y ≃ Y' → X ==> Y → X' ==> Y' → Set
-    coh : ∀ {X Y} (e : X ≃ Y) → e , ≃-refl ⊢ coe e ≃m ⟦id⟧
--}
 
 module Interpret {ℓ}{m} (ℳ : Model ℓ m) where
 

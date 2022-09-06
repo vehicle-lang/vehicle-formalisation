@@ -400,7 +400,7 @@ module _ (extFunc : ℚ → ℚ) where
        λ w' ρ → r-fg w' (wk-w ∘w ρ)
 
   ⟦return⟧R : ∀ {X} → X ===> LiftMR X
-  ⟦return⟧R .left = λ x → x
+  ⟦return⟧R .left = 𝒮.⟦return⟧
   ⟦return⟧R .right = 𝒩.⟦return⟧
   ⟦return⟧R .rel-mor w x₁ x₂ r-x₁x₂ = r-x₁x₂
 
@@ -411,15 +411,14 @@ module _ (extFunc : ℚ → ℚ) where
     trans (cong extFunc r-x₁x₂) (sym (*-identityˡ _))
 
   ⟦if⟧R : ∀ {X} → ((LiftMR X ⟦×⟧R LiftMR X) ⟦×⟧R ⟦Bool⟧R constraint) ===> LiftMR X
-  ⟦if⟧R .left ((tr , fa) , false) = fa
-  ⟦if⟧R .left ((tr , fa) , true) = tr
+  ⟦if⟧R .left = 𝒮.⟦if⟧
   ⟦if⟧R .right = 𝒩.⟦if⟧
   ⟦if⟧R .rel-mor w ((tr₁ , fa₁) , false) ((tr₂ , fa₂) , ϕ) ((tr₁-tr₂ , fa₁-fa₂) , eq) rewrite sym eq = fa₁-fa₂
   ⟦if⟧R .rel-mor w ((tr₁ , fa₁) , true) ((tr₂ , fa₂) , ϕ) ((tr₁-tr₂ , fa₁-fa₂) , eq) rewrite sym eq = tr₁-tr₂
 
   extendR : ∀ {X Y Z} → ((X ⟦×⟧R Y) ===> LiftMR Z) → (X ⟦×⟧R LiftMR Y) ===> LiftMR Z
-  extendR f .left = f .left
-  extendR {X} f .right = 𝒩.⟦extend⟧ (f .right)
+  extendR f .left = 𝒮.⟦extend⟧ (f .left)
+  extendR f .right = 𝒩.⟦extend⟧ (f .right)
   extendR {X} f .rel-mor w (x₁ , ly₁) (x₂ , ly₂) (x₁x₂ , ly₁-ly₂) =
     let-bindR w ly₁ ly₂
       (λ y → f .left (x₁ , y))
@@ -508,17 +507,11 @@ module _ (extFunc : ℚ → ℚ) where
 
   module ℐ = Interpret ℳ
 
-  standard : ε / ε ⊢ Bool query → S.Ex 𝔹
-  standard t = ℐ.⟦ t ⟧tm tt .left tt
+  standard : ε / ε ⊢ Bool query → Set
+  standard t = S.eval-Ex (ℐ.⟦ t ⟧tm tt .left tt) True
 
   normalise : ε / ε ⊢ Bool query → Query ε
   normalise t = compile (ℐ.⟦ t ⟧tm tt .right .N.mor tt)
-
-  related : (t : ε / ε ⊢ Bool query) →
-            QueryR empty (standard t) (normalise t)
-  related t = compile-lemma empty _ (ℐ.⟦ t ⟧tm tt .right .N.mor tt)
-                            (ℐ.⟦ t ⟧tm tt .rel-mor empty tt tt tt)
-
 
   correctness : ∀ w {x₁ x₂} →
                 QueryR w x₁ x₂ →
@@ -546,5 +539,5 @@ module _ (extFunc : ℚ → ℚ) where
             (↔-trans (known q) (cong-Σ-snd (λ q' → ×-cong (x q') ↔-refl)))
 
   full-correctness : (t : ε / ε ⊢ Bool query) →
-                     S.eval-Ex (standard t) True ↔ eval-Query extFunc (normalise t) (empty .env)
-  full-correctness t = correctness empty (related t)
+                     standard t ↔ eval-Query extFunc (normalise t) (empty .env)
+  full-correctness t = correctness empty (compile-lemma empty _ (ℐ.⟦ t ⟧tm tt .right .N.mor tt) (ℐ.⟦ t ⟧tm tt .rel-mor empty tt tt tt))
