@@ -9,7 +9,7 @@ open import Data.Product using (_×_; proj₁; proj₂; _,_)
 open import Data.Rational using (ℚ; 1ℚ)
 open import Data.Unit using (⊤; tt)
 
-open import MiniVehicle hiding (_⇒ᵣ_)
+open import MiniVehicle hiding (_⇒ᵣ_; under)
 open import NormalisedExpr
 open import Interpretation
 
@@ -38,6 +38,35 @@ open _==>_ public
 ⟦Num⟧ const = K ℚ
 ⟦Num⟧ linear .Carrier = LinExp
 ⟦Num⟧ linear .rename = rename-LinExp
+
+data LetLift (A : LinVarCtxt → Set) : LinVarCtxt → Set where
+  return     : ∀ {Δ} → A Δ → LetLift A Δ
+  if         : ∀ {Δ} → ConstraintExp Δ → LetLift A Δ → LetLift A Δ → LetLift A Δ
+  let-linexp : ∀ {Δ} → LinExp Δ → LetLift A (Δ ,∙) → LetLift A Δ
+  let-funexp : ∀ {Δ} → {- fsymb → -} Var Δ → LetLift A (Δ ,∙) → LetLift A Δ
+
+-- expand a Query within lets and ifs into a Query
+compile : ∀ {Δ} → LetLift Query Δ → Query Δ
+compile (return x)       = x
+compile (if ϕ tr fa)     = ((constraint ϕ) and (compile tr)) or (constraint (negate ϕ) and (compile fa))
+compile (let-linexp e k) = ex ((constraint ((var 1ℚ zero) `=` rename-LinExp succ e)) and compile k)
+compile (let-funexp x k) = ex ((constraint (zero `=`f (succ x))) and (compile k))
+
+rename-lift : ∀ {A} → Renameable A → Renameable (LetLift A)
+rename-lift rA ρ (return x) =
+  return (rA ρ x)
+rename-lift rA ρ (if p k₁ k₂) =
+  if (rename-ConstraintExp ρ p) (rename-lift rA ρ k₁) (rename-lift rA ρ k₂)
+rename-lift rA ρ (let-linexp e k) =
+  let-linexp (rename-LinExp ρ e) (rename-lift rA (under ρ) k)
+rename-lift rA ρ (let-funexp v k) =
+  let-funexp (ρ v) (rename-lift rA (under ρ) k)
+
+bind-let : ∀ {Δ A B} → LetLift A Δ → (A ⇒ₖ LetLift B) Δ → LetLift B Δ
+bind-let (return x)       f = f _ (λ x → x) x
+bind-let (if e kt kf)     f = if e (bind-let kt f) (bind-let kf f)
+bind-let (let-linexp e k) f = let-linexp e (bind-let k (rename-⇒ₖ succ f))
+bind-let (let-funexp x k) f = let-funexp x (bind-let k (rename-⇒ₖ succ f))
 
 LiftM : Syn → Syn
 LiftM A .Carrier = LetLift (A .Carrier)

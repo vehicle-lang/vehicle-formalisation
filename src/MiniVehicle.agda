@@ -138,6 +138,11 @@ data _/_⊢_ : (Δ : KindContext) → Context Δ → Δ ⊢T Type → Set where
   _`∨_    : ∀ {Δ Γ} → Δ / Γ ⊢ Bool constraint → Δ / Γ ⊢ Bool constraint → Δ / Γ ⊢ Bool constraint
 
   constraint : ∀ {Δ Γ} → Δ / Γ ⊢ Bool constraint → Δ / Γ ⊢ Bool query
+  -- FIXME: identify quantifiable types:
+  ---- Quantifiable (Num linear)
+  ---- Quantifiable A → Quantifiable (Array N A)
+  ---- Quantifiable : Type → Type, in the kinding system; and we have explicit evidence for it here
+  ---- Quantifiable A = (A → Bool query) → Bool query
   ∃          : ∀ {Δ Γ} → Δ / Γ ⊢ (Num linear ⇒ Bool query) → Δ / Γ ⊢ Bool query
 
   -- FIXME: 'and' and 'or' work on queries too

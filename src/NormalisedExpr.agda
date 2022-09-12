@@ -2,7 +2,8 @@
 
 module NormalisedExpr where
 
-open import Data.Bool using (Bool; true; false; _∧_; _∨_; if_then_else_; not)
+open import Data.Bool
+       using (Bool; true; false; _∧_; _∨_; if_then_else_; not)
        renaming (T to True)
 open import Data.Bool.Properties using (not-involutive)
 open import Algebra.Properties.BooleanAlgebra (Data.Bool.Properties.∨-∧-booleanAlgebra) using (deMorgan₁; deMorgan₂)
@@ -117,6 +118,18 @@ rename-negate ρ (x `≠`f x₁) = refl
 rename-negate ρ (ϕ and ϕ₁) = cong₂ _or_ (rename-negate ρ ϕ) (rename-negate ρ ϕ₁)
 rename-negate ρ (ϕ or ϕ₁) = cong₂ _and_ (rename-negate ρ ϕ) (rename-negate ρ ϕ₁)
 
+data Query : LinVarCtxt → Set where
+  constraint : ∀ {Δ} → ConstraintExp Δ → Query Δ
+  ex         : ∀ {Δ} → Query (Δ ,∙) → Query Δ
+  _and_      : ∀ {Δ} → Query Δ → Query Δ → Query Δ
+  _or_       : ∀ {Δ} → Query Δ → Query Δ → Query Δ
+
+rename-Query : Renameable Query
+rename-Query ρ (constraint ϕ) = constraint (rename-ConstraintExp ρ ϕ)
+rename-Query ρ (ex ϕ)         = ex (rename-Query (under ρ) ϕ)
+rename-Query ρ (ϕ and ψ)      = rename-Query ρ ϕ and rename-Query ρ ψ
+rename-Query ρ (ϕ or ψ)       = rename-Query ρ ϕ or rename-Query ρ ψ
+
 ------------------------------------------------------------------------------
 -- Evaluation
 
@@ -152,6 +165,7 @@ module _ (extFunc : ℚ → ℚ) where
   eval-ConstraintExp (x₁ `=`f x₂) η = (η x₁ ≟ extFunc (η x₂)) .does
   eval-ConstraintExp (x₁ `≠`f x₂) η = not ((η x₁ ≟ extFunc (η x₂)) .does)
 
+
   eval-negate : ∀ {Δ} (p : ConstraintExp Δ) η →
                 not (eval-ConstraintExp p η) ≡ eval-ConstraintExp (negate p) η
   eval-negate (x `≤` x₁) η = refl
@@ -167,60 +181,9 @@ module _ (extFunc : ℚ → ℚ) where
   eval-negate (x₁ `=`f x₂) η = refl
   eval-negate (x₁ `≠`f x₂) η = not-involutive _
 
-------------------------------------------------------------------------------
--- Part III: Queries
-data Query : LinVarCtxt → Set where
-  constraint : ∀ {Δ} → ConstraintExp Δ → Query Δ
-  ex         : ∀ {Δ} → Query (Δ ,∙) → Query Δ
-  _and_      : ∀ {Δ} → Query Δ → Query Δ → Query Δ
-  _or_       : ∀ {Δ} → Query Δ → Query Δ → Query Δ
 
-module _ (extFunc : ℚ → ℚ) where
   eval-Query : ∀ {Δ} → Query Δ → Env Δ → Set
-  eval-Query (constraint ϕ) η = True (eval-ConstraintExp extFunc ϕ η)
+  eval-Query (constraint ϕ) η = True (eval-ConstraintExp ϕ η)
   eval-Query (ex ϕ) η = Σ[ q ∈ ℚ ] eval-Query ϕ (extend-env η q)
   eval-Query (ϕ and ψ) η = eval-Query ϕ η × eval-Query ψ η
   eval-Query (ϕ or ψ) η = eval-Query ϕ η ⊎ eval-Query ψ η
-
-rename-Query : Renameable Query
-rename-Query ρ (constraint ϕ) = constraint (rename-ConstraintExp ρ ϕ)
-rename-Query ρ (ex ϕ)         = ex (rename-Query (under ρ) ϕ)
-rename-Query ρ (ϕ and ψ)      = rename-Query ρ ϕ and rename-Query ρ ψ
-rename-Query ρ (ϕ or ψ)       = rename-Query ρ ϕ or rename-Query ρ ψ
-
-
-
-------------------------------------------------------------------------
--- Part IV : Let/If lifting monad
-
--- FIXME: split this into a separate module because it is specific to
--- the Normalisation procedure
-
-data LetLift (A : LinVarCtxt → Set) : LinVarCtxt → Set where
-  return     : ∀ {Δ} → A Δ → LetLift A Δ
-  if         : ∀ {Δ} → ConstraintExp Δ → LetLift A Δ → LetLift A Δ → LetLift A Δ
-  let-linexp : ∀ {Δ} → LinExp Δ → LetLift A (Δ ,∙) → LetLift A Δ
-  let-funexp : ∀ {Δ} → {- fsymb → -} Var Δ → LetLift A (Δ ,∙) → LetLift A Δ
-
--- expand a Query within lets and ifs into a Query
-compile : ∀ {Δ} → LetLift Query Δ → Query Δ
-compile (return x)       = x
-compile (if ϕ tr fa)     = ((constraint ϕ) and (compile tr)) or (constraint (negate ϕ) and (compile fa))
-compile (let-linexp e k) = ex ((constraint ((var 1ℚ zero) `=` rename-LinExp succ e)) and compile k)
-compile (let-funexp x k) = ex ((constraint (zero `=`f (succ x))) and (compile k))
-
-rename-lift : ∀ {A} → Renameable A → Renameable (LetLift A)
-rename-lift rA ρ (return x) =
-  return (rA ρ x)
-rename-lift rA ρ (if p k₁ k₂) =
-  if (rename-ConstraintExp ρ p) (rename-lift rA ρ k₁) (rename-lift rA ρ k₂)
-rename-lift rA ρ (let-linexp e k) =
-  let-linexp (rename-LinExp ρ e) (rename-lift rA (under ρ) k)
-rename-lift rA ρ (let-funexp v k) =
-  let-funexp (ρ v) (rename-lift rA (under ρ) k)
-
-bind-let : ∀ {Δ A B} → LetLift A Δ → (A ⇒ₖ LetLift B) Δ → LetLift B Δ
-bind-let (return x)       f = f _ (λ x → x) x
-bind-let (if e kt kf)     f = if e (bind-let kt f) (bind-let kf f)
-bind-let (let-linexp e k) f = let-linexp e (bind-let k (rename-⇒ₖ succ f))
-bind-let (let-funexp x k) f = let-funexp x (bind-let k (rename-⇒ₖ succ f))

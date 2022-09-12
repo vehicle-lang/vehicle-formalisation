@@ -2,131 +2,159 @@
 
 module Isomorphism where
 
+open import Level using (Level)
 open import Data.Bool renaming (T to True)
-open import Data.Product using (Σ; Σ-syntax; _,_; _×_)
-open import Relation.Binary.PropositionalEquality using (_≡_; refl; trans; cong)
-open import Data.Sum using (_⊎_; inj₁; inj₂)
 open import Data.Empty using (⊥)
+open import Data.Product using (Σ; Σ-syntax; _,_; _×_)
+open import Data.Sum using (_⊎_; inj₁; inj₂)
 open import Data.Unit using (⊤; tt)
+open import Function using (_⇔_; Equivalence) public
+open import Function.Properties.Equivalence using (⇔-isEquivalence)
+open import Relation.Binary using (IsEquivalence)
+open import Relation.Binary.PropositionalEquality using (_≡_; refl; trans; cong)
+open import Relation.Nullary using (does; Dec; _because_; yes; no)
 
 -- FIXME: move this
 postulate
   fext : ∀ {ℓ₁ ℓ₂}{A : Set ℓ₁}{B : A → Set ℓ₂}{f g : (a : A) → B a} →
          ((a : A) → f a ≡ g a) → f ≡ g
 
+open Equivalence
+
 module _ {ℓ} where
 
-  record _↔_ (A B : Set ℓ) : Set ℓ where
-    field
-      fwd : A → B
-      bwd : B → A
-      -- fwd∘bwd : ∀ b → fwd (bwd b) ≡ b
-      -- bwd∘fwd : ∀ a → bwd (fwd a) ≡ a
-  open _↔_ public
+  open IsEquivalence (⇔-isEquivalence {ℓ})
+     renaming (refl to ⇔-refl;
+               sym to ⇔-sym;
+               trans to ⇔-trans)
+     public
 
-  ↔-sym : ∀ {A B} → A ↔ B → B ↔ A
-  ↔-sym ab .fwd = ab .bwd
-  ↔-sym ab .bwd = ab .fwd
+variable
+  ℓ : Level
 
-  ↔-refl : ∀ {A} → A ↔ A
-  ↔-refl .fwd = λ a → a
-  ↔-refl .bwd = λ a → a
-  -- ↔-refl .fwd∘bwd a = refl
-  -- ↔-refl .bwd∘fwd a = refl
+cong-∃ : ∀ {A : Set ℓ}{B₁ B₂ : A → Set ℓ} →
+         ((a : A) → B₁ a ⇔ B₂ a) →
+         (Σ A B₁) ⇔ Σ A B₂
+cong-∃ eq .f (a , b₁) = a , eq a .f b₁
+cong-∃ eq .g (a , b₂) = a , eq a .g b₂
+cong-∃ eq .cong₁ refl = refl
+cong-∃ eq .cong₂ refl = refl
 
-  ↔-trans : ∀ {A B C} → A ↔ B → B ↔ C → A ↔ C
-  ↔-trans i₁ i₂ .fwd a = i₂ .fwd (i₁ .fwd a)
-  ↔-trans i₁ i₂ .bwd c = i₁ .bwd (i₂ .bwd c)
+known : ∀ {A : Set ℓ}{B : A → Set ℓ} a →
+        B a ⇔ (Σ[ a' ∈ A ] (a' ≡ a × B a'))
+known a .f b = a , refl , b
+known a .g (a , refl , b) = b
+known a .cong₁ refl = refl
+known a .cong₂ refl = refl
 
-  cong-→ : ∀ {A₁ A₂ B₁ B₂} →
-           A₁ ↔ A₂ → B₁ ↔ B₂ →
-           (A₁ → B₁) ↔ (A₂ → B₂)
-  cong-→ eq-A eq-B .fwd f a₂ = eq-B .fwd (f (eq-A .bwd a₂))
-  cong-→ eq-A eq-B .bwd f a₁ = eq-B .bwd (f (eq-A .fwd a₁))
-  -- cong-→ eq-A eq-B .fwd∘bwd f = fext (λ a → trans (eq-B .fwd∘bwd _) (cong f (eq-A .fwd∘bwd a)))
-  -- cong-→ eq-A eq-B .bwd∘fwd f = fext (λ a → trans (eq-B .bwd∘fwd _) (cong f (eq-A .bwd∘fwd a)))
+or-left : ∀ {A : Set ℓ} → A ⇔ (A ⊎ ⊥)
+or-left .f = inj₁
+or-left .g (inj₁ x) = x
+or-left .cong₁ refl = refl
+or-left .cong₂ refl = refl
 
-  cong-Σ-snd : ∀ {A : Set ℓ}{B₁ B₂ : A → Set ℓ} →
-               ((a : A) → B₁ a ↔ B₂ a) →
-               (Σ A B₁) ↔ Σ A B₂
-  cong-Σ-snd eq .fwd (a , b₁) = a , eq a .fwd b₁
-  cong-Σ-snd eq .bwd (a , b₂) = a , eq a .bwd b₂
+or-right : ∀ {A : Set ℓ} → A ⇔ (⊥ ⊎ A)
+or-right .f = inj₂
+or-right .g (inj₂ a) = a
+or-right .cong₁ refl = refl
+or-right .cong₂ refl = refl
 
-  known : ∀ {A : Set ℓ}{B : A → Set ℓ} a →
-          B a ↔ (Σ[ a' ∈ A ] (a' ≡ a × B a'))
-  known a .fwd b = a , refl , b
-  known a .bwd (a , refl , b) = b
+⊤-fst : ∀ {A : Set ℓ} → A ⇔ (⊤ × A)
+⊤-fst .f a = tt , a
+⊤-fst .g (tt , a) = a
+⊤-fst .cong₁ refl = refl
+⊤-fst .cong₂ refl = refl
 
-  cong-Π : ∀ {A : Set ℓ}{B₁ B₂ : A → Set ℓ} →
-         ((a : A) → B₁ a ↔ B₂ a) →
-         ((a : A) → B₁ a) ↔ ((a : A) → B₂ a)
-  cong-Π eq .fwd b₁ a = eq a .fwd (b₁ a)
-  cong-Π eq .bwd b₂ a = eq a .bwd (b₂ a)
-  -- cong-Π eq .fwd∘bwd b₂ = fext (λ a → eq a .fwd∘bwd (b₂ a))
-  -- cong-Π eq .bwd∘fwd b₁ = fext (λ a → eq a .bwd∘fwd (b₁ a))
+eq-cong : ∀ {A : Set ℓ} {a b c d : A} →
+          a ≡ c →
+          b ≡ d →
+          (a ≡ b) ⇔ (c ≡ d)
+eq-cong refl refl = ⇔-refl
 
-  cong-F : ∀ {ℓ'} {A : Set ℓ'}(B : A → Set ℓ){a₁ a₂ : A} →
-           a₁ ≡ a₂ →
-           B a₁ ↔ B a₂
-  cong-F B refl = ↔-refl
+⊥-fst : ∀ {A : Set} → ⊥ ⇔ (⊥ × A)
+⊥-fst .f ()
+⊥-fst .g ()
 
-  or-left : ∀ {A : Set ℓ} → A ↔ (A ⊎ ⊥)
-  or-left .fwd = inj₁
-  or-left .bwd (inj₁ x) = x
+⊎-cong : ∀ {a b} {A C : Set a}{B D : Set b} → A ⇔ C → B ⇔ D → (A ⊎ B) ⇔ (C ⊎ D)
+⊎-cong ac bd .f (inj₁ x) = inj₁ (ac .f x)
+⊎-cong ac bd .f (inj₂ y) = inj₂ (bd .f y)
+⊎-cong ac bd .g (inj₁ x) = inj₁ (ac .g x)
+⊎-cong ac bd .g (inj₂ y) = inj₂ (bd .g y)
+⊎-cong ac bd .cong₁ refl = refl
+⊎-cong ac bd .cong₂ refl = refl
 
-  or-right : ∀ {A : Set ℓ} → A ↔ (⊥ ⊎ A)
-  or-right .fwd = inj₂
-  or-right .bwd (inj₂ a) = a
+×-cong : ∀ {a b} {A C : Set a}{B D : Set b} → A ⇔ C → B ⇔ D → (A × B) ⇔ (C × D)
+×-cong ac bd .f (a , b) = (ac .f a) , (bd .f b)
+×-cong ac bd .g (c , d) = (ac .g c) , (bd .g d)
+×-cong ac bd .cong₁ refl = refl
+×-cong ac bd .cong₂ refl = refl
 
-  ⊤-fst : ∀ {A : Set ℓ} → A ↔ (⊤ × A)
-  ⊤-fst .fwd a = tt , a
-  ⊤-fst .bwd (tt , a) = a
+cong-True : ∀ {b₁ b₂ : Bool} → b₁ ≡ b₂ → True b₁ ⇔ True b₂
+cong-True refl = ⇔-refl
 
-  eq-cong : ∀ {A : Set ℓ} {a b c d : A} →
-            a ≡ c →
-            b ≡ d →
-            (a ≡ b) ↔ (c ≡ d)
-  eq-cong refl refl = ↔-refl
+True-∧ : ∀ {b₁ b₂ : Bool} → (True b₁ × True b₂) ⇔ True (b₁ ∧ b₂)
+True-∧ {true} {true} .f (tt , tt) = tt
+True-∧ {true} {true} .g x = tt , tt
+True-∧ .cong₁ refl = refl
+True-∧ .cong₂ refl = refl
 
-⊥-fst : ∀ {A : Set} → ⊥ ↔ (⊥ × A)
-⊥-fst .fwd ()
-⊥-fst .bwd ()
+True-∨ : ∀ {b₁ b₂ : Bool} → (True b₁ ⊎ True b₂) ⇔ True (b₁ ∨ b₂)
+True-∨ {false} {b₂} .f (inj₂ y) = y
+True-∨ {true}  {b₂} .f _ = tt
+True-∨ {false} {b₂} .g = inj₂
+True-∨ {true} {b₂} .g = inj₁
+True-∨ .cong₁ refl = refl
+True-∨ .cong₂ refl = refl
 
-⊎-cong : ∀ {a b} {A C : Set a}{B D : Set b} → A ↔ C → B ↔ D → (A ⊎ B) ↔ (C ⊎ D)
-⊎-cong ac bd .fwd (inj₁ x) = inj₁ (ac .fwd x)
-⊎-cong ac bd .fwd (inj₂ y) = inj₂ (bd .fwd y)
-⊎-cong ac bd .bwd (inj₁ x) = inj₁ (ac .bwd x)
-⊎-cong ac bd .bwd (inj₂ y) = inj₂ (bd .bwd y)
+⊥-bool : ∀ {b} → b ≡ false → ⊥ ⇔ True b
+⊥-bool refl .f ()
+⊥-bool refl .g ()
+⊥-bool refl .cong₁ refl = refl
+⊥-bool refl .cong₂ refl = refl
 
-×-cong : ∀ {a b} {A C : Set a}{B D : Set b} → A ↔ C → B ↔ D → (A × B) ↔ (C × D)
-×-cong ac bd .fwd (a , b) = (ac .fwd a) , (bd .fwd b)
-×-cong ac bd .bwd (c , d) = (ac .bwd c) , (bd .bwd d)
+⊤-bool : ∀ {b} → b ≡ true → ⊤ ⇔ True b
+⊤-bool refl .f tt = tt
+⊤-bool refl .g tt = tt
+⊤-bool refl .cong₁ refl = refl
+⊤-bool refl .cong₂ refl = refl
 
-cong-True : ∀ {b₁ b₂ : Bool} → b₁ ≡ b₂ → True b₁ ↔ True b₂
-cong-True refl = ↔-refl
+does-cong : ∀ {P : Set} (x : Dec P) → True (x .does) ⇔ P
+does-cong (no p) .f ()
+does-cong (no p) .g = p
+does-cong (yes p) .f tt = p
+does-cong (yes p) .g _ = tt
+does-cong _ .cong₁ refl = refl
+does-cong _ .cong₂ refl = refl
 
-True-∧ : ∀ {b₁ b₂ : Bool} → (True b₁ × True b₂) ↔ True (b₁ ∧ b₂)
-True-∧ {true} {true} .fwd (tt , tt) = tt
-True-∧ {true} {true} .bwd x = tt , tt
+variable
+  A B : Set
+  P : A → Set
+  Q : B → Set
 
-True-∨ : ∀ {b₁ b₂ : Bool} → (True b₁ ⊎ True b₂) ↔ True (b₁ ∨ b₂)
-True-∨ {false} {b₂} .fwd (inj₂ y) = y
-True-∨ {true} {b₂} .fwd _ = tt
-True-∨ {false} {b₂} .bwd = inj₂
-True-∨ {true} {b₂} .bwd = inj₁
+and-comm-left : (A × Σ[ b ∈ B ] Q b) ⇔ (Σ[ b ∈ B ] (A × Q b))
+and-comm-left .f (a , b , q) = b , a , q
+and-comm-left .g (b , a , q) = a , b , q
+and-comm-left .cong₁ refl = refl
+and-comm-left .cong₂ refl = refl
 
-⊥-bool : ∀ {b} → b ≡ false → ⊥ ↔ True b
-⊥-bool refl .fwd ()
-⊥-bool refl .bwd ()
+and-comm-right : ((Σ[ a ∈ A ] P a) × B) ⇔ (Σ[ a ∈ A ] (P a × B))
+and-comm-right .f ((a , p) , b) = a , p , b
+and-comm-right .g (a , p , b) = (a , p) , b
+and-comm-right .cong₁ refl = refl
+and-comm-right .cong₂ refl = refl
 
-⊤-bool : ∀ {b} → b ≡ true → ⊤ ↔ True b
-⊤-bool refl .fwd tt = tt
-⊤-bool refl .bwd tt = tt
+or-comm-right : B → (A ⊎ Σ[ b ∈ B ] Q b) ⇔ (Σ[ b ∈ B ] (A ⊎ Q b))
+or-comm-right b .f (inj₁ a) = b , inj₁ a
+or-comm-right b .f (inj₂ (b' , q)) = b' , inj₂ q
+or-comm-right b .g (b' , inj₁ a) = inj₁ a
+or-comm-right b .g (b' , inj₂ q) = inj₂ (b' , q)
+or-comm-right b .cong₁ refl = refl
+or-comm-right b .cong₂ refl = refl
 
-open import Relation.Nullary using (does; Dec; _because_; yes; no)
-
-does-cong : ∀ {P : Set} (x : Dec P) → True (x .does) ↔ P
-does-cong (no p) .fwd ()
-does-cong (no p) .bwd = p
-does-cong (yes p) .fwd tt = p
-does-cong (yes p) .bwd _ = tt
+or-comm-left : A → ((Σ[ a ∈ A ] P a) ⊎ B) ⇔ (Σ[ a ∈ A ] (P a ⊎ B))
+or-comm-left a₀ .f (inj₁ (a , p)) = a , inj₁ p
+or-comm-left a₀ .f (inj₂ b)       = a₀ , inj₂ b
+or-comm-left a₀ .g (a , inj₁ p) = inj₁ (a , p)
+or-comm-left a₀ .g (a , inj₂ b) = inj₂ b
+or-comm-left a₀ .cong₁ refl = refl
+or-comm-left a₀ .cong₂ refl = refl
