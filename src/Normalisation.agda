@@ -16,7 +16,7 @@ open import Interpretation
 record Syn : Set₁ where
   field
     Carrier : LinVarCtxt → Set
-    rename  : ∀ {Δ Δ'} → (Δ ⇒ᵣ Δ') → Carrier Δ' → Carrier Δ
+    rename  : Renameable Carrier
 open Syn public
 
 K : Set → Syn
@@ -31,8 +31,8 @@ open _==>_ public
 ⟦Bool⟧ : BoolKind → Syn
 ⟦Bool⟧ query .Carrier = Query
 ⟦Bool⟧ query .rename = rename-Query
-⟦Bool⟧ constraint .Carrier = ConstraintExp
-⟦Bool⟧ constraint .rename = rename-ConstraintExp
+⟦Bool⟧ constraint .Carrier = Constraint
+⟦Bool⟧ constraint .rename = rename-Constraint
 
 ⟦Num⟧ : Linearity → Syn
 ⟦Num⟧ const = K ℚ
@@ -41,7 +41,7 @@ open _==>_ public
 
 data LetLift (A : LinVarCtxt → Set) : LinVarCtxt → Set where
   return     : ∀ {Δ} → A Δ → LetLift A Δ
-  if         : ∀ {Δ} → ConstraintExp Δ → LetLift A Δ → LetLift A Δ → LetLift A Δ
+  if         : ∀ {Δ} → Constraint Δ → LetLift A Δ → LetLift A Δ → LetLift A Δ
   let-linexp : ∀ {Δ} → LinExp Δ → LetLift A (Δ ,∙) → LetLift A Δ
   let-funexp : ∀ {Δ} → {- fsymb → -} Var Δ → LetLift A (Δ ,∙) → LetLift A Δ
 
@@ -56,7 +56,7 @@ rename-lift : ∀ {A} → Renameable A → Renameable (LetLift A)
 rename-lift rA ρ (return x) =
   return (rA ρ x)
 rename-lift rA ρ (if p k₁ k₂) =
-  if (rename-ConstraintExp ρ p) (rename-lift rA ρ k₁) (rename-lift rA ρ k₂)
+  if (rename-Constraint ρ p) (rename-lift rA ρ k₁) (rename-lift rA ρ k₂)
 rename-lift rA ρ (let-linexp e k) =
   let-linexp (rename-LinExp ρ e) (rename-lift rA (under ρ) k)
 rename-lift rA ρ (let-funexp v k) =
@@ -109,8 +109,8 @@ _∘S_ : ∀ {X Y Z} → (Y ==> Z) → (X ==> Y) → (X ==> Z)
 ⟦return⟧ : ∀ {X} → X ==> LiftM X
 ⟦return⟧ .mor = return
 
-extend : ∀ {X Y Z} → ((X ⟦×⟧ Y) ==> LiftM Z) → (X ⟦×⟧ LiftM Y) ==> LiftM Z
-extend {X} f .mor (x , ly) =
+⟦extend⟧ : ∀ {X Y Z} → ((X ⟦×⟧ Y) ==> LiftM Z) → (X ⟦×⟧ LiftM Y) ==> LiftM Z
+⟦extend⟧ {X} f .mor (x , ly) =
   bind-let ly (λ Δ' ρ y → f .mor (X .rename ρ x , y))
 
 ------------------------------------------------------------------------------
@@ -179,7 +179,7 @@ extend {X} f .mor (x , ly) =
 ℳ .Model.⟦∀-elim⟧ = ⟦∀-elim⟧
 ℳ .Model.Mon = LiftM
 ℳ .Model.⟦return⟧ = ⟦return⟧
-ℳ .Model.⟦extend⟧ = extend
+ℳ .Model.⟦extend⟧ = ⟦extend⟧
 ℳ .Model.⟦Num⟧ = ⟦Num⟧
 ℳ .Model.⟦add⟧ = ⟦add⟧
 ℳ .Model.⟦mul⟧ = ⟦mul⟧
@@ -196,3 +196,8 @@ extend {X} f .mor (x , ly) =
 ℳ .Model.⟦idx⟧ n i .mor _ = i
 ℳ .Model.⟦constraint⟧ .mor = constraint
 ℳ .Model.⟦∃⟧ .mor {Δ} f = ex (compile (f (Δ ,∙) succ (var 1ℚ zero)))
+
+module 𝒩 = Interpret ℳ
+
+normalise : ε / ε ⊢ Bool query → FlatQuery ε
+normalise t = flatten (compile (𝒩.⟦ t ⟧tm tt .mor tt))
