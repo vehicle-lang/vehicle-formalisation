@@ -1,6 +1,6 @@
 {-# OPTIONS --postfix-projections #-}
 
-module Isomorphism where
+module EquiInhabited where
 
 open import Level using (Level)
 open import Data.Bool renaming (T to True)

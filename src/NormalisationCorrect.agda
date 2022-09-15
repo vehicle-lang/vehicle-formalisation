@@ -20,7 +20,7 @@ open import Util
 open import MiniVehicle.Qualifiers
 open import NormalisedExpr
 open import Interpretation
-open import Isomorphism
+open import EquiInhabited
 
 module NormalisationCorrect (extFunc : ℚ → ℚ) where
 
