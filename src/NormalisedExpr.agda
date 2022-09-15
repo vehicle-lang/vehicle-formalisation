@@ -38,9 +38,6 @@ under ρ (succ x) = succ (ρ x)
 wk-r : ∀ {Δ} → (Δ ,∙) ⇒ᵣ Δ
 wk-r = succ
 
--- FIXME: make a Renameable record to combine the family and the
--- Renameable part
-
 Renameable : (LinVarCtxt → Set) → Set
 Renameable A = ∀ {Δ Δ'} → (Δ ⇒ᵣ Δ') → A Δ' → A Δ
 
@@ -49,13 +46,6 @@ _⇒ₖ_ : (LinVarCtxt → Set) → (LinVarCtxt → Set) → LinVarCtxt → Set
 
 rename-⇒ₖ : ∀ {X Y} → Renameable (X ⇒ₖ Y)
 rename-⇒ₖ ρ f _ ρ' = f _ (λ v → ρ' (ρ v))
-
--- Alternatively: □ A = I ⇒ₖ A
--- □ : (LinVarCtxt → Set) → (LinVarCtxt → Set)
--- □ A Δ = ∀ {Δ'} → (Δ' ⇒ᵣ Δ) → A Δ'
-
--- rename-□ : ∀ {A} → Renameable (□ A)
--- rename-□ ρ a ρ' = a (λ x → ρ' (ρ x))
 
 ------------------------------------------------------------------------------
 -- Linear and Constraint Expressions in a normal form

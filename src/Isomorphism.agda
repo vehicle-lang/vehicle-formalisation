@@ -14,11 +14,6 @@ open import Relation.Binary using (IsEquivalence)
 open import Relation.Binary.PropositionalEquality using (_≡_; refl; trans; cong)
 open import Relation.Nullary using (does; Dec; _because_; yes; no)
 
--- FIXME: move this
-postulate
-  fext : ∀ {ℓ₁ ℓ₂}{A : Set ℓ₁}{B : A → Set ℓ₂}{f g : (a : A) → B a} →
-         ((a : A) → f a ≡ g a) → f ≡ g
-
 open Equivalence
 
 module _ {ℓ} where

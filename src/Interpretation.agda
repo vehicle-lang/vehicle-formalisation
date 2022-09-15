@@ -11,13 +11,13 @@ open import Data.Product using (_×_; _,_; proj₁)
 open import Relation.Binary.PropositionalEquality
             using (_≡_; refl; cong; trans; cong₂; sym)
 
-open import Isomorphism using (fext)
-
--- FIXME: move to Util
-cong₃ : ∀ {a b c d} {A : Set a}{B : Set b}{C : Set c}{D : Set d} (f : A → B → C → D) {x y u v t w} → x ≡ y → u ≡ v → t ≡ w → f x u t ≡ f y v w
-cong₃ f refl refl refl = refl
-
+open import Util
 open import MiniVehicle.Qualifiers
+
+-- FIXME: try to remove this by defining setoid equalities for each kind
+postulate
+  fext : ∀ {ℓ₁ ℓ₂}{A : Set ℓ₁}{B : A → Set ℓ₂}{f g : (a : A) → B a} →
+         ((a : A) → f a ≡ g a) → f ≡ g
 
 record Model ℓ m : Set (suc ℓ ⊔ suc m) where
   field
