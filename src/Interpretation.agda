@@ -137,7 +137,7 @@ module Interpret {ℓ}{m} (ℳ : Model ℓ m) where
   ⟦ Num x ⟧ty ks = ⟦Num⟧ (⟦ x ⟧ty ks .lower)
   ⟦ A ⇒ B ⟧ty ks = (⟦ A ⟧ty ks) ⟦⇒⟧ Mon (⟦ B ⟧ty ks)
   ⟦ Index N ⟧ty ks = ⟦Index⟧ (⟦ N ⟧ty ks .lower)
-  ⟦ Array N A ⟧ty ks = (⟦Index⟧ (⟦ N ⟧ty ks .lower)) ⟦⇒⟧ Mon (⟦ A ⟧ty ks)
+  ⟦ Vec N A ⟧ty ks = (⟦Index⟧ (⟦ N ⟧ty ks .lower)) ⟦⇒⟧ Mon (⟦ A ⟧ty ks)
   ⟦ Forall Nat A ⟧ty ks = ⟦∀⟧ (λ n → Mon (⟦ A ⟧ty (ks , lift n)))
   ⟦ Forall Linearity A ⟧ty ks = ⟦∀⟧ (λ l → Mon (⟦ A ⟧ty (ks , lift l)))
   ⟦ Forall Polarity A ⟧ty ks = ⟦∀⟧ (λ p → Mon (⟦ A ⟧ty (ks , lift p)))
@@ -203,7 +203,7 @@ module Interpret {ℓ}{m} (ℳ : Model ℓ m) where
     cong₂ (λ □₁ □₂ → □₁ ⟦⇒⟧ (Mon □₂)) (ren-⟦Type⟧ ρ A) (ren-⟦Type⟧ ρ B)
   ren-⟦Type⟧ ρ (Index N) =
     cong (λ □ → ⟦Index⟧ (□ .lower)) (ren-⟦Type⟧ ρ N)
-  ren-⟦Type⟧ ρ (Array N A) =
+  ren-⟦Type⟧ ρ (Vec N A) =
     cong₂ (λ □₁ □₂ → ⟦Index⟧ (□₁ .lower) ⟦⇒⟧ (Mon □₂)) (ren-⟦Type⟧ ρ N) (ren-⟦Type⟧ ρ A)
   ren-⟦Type⟧ ρ (Forall Nat A) = cong ⟦∀⟧ (fext λ n → trans (cong Mon (ren-⟦Type⟧ (under ρ) A)) (cong (λ □ → Mon (⟦ A ⟧ty (□ , lift n))) ⟦ ρ succ⟧ren))
   ren-⟦Type⟧ ρ (Forall Linearity A) {ks} = cong ⟦∀⟧ (fext λ n → trans (cong Mon (ren-⟦Type⟧ (under ρ) A)) (cong (λ □ → Mon (⟦ A ⟧ty (□ , lift n))) ⟦ ρ succ⟧ren))
@@ -244,7 +244,7 @@ module Interpret {ℓ}{m} (ℳ : Model ℓ m) where
   subst-⟦Type⟧ σ (Num x) = cong ⟦Num⟧ (cong lower (subst-⟦Type⟧ σ x))
   subst-⟦Type⟧ σ (A ⇒ B) = cong₂ (λ □₁ □₂ → □₁ ⟦⇒⟧ (Mon □₂)) (subst-⟦Type⟧ σ A) (subst-⟦Type⟧ σ B)
   subst-⟦Type⟧ σ (Index N) = cong ⟦Index⟧ (cong lower (subst-⟦Type⟧ σ N))
-  subst-⟦Type⟧ σ (Array N A) =
+  subst-⟦Type⟧ σ (Vec N A) =
     cong₂ (λ n X → ⟦Index⟧ n ⟦⇒⟧ Mon X) (cong lower (subst-⟦Type⟧ σ N)) (subst-⟦Type⟧ σ A)
   subst-⟦Type⟧ σ (Forall Nat A) =
     cong ⟦∀⟧ (fext λ n →
@@ -356,7 +356,7 @@ module Interpret {ℓ}{m} (ℳ : Model ℓ m) where
           eq = trans (cong (λ □ → ⟦ A ⟧ty (□ , ⟦ N ⟧ty δ)) (sym ⟦id⟧-subst))
                      (sym (subst-⟦Type⟧ (single-sub N) A))
 
-  ⟦ array n A t ⟧tm δ = ⟦return⟧ ∘ ⟦Λ⟧ (⟦ t ⟧tm δ)
+  ⟦ foreach n A t ⟧tm δ = ⟦return⟧ ∘ ⟦Λ⟧ (⟦ t ⟧tm δ)
     -- FIXME: two choices here:
     -- 1. Lazily do the let- and if- lifting so that it gets replicated every time we index
     --    into the array (this is what is implemented here)
@@ -380,11 +380,3 @@ module Interpret {ℓ}{m} (ℳ : Model ℓ m) where
   ⟦ (t `∨ t₁) t₂ t₃ ⟧tm δ =
     (((unary ⟦or⟧ ∘ seq) ∘ (⟦id⟧ ×m seq)) ∘ (⟦id⟧ ×m (⟦id⟧ ×m seq))) ∘ ⟨ ⟦ t ⟧tm δ , ⟨ ⟦ t₁ ⟧tm δ , ⟨ ⟦ t₂ ⟧tm δ , ⟦ t₃ ⟧tm δ ⟩ ⟩ ⟩
   ⟦ ∃ t t₁ ⟧tm δ = binary ⟦∃⟧ ∘ ⟨ ⟦ t ⟧tm δ , ⟦ t₁ ⟧tm δ ⟩
-
-  -- ⟦ t₁ `≤ t₂ ⟧tm δ = binary ⟦≤⟧ ∘ ⟨ ⟦ t₁ ⟧tm δ , ⟦ t₂ ⟧tm δ ⟩
-  -- ⟦ if s then t else u ⟧tm δ = ⟦extend⟧ ⟦if⟧ ∘ ⟨ ⟨ ⟦ t ⟧tm δ , ⟦ u ⟧tm δ ⟩ , ⟦ s ⟧tm δ ⟩
-  -- ⟦ `¬ t ⟧tm δ = unary ⟦not⟧ ∘ ⟦ t ⟧tm δ
-  -- ⟦ t₁ `∧ t₂ ⟧tm δ = binary ⟦and⟧ ∘ ⟨ ⟦ t₁ ⟧tm δ , ⟦ t₂ ⟧tm δ ⟩
-  -- ⟦ t₁ `∨ t₂ ⟧tm δ = binary ⟦or⟧ ∘ ⟨ ⟦ t₁ ⟧tm δ , ⟦ t₂ ⟧tm δ ⟩
-  -- ⟦ constraint t ⟧tm δ = unary ⟦constraint⟧ ∘ ⟦ t ⟧tm δ
-  -- ⟦ ∃ t ⟧tm δ = unary ⟦∃⟧ ∘ ⟦ t ⟧tm δ
