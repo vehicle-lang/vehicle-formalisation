@@ -17,7 +17,7 @@ open import Relation.Binary.PropositionalEquality
   using (_≡_; refl; trans; cong; sym; cong₂; subst; module ≡-Reasoning)
 
 open import Util
-open import MiniVehicle hiding (_⇒ᵣ_; under)
+open import MiniVehicle.Qualifiers
 open import NormalisedExpr
 open import Interpretation
 open import Isomorphism
@@ -115,6 +115,11 @@ module NormalisationCorrect (extFunc : ℚ → ℚ) where
   FlatR X .Right = N.K X
   FlatR X .rel w x₁ x₂ = x₁ ≡ x₂
   FlatR X .ext ρ x₁ x₂ eq = eq
+
+  elem : ∀ {A X} → A → X ===> FlatR A
+  elem a .left = 𝒮.elem a
+  elem a .right = 𝒩.elem a
+  elem a .rel-mor w _ _ _ = refl
 
   ------------------------------------------------------------------------------
   -- Products and terminal object
@@ -507,52 +512,6 @@ module NormalisationCorrect (extFunc : ℚ → ℚ) where
     q-ex λ q → compile-lemma l (extend-w w q) (f₁ q) (f₂ (w .ctxt ,∙) succ (var 1ℚ zero))
                  (r (extend-w w q) wk-w q (var 1ℚ zero) (sym (*-identityˡ q)))
 
-  ℳ : Model (suc 0ℓ) 0ℓ
-  ℳ .Model.⟦Type⟧ = WRel
-  ℳ .Model._==>_ = _===>_
-  ℳ .Model.Flat = FlatR
-  ℳ .Model.⟦id⟧ = ⟦id⟧R
-  ℳ .Model._∘_ = _∘R_
-  ℳ .Model._⟦×⟧_ = _⟦×⟧R_
-  ℳ .Model.⟦⊤⟧ = ⟦⊤⟧R
-  ℳ .Model.⟦terminal⟧ = ⟦terminal⟧R
-  ℳ .Model.⟦proj₁⟧ = ⟦proj₁⟧R
-  ℳ .Model.⟦proj₂⟧ = ⟦proj₂⟧R
-  ℳ .Model.⟨_,_⟩ = ⟨_,_⟩R
-  ℳ .Model._⟦⇒⟧_ = _⟦⇒⟧R_
-  ℳ .Model.⟦Λ⟧ = ⟦Λ⟧R
-  ℳ .Model.⟦eval⟧ = ⟦eval⟧R
-  ℳ .Model.⟦∀⟧ = ⟦∀⟧R
-  ℳ .Model.⟦∀-intro⟧ = ⟦∀-intro⟧R
-  ℳ .Model.⟦∀-elim⟧ = ⟦∀-elim⟧R
-  ℳ .Model.Mon = LiftMR
-  ℳ .Model.⟦return⟧ = ⟦return⟧R
-  ℳ .Model.⟦extend⟧ = extendR
-  ℳ .Model.⟦Num⟧ = ⟦Num⟧R
-  ℳ .Model.⟦add⟧ = ⟦add⟧R
-  ℳ .Model.⟦mul⟧ = ⟦mul⟧R
-  ℳ .Model.⟦const⟧ = ⟦const⟧R
-  ℳ .Model.⟦extFunc⟧ = ⟦extFunc⟧R
-  ℳ .Model.⟦Bool⟧ = ⟦Bool⟧R
-  ℳ .Model.⟦not⟧ = ⟦not⟧
-  ℳ .Model.⟦and⟧ = ⟦and⟧
-  ℳ .Model.⟦or⟧ = ⟦or⟧
-  ℳ .Model.⟦≤⟧ = ⟦≤⟧
-  ℳ .Model.⟦if⟧ = ⟦if⟧R
-  ℳ .Model.⟦Index⟧ = ⟦Index⟧R
-  ℳ .Model.⟦idx⟧ n i .left = 𝒮.⟦idx⟧ n i
-  ℳ .Model.⟦idx⟧ n i .right = 𝒩.⟦idx⟧ n i
-  ℳ .Model.⟦idx⟧ n i .rel-mor w _ _ _ = refl
-  ℳ .Model.⟦∃⟧ = ⟦∃⟧
-
-  module ℐ = Interpret ℳ
-
-  standard : ε / ε ⊢ Bool linear Ex → Set
-  standard t = S.eval-Quant (ℐ.⟦ t ⟧tm (lift tt) .left tt) True
-
-  normalise : ε / ε ⊢ Bool linear Ex → FlatQuery ε
-  normalise t = flatten (N.compile (ℐ.⟦ t ⟧tm (lift tt) .right .N.mor tt))
-
   QueryR-ok : ∀ w {x₁ x₂} →
                 QueryR w x₁ x₂ →
                 S.eval-Quant x₁ True ⇔ eval-Query x₂ (w .env)
@@ -642,7 +601,56 @@ module NormalisationCorrect (extFunc : ℚ → ℚ) where
     ⇔-trans (⊎-cong (flatten-ok ϕ η) (flatten-ok ψ η))
               (equi-disj (flatten ϕ) (flatten ψ) η)
 
-  full-correctness : (t : ε / ε ⊢ Bool linear Ex) →
+  ℳ : Model (suc 0ℓ) 0ℓ
+  ℳ .Model.⟦Type⟧ = WRel
+  ℳ .Model._==>_ = _===>_
+  ℳ .Model.Flat = FlatR
+  ℳ .Model.elem = elem
+  ℳ .Model.⟦id⟧ = ⟦id⟧R
+  ℳ .Model._∘_ = _∘R_
+  ℳ .Model._⟦×⟧_ = _⟦×⟧R_
+  ℳ .Model.⟦⊤⟧ = ⟦⊤⟧R
+  ℳ .Model.⟦terminal⟧ = ⟦terminal⟧R
+  ℳ .Model.⟦proj₁⟧ = ⟦proj₁⟧R
+  ℳ .Model.⟦proj₂⟧ = ⟦proj₂⟧R
+  ℳ .Model.⟨_,_⟩ = ⟨_,_⟩R
+  ℳ .Model._⟦⇒⟧_ = _⟦⇒⟧R_
+  ℳ .Model.⟦Λ⟧ = ⟦Λ⟧R
+  ℳ .Model.⟦eval⟧ = ⟦eval⟧R
+  ℳ .Model.⟦∀⟧ = ⟦∀⟧R
+  ℳ .Model.⟦∀-intro⟧ = ⟦∀-intro⟧R
+  ℳ .Model.⟦∀-elim⟧ = ⟦∀-elim⟧R
+  ℳ .Model.Mon = LiftMR
+  ℳ .Model.⟦return⟧ = ⟦return⟧R
+  ℳ .Model.⟦extend⟧ = extendR
+  ℳ .Model.⟦Num⟧ = ⟦Num⟧R
+  ℳ .Model.⟦add⟧ = ⟦add⟧R
+  ℳ .Model.⟦mul⟧ = ⟦mul⟧R
+  ℳ .Model.⟦const⟧ = ⟦const⟧R
+  ℳ .Model.⟦extFunc⟧ = ⟦extFunc⟧R
+  ℳ .Model.⟦Bool⟧ = ⟦Bool⟧R
+  ℳ .Model.⟦not⟧ = ⟦not⟧
+  ℳ .Model.⟦and⟧ = ⟦and⟧
+  ℳ .Model.⟦or⟧ = ⟦or⟧
+  ℳ .Model.⟦≤⟧ = ⟦≤⟧
+  ℳ .Model.⟦if⟧ = ⟦if⟧R
+  ℳ .Model.⟦Index⟧ = ⟦Index⟧R
+  ℳ .Model.⟦idx⟧ n i .left = 𝒮.⟦idx⟧ n i
+  ℳ .Model.⟦idx⟧ n i .right = 𝒩.⟦idx⟧ n i
+  ℳ .Model.⟦idx⟧ n i .rel-mor w _ _ _ = refl
+  ℳ .Model.⟦∃⟧ = ⟦∃⟧
+
+  open import MiniVehicle hiding (_⇒ᵣ_; under)
+
+  module ℐ = Interpret ℳ
+
+  standard : ε / ε ⊢ Bool (LinearityConst linear) (PolarityConst Ex) → Set
+  standard t = S.eval-Quant (ℐ.⟦ t ⟧tm (lift tt) .left tt) True
+
+  normalise : ε / ε ⊢ Bool (LinearityConst linear) (PolarityConst Ex) → FlatQuery ε
+  normalise t = flatten (N.compile (ℐ.⟦ t ⟧tm (lift tt) .right .N.mor tt))
+
+  full-correctness : (t : ε / ε ⊢ Bool (LinearityConst linear) (PolarityConst Ex)) →
                      standard t ⇔ eval-FlatQuery (normalise t) (empty .env)
   full-correctness t =
     ⇔-trans

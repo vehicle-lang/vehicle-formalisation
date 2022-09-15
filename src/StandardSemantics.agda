@@ -12,7 +12,7 @@ open import Data.Sum using (_⊎_)
 open import Data.Unit using (⊤; tt)
 open import Relation.Binary.PropositionalEquality using (_≡_; refl; trans; cong; sym; cong₂)
 
-open import MiniVehicle
+open import MiniVehicle.Qualifiers
 open import Interpretation
 
 data Quant (A : Set) : Set where
@@ -34,6 +34,7 @@ module _ (extFunc : ℚ → ℚ) where
   ℳ .⟦Type⟧ = Set
   ℳ ._==>_ X Y = X → Y
   ℳ .Flat X = X
+  ℳ .elem a x = a
   ℳ .⟦id⟧ = λ x → x
   ℳ ._∘_ f g x = f (g x)
   ℳ ._⟦×⟧_ = _×_

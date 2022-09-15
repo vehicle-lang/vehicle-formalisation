@@ -6,6 +6,8 @@ open import Data.Fin using (Fin)
 open import Data.Nat using (ℕ)
 open import Data.Rational using (ℚ)
 
+open import MiniVehicle.Qualifiers
+
 data Kind : Set where
   Nat Type Linearity Polarity : Kind
 
@@ -42,8 +44,8 @@ data _⊢T_ : KindContext → Kind → Set where
   Forall : ∀ {Δ κ} → SmallKind κ → (Δ ,- κ) ⊢T Type → Δ ⊢T Type
   [_]    : ∀ {Δ} → ℕ → Δ ⊢T Nat
 
-  const linear : ∀ {Δ} → Δ ⊢T Linearity
-  U Ex   : ∀ {Δ} → Δ ⊢T Polarity
+  LinearityConst : ∀ {Δ} → LinearityVal → Δ ⊢T Linearity
+  PolarityConst  : ∀ {Δ} → PolarityVal → Δ ⊢T Polarity
   MaxLin : ∀ {Δ} → Δ ⊢T Linearity → Δ ⊢T Linearity → Δ ⊢T Linearity → Δ ⊢T Type
   HasMul : ∀ {Δ} → Δ ⊢T Linearity → Δ ⊢T Linearity → Δ ⊢T Linearity → Δ ⊢T Type
   MaxPol : ∀ {Δ} → Δ ⊢T Polarity → Δ ⊢T Polarity → Δ ⊢T Polarity → Δ ⊢T Type
@@ -60,10 +62,8 @@ ren-Type ρ (Index A) = Index (ren-Type ρ A)
 ren-Type ρ (Vec A B) = Vec (ren-Type ρ A) (ren-Type ρ B)
 ren-Type ρ (Forall s A) = Forall s (ren-Type (under ρ) A)
 ren-Type ρ [ n ] = [ n ]
-ren-Type ρ const = const
-ren-Type ρ linear = linear
-ren-Type ρ U = U
-ren-Type ρ Ex = Ex
+ren-Type ρ (LinearityConst l) = LinearityConst l
+ren-Type ρ (PolarityConst p) = PolarityConst p
 ren-Type ρ (MaxLin l₁ l₂ l₃) = MaxLin (ren-Type ρ l₁) (ren-Type ρ l₂) (ren-Type ρ l₃)
 ren-Type ρ (MaxPol p₁ p₂ p₃) = MaxPol (ren-Type ρ p₁) (ren-Type ρ p₂) (ren-Type ρ p₃)
 ren-Type ρ (HasMul l₁ l₂ l₃) = HasMul (ren-Type ρ l₁) (ren-Type ρ l₂) (ren-Type ρ l₃)
@@ -86,10 +86,8 @@ subst-Type σ (Index A) = Index (subst-Type σ A)
 subst-Type σ (Vec A B) = Vec (subst-Type σ A) (subst-Type σ B)
 subst-Type σ (Forall s A) = Forall s (subst-Type (binder σ) A)
 subst-Type σ [ n ] = [ n ]
-subst-Type σ const = const
-subst-Type σ linear = linear
-subst-Type σ U = U
-subst-Type σ Ex = Ex
+subst-Type σ (LinearityConst l) = LinearityConst l
+subst-Type σ (PolarityConst l) = PolarityConst l
 subst-Type σ (MaxLin l₁ l₂ l₃) = MaxLin (subst-Type σ l₁) (subst-Type σ l₂) (subst-Type σ l₃)
 subst-Type σ (MaxPol p₁ p₂ p₃) = MaxPol (subst-Type σ p₁) (subst-Type σ p₂) (subst-Type σ p₃)
 subst-Type σ (HasMul l₁ l₂ l₃) = HasMul (subst-Type σ l₁) (subst-Type σ l₂) (subst-Type σ l₃)
@@ -138,9 +136,9 @@ data _/_⊢_ : (Δ : KindContext) → Context Δ → Δ ⊢T Type → Set where
            Δ / Γ ⊢ subst-Type (single-sub B) A
 
   -- External functions
-  func   : ∀ {Δ Γ} → Δ / Γ ⊢ Num linear → Δ / Γ ⊢ Num linear
+  func   : ∀ {Δ Γ} → Δ / Γ ⊢ Num (LinearityConst linear) → Δ / Γ ⊢ Num (LinearityConst linear)
 
-  const  : ∀ {Δ Γ} → ℚ → Δ / Γ ⊢ Num const
+  const  : ∀ {Δ Γ} → ℚ → Δ / Γ ⊢ Num (LinearityConst const)
   _`+_   : ∀ {Δ Γ l₁ l₂ l₃} → Δ / Γ ⊢ MaxLin l₁ l₂ l₃ → Δ / Γ ⊢ Num l₁ → Δ / Γ ⊢ Num l₂ → Δ / Γ ⊢ Num l₃
   _`*_   : ∀ {Δ Γ l₁ l₂ l₃} → Δ / Γ ⊢ HasMul l₁ l₂ l₃ → Δ / Γ ⊢ Num l₁ → Δ / Γ ⊢ Num l₂ → Δ / Γ ⊢ Num l₃
 
@@ -151,11 +149,11 @@ data _/_⊢_ : (Δ : KindContext) → Context Δ → Δ ⊢T Type → Set where
   -- FIXME: crush/fold/reduce
 
   -- Comparisons
-  _`≤_   : ∀ {Δ Γ l₁ l₂ l₃} → Δ / Γ ⊢ MaxLin l₁ l₂ l₃ → Δ / Γ ⊢ Num l₁ → Δ / Γ ⊢ Num l₂ → Δ / Γ ⊢ Bool l₃ U
+  _`≤_   : ∀ {Δ Γ l₁ l₂ l₃} → Δ / Γ ⊢ MaxLin l₁ l₂ l₃ → Δ / Γ ⊢ Num l₁ → Δ / Γ ⊢ Num l₂ → Δ / Γ ⊢ Bool l₃ (PolarityConst U)
 
   -- Polymorphic if-then-else
   if_then_else_ : ∀ {Δ Γ A}
-     (cond : Δ / Γ ⊢ Bool linear U)
+     (cond : Δ / Γ ⊢ Bool (LinearityConst linear) (PolarityConst U))
      (on-true on-false : Δ / Γ ⊢ A) →
      Δ / Γ ⊢ A
   -- FIXME: need an 'almost equal' typeclass constraint here; can make it as complex as needed
@@ -174,5 +172,22 @@ data _/_⊢_ : (Δ : KindContext) → Context Δ → Δ ⊢T Type → Set where
         Δ / Γ ⊢ Bool l p₂
   ∃   : ∀ {Δ Γ p₁ p₂ l} →
         Δ / Γ ⊢ Quantify p₁ p₂ →
-        Δ / Γ ⊢ (Num linear ⇒ Bool l p₁) →
+        Δ / Γ ⊢ (Num (LinearityConst linear) ⇒ Bool l p₁) →
         Δ / Γ ⊢ Bool l p₂
+
+  -- Evidence for usage of the operations
+  maxlin : ∀ {Δ Γ l₁ l₂ l₃} →
+           MaxLinRel l₁ l₂ l₃ →
+           Δ / Γ ⊢ MaxLin (LinearityConst l₁) (LinearityConst l₂) (LinearityConst l₃)
+  hasmul : ∀ {Δ Γ l₁ l₂ l₃} →
+           MulRel l₁ l₂ l₃ →
+           Δ / Γ ⊢ HasMul (LinearityConst l₁) (LinearityConst l₂) (LinearityConst l₃)
+  maxpol : ∀ {Δ Γ p₁ p₂ p₃} →
+           MaxPolRel p₁ p₂ p₃ →
+           Δ / Γ ⊢ MaxPol (PolarityConst p₁) (PolarityConst p₂) (PolarityConst p₃)
+  negpol : ∀ {Δ Γ p₁ p₂} →
+           NegPolRel p₁ p₂ →
+           Δ / Γ ⊢ NegPol (PolarityConst p₁) (PolarityConst p₂)
+  quantify : ∀ {Δ Γ p₁ p₂} →
+             QuantifyRel p₁ p₂ →
+             Δ / Γ ⊢ Quantify (PolarityConst p₁) (PolarityConst p₂)

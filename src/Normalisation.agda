@@ -9,7 +9,7 @@ open import Data.Product using (_×_; proj₁; proj₂; _,_)
 open import Data.Rational using (ℚ; 1ℚ; _+_; _*_)
 open import Data.Unit using (⊤; tt)
 
-open import MiniVehicle hiding (_⇒ᵣ_; under)
+open import MiniVehicle.Qualifiers
 open import NormalisedExpr
 open import Interpretation
 
@@ -192,6 +192,7 @@ _∘S_ : ∀ {X Y Z} → (Y ==> Z) → (X ==> Y) → (X ==> Z)
 ℳ .Model.⟦Type⟧ = Syn
 ℳ .Model._==>_ = _==>_
 ℳ .Model.Flat = Flat
+ℳ .Model.elem a .mor _ = a
 ℳ .Model.⟦id⟧ = ⟦id⟧
 ℳ .Model._∘_ = _∘S_
 ℳ .Model._⟦×⟧_ = _⟦×⟧_
@@ -226,5 +227,7 @@ _∘S_ : ∀ {X Y Z} → (Y ==> Z) → (X ==> Y) → (X ==> Z)
 
 module 𝒩 = Interpret ℳ
 
-normalise : ε / ε ⊢ Bool linear Ex → FlatQuery ε
+open import MiniVehicle
+
+normalise : ε / ε ⊢ Bool (LinearityConst linear) (PolarityConst Ex) → FlatQuery ε
 normalise t = flatten (compile (𝒩.⟦ t ⟧tm (lift tt) .mor tt))

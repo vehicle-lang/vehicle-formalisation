@@ -17,37 +17,7 @@ open import Isomorphism using (fext)
 cong₃ : ∀ {a b c d} {A : Set a}{B : Set b}{C : Set c}{D : Set d} (f : A → B → C → D) {x y u v t w} → x ≡ y → u ≡ v → t ≡ w → f x u t ≡ f y v w
 cong₃ f refl refl refl = refl
 
-open import MiniVehicle
-
-data LinearityVal : Set where
-  const linear nonlinear : LinearityVal
-
-data PolarityVal : Set where
-  U Ex : PolarityVal
-
-data MaxLinRel : LinearityVal → LinearityVal → LinearityVal → Set where
-  const-const   : MaxLinRel const const const
-  const-linear  : MaxLinRel const linear linear
-  linear-const  : MaxLinRel linear const linear
-  linear-linear : MaxLinRel linear linear linear
-
-data MulRel : LinearityVal → LinearityVal → LinearityVal → Set where
-  const-const  : MulRel const const const
-  const-linear : MulRel const linear linear
-  linear-const : MulRel linear const linear
-
-data MaxPolRel : PolarityVal → PolarityVal → PolarityVal → Set where
-  U-U   : MaxPolRel U U U
-  U-Ex  : MaxPolRel U Ex Ex
-  Ex-U  : MaxPolRel Ex U Ex
-  Ex-Ex : MaxPolRel Ex Ex Ex
-
-data NegPolRel : PolarityVal → PolarityVal → Set where
-  U  : NegPolRel U U
-
-data QuantifyRel : PolarityVal → PolarityVal → Set where
-  U  : QuantifyRel U Ex
-  Ex : QuantifyRel Ex Ex
+open import MiniVehicle.Qualifiers
 
 record Model ℓ m : Set (suc ℓ ⊔ suc m) where
   field
@@ -59,6 +29,7 @@ record Model ℓ m : Set (suc ℓ ⊔ suc m) where
 
     -- Sets as types
     Flat : Set → ⟦Type⟧
+    elem : ∀ {A X} → A → X ==> Flat A
 
     -- finite products
     _⟦×⟧_      : ⟦Type⟧ → ⟦Type⟧ → ⟦Type⟧
@@ -110,6 +81,7 @@ record Model ℓ m : Set (suc ℓ ⊔ suc m) where
 
 module Interpret {ℓ}{m} (ℳ : Model ℓ m) where
 
+  open import MiniVehicle
   open Model ℳ
 
   ⟦_⟧kind : Kind → Set ℓ
@@ -142,10 +114,8 @@ module Interpret {ℓ}{m} (ℳ : Model ℓ m) where
   ⟦ Forall Linearity A ⟧ty ks = ⟦∀⟧ (λ l → Mon (⟦ A ⟧ty (ks , lift l)))
   ⟦ Forall Polarity A ⟧ty ks = ⟦∀⟧ (λ p → Mon (⟦ A ⟧ty (ks , lift p)))
   ⟦ [ n ] ⟧ty ks = lift n
-  ⟦ const ⟧ty ks = lift const
-  ⟦ linear ⟧ty ks = lift linear
-  ⟦ U ⟧ty ks = lift U
-  ⟦ Ex ⟧ty ks = lift Ex
+  ⟦ LinearityConst l ⟧ty ks = lift l
+  ⟦ PolarityConst p ⟧ty ks = lift p
   ⟦ MaxLin l₁ l₂ l₃ ⟧ty ks =
     Flat (MaxLinRel (⟦ l₁ ⟧ty ks .lower) (⟦ l₂ ⟧ty ks .lower) (⟦ l₃ ⟧ty ks .lower))
   ⟦ HasMul l₁ l₂ l₃ ⟧ty ks =
@@ -209,10 +179,8 @@ module Interpret {ℓ}{m} (ℳ : Model ℓ m) where
   ren-⟦Type⟧ ρ (Forall Linearity A) {ks} = cong ⟦∀⟧ (fext λ n → trans (cong Mon (ren-⟦Type⟧ (under ρ) A)) (cong (λ □ → Mon (⟦ A ⟧ty (□ , lift n))) ⟦ ρ succ⟧ren))
   ren-⟦Type⟧ ρ (Forall Polarity A) {ks} = cong ⟦∀⟧ (fext λ n → trans (cong Mon (ren-⟦Type⟧ (under ρ) A)) (cong (λ □ → Mon (⟦ A ⟧ty (□ , lift n))) ⟦ ρ succ⟧ren))
   ren-⟦Type⟧ ρ [ n ] = refl
-  ren-⟦Type⟧ ρ const = refl
-  ren-⟦Type⟧ ρ linear = refl
-  ren-⟦Type⟧ ρ U = refl
-  ren-⟦Type⟧ ρ Ex = refl
+  ren-⟦Type⟧ ρ (LinearityConst l) = refl
+  ren-⟦Type⟧ ρ (PolarityConst p) = refl
   ren-⟦Type⟧ ρ (MaxLin l₁ l₂ l₃) =
     cong Flat (cong₃ MaxLinRel (cong lower (ren-⟦Type⟧ ρ l₁)) (cong lower (ren-⟦Type⟧ ρ l₂)) (cong lower (ren-⟦Type⟧ ρ l₃)))
   ren-⟦Type⟧ ρ (HasMul l₁ l₂ l₃) =
@@ -262,10 +230,8 @@ module Interpret {ℓ}{m} (ℳ : Model ℓ m) where
             (cong (λ □ → Mon (⟦ A ⟧ty (□ , lift n)))
                   (trans (subst-ren wk σ) (cong ⟦ σ ⟧subst ⟦wk⟧-eq))))
   subst-⟦Type⟧ σ [ n ] = refl
-  subst-⟦Type⟧ σ const = refl
-  subst-⟦Type⟧ σ linear = refl
-  subst-⟦Type⟧ σ U = refl
-  subst-⟦Type⟧ σ Ex = refl
+  subst-⟦Type⟧ σ (LinearityConst l) = refl
+  subst-⟦Type⟧ σ (PolarityConst p) = refl
   subst-⟦Type⟧ ρ (MaxLin l₁ l₂ l₃) =
     cong Flat (cong₃ MaxLinRel (cong lower (subst-⟦Type⟧ ρ l₁)) (cong lower (subst-⟦Type⟧ ρ l₂)) (cong lower (subst-⟦Type⟧ ρ l₃)))
   subst-⟦Type⟧ ρ (HasMul l₁ l₂ l₃) =
@@ -380,3 +346,9 @@ module Interpret {ℓ}{m} (ℳ : Model ℓ m) where
   ⟦ (t `∨ t₁) t₂ t₃ ⟧tm δ =
     (((unary ⟦or⟧ ∘ seq) ∘ (⟦id⟧ ×m seq)) ∘ (⟦id⟧ ×m (⟦id⟧ ×m seq))) ∘ ⟨ ⟦ t ⟧tm δ , ⟨ ⟦ t₁ ⟧tm δ , ⟨ ⟦ t₂ ⟧tm δ , ⟦ t₃ ⟧tm δ ⟩ ⟩ ⟩
   ⟦ ∃ t t₁ ⟧tm δ = binary ⟦∃⟧ ∘ ⟨ ⟦ t ⟧tm δ , ⟦ t₁ ⟧tm δ ⟩
+
+  ⟦ maxlin x ⟧tm δ = ⟦return⟧ ∘ elem x
+  ⟦ hasmul x ⟧tm δ = ⟦return⟧ ∘ elem x
+  ⟦ maxpol x ⟧tm δ = ⟦return⟧ ∘ elem x
+  ⟦ negpol x ⟧tm δ = ⟦return⟧ ∘ elem x
+  ⟦ quantify x ⟧tm δ = ⟦return⟧ ∘ elem x
