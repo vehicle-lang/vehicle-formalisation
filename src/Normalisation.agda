@@ -32,8 +32,8 @@ Flat : Set → Syn
 Flat = K
 
 ⟦Bool⟧ : LinearityVal → PolarityVal → Syn
-⟦Bool⟧ _ Ex .Carrier = Query
-⟦Bool⟧ _ Ex .rename = rename-Query
+⟦Bool⟧ _ Ex .Carrier = ExFormula
+⟦Bool⟧ _ Ex .rename = rename-ExFormula
 ⟦Bool⟧ _ U .Carrier = Constraint
 ⟦Bool⟧ _ U .rename = rename-Constraint
 
@@ -49,8 +49,8 @@ data LetLift (A : LinVarCtxt → Set) : LinVarCtxt → Set where
   let-linexp : ∀ {Δ} → LinExp Δ → LetLift A (Δ ,∙) → LetLift A Δ
   let-funexp : ∀ {Δ} → {- fsymb → -} Var Δ → LetLift A (Δ ,∙) → LetLift A Δ
 
--- expand a Query within lets and ifs into a Query
-compile : ∀ {Δ} → LetLift Query Δ → Query Δ
+-- expand a ExFormula within lets and ifs into a ExFormula
+compile : ∀ {Δ} → LetLift ExFormula Δ → ExFormula Δ
 compile (return x)       = x
 compile (if ϕ tr fa)     = ((constraint ϕ) and (compile tr)) or (constraint (negate ϕ) and (compile fa))
 compile (let-linexp e k) = ex ((constraint ((var 1ℚ zero) `=` rename-LinExp succ e)) and compile k)
@@ -229,5 +229,5 @@ module 𝒩 = Interpret ℳ
 
 open import MiniVehicle
 
-normalise : ε / ε ⊢ Bool (LinearityConst linear) (PolarityConst Ex) → FlatQuery ε
-normalise t = flatten (compile (𝒩.⟦ t ⟧tm (lift tt) .mor tt))
+normalise : ε / ε ⊢ Bool (LinearityConst linear) (PolarityConst Ex) → PrenexFormula ε
+normalise t = toPrenexForm (compile (𝒩.⟦ t ⟧tm (lift tt) .mor tt))

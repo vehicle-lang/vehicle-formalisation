@@ -108,48 +108,47 @@ rename-negate ρ (x `≠`f x₁) = refl
 rename-negate ρ (ϕ and ϕ₁) = cong₂ _or_ (rename-negate ρ ϕ) (rename-negate ρ ϕ₁)
 rename-negate ρ (ϕ or ϕ₁) = cong₂ _and_ (rename-negate ρ ϕ) (rename-negate ρ ϕ₁)
 
--- FIXME: rename to TreeQuery
-data Query : LinVarCtxt → Set where
-  constraint : ∀ {Δ} → Constraint Δ → Query Δ
-  ex         : ∀ {Δ} → Query (Δ ,∙) → Query Δ
-  _and_      : ∀ {Δ} → Query Δ → Query Δ → Query Δ
-  _or_       : ∀ {Δ} → Query Δ → Query Δ → Query Δ
+data ExFormula : LinVarCtxt → Set where
+  constraint : ∀ {Δ} → Constraint Δ → ExFormula Δ
+  ex         : ∀ {Δ} → ExFormula (Δ ,∙) → ExFormula Δ
+  _and_      : ∀ {Δ} → ExFormula Δ → ExFormula Δ → ExFormula Δ
+  _or_       : ∀ {Δ} → ExFormula Δ → ExFormula Δ → ExFormula Δ
 
-rename-Query : Renameable Query
-rename-Query ρ (constraint ϕ) = constraint (rename-Constraint ρ ϕ)
-rename-Query ρ (ex ϕ)         = ex (rename-Query (under ρ) ϕ)
-rename-Query ρ (ϕ and ψ)      = rename-Query ρ ϕ and rename-Query ρ ψ
-rename-Query ρ (ϕ or ψ)       = rename-Query ρ ϕ or rename-Query ρ ψ
+rename-ExFormula : Renameable ExFormula
+rename-ExFormula ρ (constraint ϕ) = constraint (rename-Constraint ρ ϕ)
+rename-ExFormula ρ (ex ϕ)         = ex (rename-ExFormula (under ρ) ϕ)
+rename-ExFormula ρ (ϕ and ψ)      = rename-ExFormula ρ ϕ and rename-ExFormula ρ ψ
+rename-ExFormula ρ (ϕ or ψ)       = rename-ExFormula ρ ϕ or rename-ExFormula ρ ψ
 
-data FlatQuery : LinVarCtxt → Set where
-  constraint : ∀ {Δ} → Constraint Δ → FlatQuery Δ
-  ex         : ∀ {Δ} → FlatQuery (Δ ,∙) → FlatQuery Δ
+data PrenexFormula : LinVarCtxt → Set where
+  constraint : ∀ {Δ} → Constraint Δ → PrenexFormula Δ
+  ex         : ∀ {Δ} → PrenexFormula (Δ ,∙) → PrenexFormula Δ
 
-rename-FlatQuery : ∀ {Δ Δ'} → (ρ : Δ' ⇒ᵣ Δ) → FlatQuery Δ → FlatQuery Δ'
-rename-FlatQuery ρ (constraint x) = constraint (rename-Constraint ρ x)
-rename-FlatQuery ρ (ex ϕ) = ex (rename-FlatQuery (under ρ) ϕ)
+rename-PrenexFormula : ∀ {Δ Δ'} → (ρ : Δ' ⇒ᵣ Δ) → PrenexFormula Δ → PrenexFormula Δ'
+rename-PrenexFormula ρ (constraint x) = constraint (rename-Constraint ρ x)
+rename-PrenexFormula ρ (ex ϕ) = ex (rename-PrenexFormula (under ρ) ϕ)
 
-conj-constraint : ∀ {Δ} → Constraint Δ → FlatQuery Δ → FlatQuery Δ
+conj-constraint : ∀ {Δ} → Constraint Δ → PrenexFormula Δ → PrenexFormula Δ
 conj-constraint ϕ (constraint ψ) = constraint (ϕ and ψ)
 conj-constraint ϕ (ex ψ) = ex (conj-constraint (rename-Constraint succ ϕ) ψ)
 
-conj : ∀ {Δ} → FlatQuery Δ → FlatQuery Δ → FlatQuery Δ
+conj : ∀ {Δ} → PrenexFormula Δ → PrenexFormula Δ → PrenexFormula Δ
 conj (constraint ϕ) ψ = conj-constraint ϕ ψ
-conj (ex ϕ)         ψ = ex (conj ϕ (rename-FlatQuery succ ψ))
+conj (ex ϕ)         ψ = ex (conj ϕ (rename-PrenexFormula succ ψ))
 
-disj-constraint : ∀ {Δ} → Constraint Δ → FlatQuery Δ → FlatQuery Δ
+disj-constraint : ∀ {Δ} → Constraint Δ → PrenexFormula Δ → PrenexFormula Δ
 disj-constraint ϕ (constraint ψ) = constraint (ϕ or ψ)
 disj-constraint ϕ (ex ψ) = ex (disj-constraint (rename-Constraint succ ϕ) ψ)
 
-disj : ∀ {Δ} → FlatQuery Δ → FlatQuery Δ → FlatQuery Δ
+disj : ∀ {Δ} → PrenexFormula Δ → PrenexFormula Δ → PrenexFormula Δ
 disj (constraint ϕ) ψ = disj-constraint ϕ ψ
-disj (ex ϕ) ψ = ex (disj ϕ (rename-FlatQuery succ ψ))
+disj (ex ϕ) ψ = ex (disj ϕ (rename-PrenexFormula succ ψ))
 
-flatten : ∀ {Δ} → Query Δ → FlatQuery Δ
-flatten (constraint x) = constraint x
-flatten (ex q)         = ex (flatten q)
-flatten (ϕ and ψ)      = conj (flatten ϕ) (flatten ψ)
-flatten (ϕ or ψ)       = disj (flatten ϕ) (flatten ψ)
+toPrenexForm : ∀ {Δ} → ExFormula Δ → PrenexFormula Δ
+toPrenexForm (constraint x) = constraint x
+toPrenexForm (ex q)         = ex (toPrenexForm q)
+toPrenexForm (ϕ and ψ)      = conj (toPrenexForm ϕ) (toPrenexForm ψ)
+toPrenexForm (ϕ or ψ)       = disj (toPrenexForm ϕ) (toPrenexForm ψ)
 
 ------------------------------------------------------------------------------
 -- Evaluation
@@ -204,12 +203,12 @@ module Evaluation (extFunc : ℚ → ℚ) where
   eval-negate (x₁ `≠`f x₂) η = not-involutive _
 
 
-  eval-Query : ∀ {Δ} → Query Δ → Env Δ → Set
-  eval-Query (constraint ϕ) η = True (eval-Constraint ϕ η)
-  eval-Query (ex ϕ) η = Σ[ q ∈ ℚ ] eval-Query ϕ (extend-env η q)
-  eval-Query (ϕ and ψ) η = eval-Query ϕ η × eval-Query ψ η
-  eval-Query (ϕ or ψ) η = eval-Query ϕ η ⊎ eval-Query ψ η
+  eval-ExFormula : ∀ {Δ} → ExFormula Δ → Env Δ → Set
+  eval-ExFormula (constraint ϕ) η = True (eval-Constraint ϕ η)
+  eval-ExFormula (ex ϕ) η = Σ[ q ∈ ℚ ] eval-ExFormula ϕ (extend-env η q)
+  eval-ExFormula (ϕ and ψ) η = eval-ExFormula ϕ η × eval-ExFormula ψ η
+  eval-ExFormula (ϕ or ψ) η = eval-ExFormula ϕ η ⊎ eval-ExFormula ψ η
 
-  eval-FlatQuery : ∀ {Δ} → FlatQuery Δ → Env Δ → Set
-  eval-FlatQuery (constraint ϕ) η = True (eval-Constraint ϕ η)
-  eval-FlatQuery (ex ϕ) η = Σ[ q ∈ ℚ ] (eval-FlatQuery ϕ (extend-env η q))
+  eval-PrenexFormula : ∀ {Δ} → PrenexFormula Δ → Env Δ → Set
+  eval-PrenexFormula (constraint ϕ) η = True (eval-Constraint ϕ η)
+  eval-PrenexFormula (ex ϕ) η = Σ[ q ∈ ℚ ] (eval-PrenexFormula ϕ (extend-env η q))

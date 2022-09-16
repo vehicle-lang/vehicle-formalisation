@@ -279,56 +279,56 @@ module NormalisationCorrect (extFunc : ℚ → ℚ) where
   ------------------------------------------------------------------------------
   -- Booleans and constraints
 
-  data QueryR : ∀ w → S.Quant 𝔹 → Query (w .ctxt) → Set where
+  data ExFormulaR : ∀ w → S.Quant 𝔹 → ExFormula (w .ctxt) → Set where
     q-constraint : ∀ {w b ϕ} →
                    eval-Constraint ϕ (w .env) ≡ b →
-                   QueryR w (S.return b) (constraint ϕ)
+                   ExFormulaR w (S.return b) (constraint ϕ)
     q-true       : ∀ {w x ϕ ψ₁ ψ₂} →
                    eval-Constraint ϕ (w .env) ≡ true →
-                   QueryR w x ψ₁ →
-                   QueryR w x ((constraint ϕ and ψ₁) or (constraint (negate ϕ) and ψ₂))
+                   ExFormulaR w x ψ₁ →
+                   ExFormulaR w x ((constraint ϕ and ψ₁) or (constraint (negate ϕ) and ψ₂))
     q-false      : ∀ {w x ϕ ψ₁ ψ₂} →
                    eval-Constraint ϕ (w .env) ≡ false →
-                   QueryR w x ψ₂ →
-                   QueryR w x ((constraint ϕ and ψ₁) or (constraint (negate ϕ) and ψ₂))
+                   ExFormulaR w x ψ₂ →
+                   ExFormulaR w x ((constraint ϕ and ψ₁) or (constraint (negate ϕ) and ψ₂))
     q-ex         : ∀ {w k ϕ} →
-                   (∀ q → QueryR (extend-w w q) (k q) ϕ) →
-                   QueryR w (S.ex k) (ex ϕ)
+                   (∀ q → ExFormulaR (extend-w w q) (k q) ϕ) →
+                   ExFormulaR w (S.ex k) (ex ϕ)
     q-ex'        : ∀ {w x ϕ ψ} q →
                    (∀ q' → (q' ≡ q) ⇔ True (eval-Constraint ϕ (extend-env (w .env) q'))) →
-                   QueryR (extend-w w q) x ψ →
-                   QueryR w x (ex (constraint ϕ and ψ))
+                   ExFormulaR (extend-w w q) x ψ →
+                   ExFormulaR w x (ex (constraint ϕ and ψ))
     q-and        : ∀ {w ϕ₁ ϕ₂ ψ₁ ψ₂ } →
-                   QueryR w ϕ₁ ψ₁ →
-                   QueryR w ϕ₂ ψ₂ →
-                   QueryR w (ϕ₁ S.and ϕ₂) (ψ₁ and ψ₂)
+                   ExFormulaR w ϕ₁ ψ₁ →
+                   ExFormulaR w ϕ₂ ψ₂ →
+                   ExFormulaR w (ϕ₁ S.and ϕ₂) (ψ₁ and ψ₂)
     q-or         : ∀ {w ϕ₁ ϕ₂ ψ₁ ψ₂ } →
-                   QueryR w ϕ₁ ψ₁ →
-                   QueryR w ϕ₂ ψ₂ →
-                   QueryR w (ϕ₁ S.or ϕ₂) (ψ₁ or ψ₂)
+                   ExFormulaR w ϕ₁ ψ₁ →
+                   ExFormulaR w ϕ₂ ψ₂ →
+                   ExFormulaR w (ϕ₁ S.or ϕ₂) (ψ₁ or ψ₂)
 
-  ext-Query : ∀ {w₁ w₂} (ρ : w₂ ⇒w w₁) x₁ x₂ →
-              QueryR w₁ x₁ x₂ → QueryR w₂ x₁ (rename-Query (ρ .ren) x₂)
-  ext-Query ρ _ _ (q-constraint {ϕ = ϕ} x) =
+  ext-ExFormula : ∀ {w₁ w₂} (ρ : w₂ ⇒w w₁) x₁ x₂ →
+              ExFormulaR w₁ x₁ x₂ → ExFormulaR w₂ x₁ (rename-ExFormula (ρ .ren) x₂)
+  ext-ExFormula ρ _ _ (q-constraint {ϕ = ϕ} x) =
     q-constraint (trans (sym (ext-evalConstraint ϕ ρ)) x)
-  ext-Query ρ _ _ (q-true {ϕ = ϕ} is-true r) rewrite rename-negate (ρ .ren) ϕ =
-    q-true (trans (sym (ext-evalConstraint ϕ ρ)) is-true) (ext-Query ρ _ _ r)
-  ext-Query ρ _ _ (q-false {ϕ = ϕ} is-false r) rewrite rename-negate (ρ .ren) ϕ =
-    q-false (trans (sym (ext-evalConstraint ϕ ρ)) is-false) (ext-Query ρ _ _ r)
-  ext-Query ρ _ _ (q-ex r) = q-ex λ q → ext-Query (under-w ρ) _ _ (r q)
-  ext-Query ρ _ _ (q-ex' {ϕ = ϕ} q uniq r) =
+  ext-ExFormula ρ _ _ (q-true {ϕ = ϕ} is-true r) rewrite rename-negate (ρ .ren) ϕ =
+    q-true (trans (sym (ext-evalConstraint ϕ ρ)) is-true) (ext-ExFormula ρ _ _ r)
+  ext-ExFormula ρ _ _ (q-false {ϕ = ϕ} is-false r) rewrite rename-negate (ρ .ren) ϕ =
+    q-false (trans (sym (ext-evalConstraint ϕ ρ)) is-false) (ext-ExFormula ρ _ _ r)
+  ext-ExFormula ρ _ _ (q-ex r) = q-ex λ q → ext-ExFormula (under-w ρ) _ _ (r q)
+  ext-ExFormula ρ _ _ (q-ex' {ϕ = ϕ} q uniq r) =
     q-ex' q (λ q' → ⇔-trans (uniq q') (cong-True (ext-evalConstraint ϕ (under-w ρ))))
-          (ext-Query (under-w ρ) _ _ r)
-  ext-Query ρ _ _ (q-and r₁ r₂) = q-and (ext-Query ρ _ _ r₁) (ext-Query ρ _ _ r₂)
-  ext-Query ρ _ _ (q-or r₁ r₂) = q-or (ext-Query ρ _ _ r₁) (ext-Query ρ _ _ r₂)
+          (ext-ExFormula (under-w ρ) _ _ r)
+  ext-ExFormula ρ _ _ (q-and r₁ r₂) = q-and (ext-ExFormula ρ _ _ r₁) (ext-ExFormula ρ _ _ r₂)
+  ext-ExFormula ρ _ _ (q-or r₁ r₂) = q-or (ext-ExFormula ρ _ _ r₁) (ext-ExFormula ρ _ _ r₂)
 
   ⟦Bool⟧ : LinearityVal → PolarityVal → WRel
   ⟦Bool⟧ l p .Left = 𝒮.⟦Bool⟧ l p
   ⟦Bool⟧ l p .Right = 𝒩.⟦Bool⟧ l p
   ⟦Bool⟧ l U .rel w b ϕ = b ≡ eval-Constraint ϕ (w .env)
   ⟦Bool⟧ l U .ext ρ b ϕ eq = trans eq (ext-evalConstraint ϕ ρ)
-  ⟦Bool⟧ l Ex .rel = QueryR
-  ⟦Bool⟧ l Ex .ext = ext-Query
+  ⟦Bool⟧ l Ex .rel = ExFormulaR
+  ⟦Bool⟧ l Ex .ext = ext-ExFormula
 
   ⟦≤⟧ : ∀ {l₁ l₂ l₃} → (Flat (MaxLinRel l₁ l₂ l₃) ⟦×⟧ (⟦Num⟧ l₁ ⟦×⟧ ⟦Num⟧ l₂)) ==> ⟦Bool⟧ l₃ U
   ⟦≤⟧ .left = 𝒮.⟦≤⟧
@@ -459,7 +459,7 @@ module NormalisationCorrect (extFunc : ℚ → ℚ) where
       λ w' ρ y₁ y₂ y₁y₂ →
         f .rel-mor w' (x₁ , y₁) (X .Right .N.rename (ρ .ren) x₂ , y₂) (X .ext ρ x₁ x₂ x₁x₂ , y₁y₂)
 
-  compile-lemma : ∀ l w x₁ x₂ → LetLiftR (⟦Bool⟧ l Ex) w x₁ x₂ → QueryR w x₁ (N.compile x₂)
+  compile-lemma : ∀ l w x₁ x₂ → LetLiftR (⟦Bool⟧ l Ex) w x₁ x₂ → ExFormulaR w x₁ (N.compile x₂)
   compile-lemma l w x₁ (N.return x) r = r
   compile-lemma l w x₁ (N.if ϕ tr fa) r with is-true-or-false (eval-Constraint ϕ (w .env))
   ... | inj₁ is-true =
@@ -504,18 +504,18 @@ module NormalisationCorrect (extFunc : ℚ → ℚ) where
     q-ex λ q → compile-lemma l (extend-w w q) (f₁ q) (f₂ (w .ctxt ,∙) succ (var 1ℚ zero))
                  (r (extend-w w q) wk-w q (var 1ℚ zero) (sym (*-identityˡ q)))
 
-  QueryR-ok : ∀ w {x₁ x₂} →
-                QueryR w x₁ x₂ →
-                S.eval-Quant x₁ True ⇔ eval-Query x₂ (w .env)
-  QueryR-ok w (q-constraint x) = cong-True (sym x)
-  QueryR-ok w (q-true {ϕ = ϕ} is-true r) =
-    ⇔-trans (QueryR-ok w r)
+  ExFormulaR-ok : ∀ w {x₁ x₂} →
+                ExFormulaR w x₁ x₂ →
+                S.eval-Quant x₁ True ⇔ eval-ExFormula x₂ (w .env)
+  ExFormulaR-ok w (q-constraint x) = cong-True (sym x)
+  ExFormulaR-ok w (q-true {ϕ = ϕ} is-true r) =
+    ⇔-trans (ExFormulaR-ok w r)
     (⇔-trans or-left
             (⊎-cong (⇔-trans ⊤-fst (×-cong (⊤-bool is-true) ⇔-refl))
                     (⇔-trans ⊥-fst (×-cong (⊥-bool (trans (sym (eval-negate ϕ (w .env))) (cong not is-true)))
                                            ⇔-refl))))
-  QueryR-ok w (q-false {ϕ = ϕ} is-false r) =
-    ⇔-trans (QueryR-ok w r)
+  ExFormulaR-ok w (q-false {ϕ = ϕ} is-false r) =
+    ⇔-trans (ExFormulaR-ok w r)
     (⇔-trans or-right
     (⊎-cong
       (⇔-trans ⊥-fst (×-cong
@@ -524,23 +524,23 @@ module NormalisationCorrect (extFunc : ℚ → ℚ) where
       (⇔-trans ⊤-fst (×-cong
                        (⊤-bool (trans (sym (eval-negate ϕ (w .env))) (cong not is-false)))
                        ⇔-refl))))
-  QueryR-ok w (q-ex x) = cong-∃ (λ q → QueryR-ok (extend-w w q) (x q))
-  QueryR-ok w (q-ex' q x r) =
-    ⇔-trans (QueryR-ok (extend-w w q) r)
+  ExFormulaR-ok w (q-ex x) = cong-∃ (λ q → ExFormulaR-ok (extend-w w q) (x q))
+  ExFormulaR-ok w (q-ex' q x r) =
+    ⇔-trans (ExFormulaR-ok (extend-w w q) r)
              (⇔-trans (known q) (cong-∃ (λ q' → ×-cong (x q') ⇔-refl)))
-  QueryR-ok w (q-and r₁ r₂) = ×-cong (QueryR-ok w r₁) (QueryR-ok w r₂)
-  QueryR-ok w (q-or r₁ r₂) = ⊎-cong (QueryR-ok w r₁) (QueryR-ok w r₂)
+  ExFormulaR-ok w (q-and r₁ r₂) = ×-cong (ExFormulaR-ok w r₁) (ExFormulaR-ok w r₂)
+  ExFormulaR-ok w (q-or r₁ r₂) = ⊎-cong (ExFormulaR-ok w r₁) (ExFormulaR-ok w r₂)
 
 
-  ext-FlatQuery : ∀ {w₁ w₂} (ρ : w₂ ⇒w w₁) ϕ →
-                  eval-FlatQuery ϕ (w₁ .env) ⇔
-                     eval-FlatQuery (rename-FlatQuery (ρ .ren) ϕ) (w₂ .env)
-  ext-FlatQuery ρ (constraint ϕ) = cong-True (ext-evalConstraint ϕ ρ)
-  ext-FlatQuery ρ (ex ϕ) = cong-∃ λ q → ext-FlatQuery (under-w ρ) ϕ
+  ext-PrenexFormula : ∀ {w₁ w₂} (ρ : w₂ ⇒w w₁) ϕ →
+                  eval-PrenexFormula ϕ (w₁ .env) ⇔
+                     eval-PrenexFormula (rename-PrenexFormula (ρ .ren) ϕ) (w₂ .env)
+  ext-PrenexFormula ρ (constraint ϕ) = cong-True (ext-evalConstraint ϕ ρ)
+  ext-PrenexFormula ρ (ex ϕ) = cong-∃ λ q → ext-PrenexFormula (under-w ρ) ϕ
 
   equi-conj-constraint : ∀ {Δ} (ϕ : Constraint Δ) ψ η →
-                         (True (eval-Constraint ϕ η) × eval-FlatQuery ψ η)
-                            ⇔ eval-FlatQuery (conj-constraint ϕ ψ) η
+                         (True (eval-Constraint ϕ η) × eval-PrenexFormula ψ η)
+                            ⇔ eval-PrenexFormula (conj-constraint ϕ ψ) η
   equi-conj-constraint ϕ (constraint x) η = True-∧
   equi-conj-constraint ϕ (ex ψ) η =
     ⇔-trans
@@ -550,20 +550,20 @@ module NormalisationCorrect (extFunc : ℚ → ℚ) where
        (cong-∃ λ q →
           equi-conj-constraint (rename-Constraint succ ϕ) ψ (extend-env η q)))
 
-  equi-conj : ∀ {Δ} (ϕ : FlatQuery Δ) ψ η →
-              (eval-FlatQuery ϕ η × eval-FlatQuery ψ η) ⇔ eval-FlatQuery (conj ϕ ψ) η
+  equi-conj : ∀ {Δ} (ϕ : PrenexFormula Δ) ψ η →
+              (eval-PrenexFormula ϕ η × eval-PrenexFormula ψ η) ⇔ eval-PrenexFormula (conj ϕ ψ) η
   equi-conj (constraint ϕ) ψ η = equi-conj-constraint ϕ ψ η
   equi-conj (ex ϕ) ψ η =
     ⇔-trans
      and-comm-right
      (cong-∃ λ q →
       ⇔-trans
-       (×-cong ⇔-refl (ext-FlatQuery wk-w ψ))
-       (equi-conj ϕ (rename-FlatQuery succ ψ) (extend-env η q)))
+       (×-cong ⇔-refl (ext-PrenexFormula wk-w ψ))
+       (equi-conj ϕ (rename-PrenexFormula succ ψ) (extend-env η q)))
 
   equi-disj-constraint : ∀ {Δ} (ϕ : Constraint Δ) ψ η →
-                         (True (eval-Constraint ϕ η) ⊎ eval-FlatQuery ψ η)
-                            ⇔ eval-FlatQuery (disj-constraint ϕ ψ) η
+                         (True (eval-Constraint ϕ η) ⊎ eval-PrenexFormula ψ η)
+                            ⇔ eval-PrenexFormula (disj-constraint ϕ ψ) η
   equi-disj-constraint ϕ (constraint x) η = True-∨
   equi-disj-constraint ϕ (ex ψ) η =
     ⇔-trans
@@ -573,26 +573,26 @@ module NormalisationCorrect (extFunc : ℚ → ℚ) where
              (⊎-cong (cong-True (ext-evalConstraint ϕ wk-w)) ⇔-refl)
              (equi-disj-constraint (rename-Constraint succ ϕ) ψ (extend-env η q)))
 
-  equi-disj : ∀ {Δ} (ϕ : FlatQuery Δ) ψ η →
-              (eval-FlatQuery ϕ η ⊎ eval-FlatQuery ψ η) ⇔ eval-FlatQuery (disj ϕ ψ) η
+  equi-disj : ∀ {Δ} (ϕ : PrenexFormula Δ) ψ η →
+              (eval-PrenexFormula ϕ η ⊎ eval-PrenexFormula ψ η) ⇔ eval-PrenexFormula (disj ϕ ψ) η
   equi-disj (constraint ϕ) ψ η = equi-disj-constraint ϕ ψ η
   equi-disj (ex ϕ) ψ η =
     ⇔-trans (or-comm-left 1ℚ)
      (cong-∃ λ q →
       ⇔-trans
-       (⊎-cong ⇔-refl (ext-FlatQuery wk-w ψ))
-       (equi-disj ϕ (rename-FlatQuery succ ψ) (extend-env η q)))
+       (⊎-cong ⇔-refl (ext-PrenexFormula wk-w ψ))
+       (equi-disj ϕ (rename-PrenexFormula succ ψ) (extend-env η q)))
 
-  flatten-ok : ∀ {Δ} (ϕ : Query Δ) η →
-               eval-Query ϕ η ⇔ eval-FlatQuery (flatten ϕ) η
-  flatten-ok (constraint x) η = ⇔-refl
-  flatten-ok (ex ϕ) η = cong-∃ λ q → flatten-ok ϕ (extend-env η q)
-  flatten-ok (ϕ and ψ) η =
-    ⇔-trans (×-cong (flatten-ok ϕ η) (flatten-ok ψ η))
-              (equi-conj (flatten ϕ) (flatten ψ) η)
-  flatten-ok (ϕ or ψ) η =
-    ⇔-trans (⊎-cong (flatten-ok ϕ η) (flatten-ok ψ η))
-              (equi-disj (flatten ϕ) (flatten ψ) η)
+  toPrenexForm-ok : ∀ {Δ} (ϕ : ExFormula Δ) η →
+               eval-ExFormula ϕ η ⇔ eval-PrenexFormula (toPrenexForm ϕ) η
+  toPrenexForm-ok (constraint x) η = ⇔-refl
+  toPrenexForm-ok (ex ϕ) η = cong-∃ λ q → toPrenexForm-ok ϕ (extend-env η q)
+  toPrenexForm-ok (ϕ and ψ) η =
+    ⇔-trans (×-cong (toPrenexForm-ok ϕ η) (toPrenexForm-ok ψ η))
+              (equi-conj (toPrenexForm ϕ) (toPrenexForm ψ) η)
+  toPrenexForm-ok (ϕ or ψ) η =
+    ⇔-trans (⊎-cong (toPrenexForm-ok ϕ η) (toPrenexForm-ok ψ η))
+              (equi-disj (toPrenexForm ϕ) (toPrenexForm ψ) η)
 
   ℳ : Model (suc 0ℓ) 0ℓ
   ℳ .Model.⟦Type⟧ = WRel
@@ -638,14 +638,14 @@ module NormalisationCorrect (extFunc : ℚ → ℚ) where
   standard : ε / ε ⊢ Bool (LinearityConst linear) (PolarityConst Ex) → Set
   standard t = S.eval-Quant (ℐ.⟦ t ⟧tm (lift tt) .left tt) True
 
-  normalise : ε / ε ⊢ Bool (LinearityConst linear) (PolarityConst Ex) → FlatQuery ε
-  normalise t = flatten (N.compile (ℐ.⟦ t ⟧tm (lift tt) .right .N.mor tt))
+  normalise : ε / ε ⊢ Bool (LinearityConst linear) (PolarityConst Ex) → PrenexFormula ε
+  normalise t = toPrenexForm (N.compile (ℐ.⟦ t ⟧tm (lift tt) .right .N.mor tt))
 
   full-correctness : (t : ε / ε ⊢ Bool (LinearityConst linear) (PolarityConst Ex)) →
-                     standard t ⇔ eval-FlatQuery (normalise t) (empty .env)
+                     standard t ⇔ eval-PrenexFormula (normalise t) (empty .env)
   full-correctness t =
     ⇔-trans
-      (QueryR-ok empty (compile-lemma linear empty _ q (ℐ.⟦ t ⟧tm (lift tt) .rel-mor empty tt tt tt)))
-      (flatten-ok (N.compile q) empty-env)
-    where q : N.LetLift Query ε
+      (ExFormulaR-ok empty (compile-lemma linear empty _ q (ℐ.⟦ t ⟧tm (lift tt) .rel-mor empty tt tt tt)))
+      (toPrenexForm-ok (N.compile q) empty-env)
+    where q : N.LetLift ExFormula ε
           q = ℐ.⟦ t ⟧tm (lift tt) .right .N.mor tt
