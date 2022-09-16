@@ -4,7 +4,6 @@ open import Level using (0ℓ; suc; lift)
 
 open import Data.Bool using (not; _∧_; _∨_; true; false)
                    renaming (Bool to 𝔹; T to True; if_then_else_ to ifᵇ_then_else_)
-open import Data.Bool.Properties using (∨-identityʳ)
 open import Data.Fin using (Fin)
 open import Data.Nat using (ℕ)
 open import Data.Product using (_×_; _,_; proj₁; proj₂; Σ-syntax)
@@ -18,7 +17,7 @@ open import Relation.Binary.PropositionalEquality
 
 open import Util
 open import MiniVehicle.Qualifiers
-open import NormalisedExpr
+open import NormalisedExpr renaming (_∘_ to _∘r_)
 open import Interpretation
 open import EquiInhabited
 
@@ -76,7 +75,6 @@ module NormalisationCorrect (extFunc : ℚ → ℚ) where
   ------------------------------------------------------------------------------
   -- Our category of related interpretations
 
-  -- module 𝒮 = Model (S.ℳ extFunc)
   module 𝒩 = Model N.ℳ
   module 𝒮 = Model (S.ℳ extFunc)
 
@@ -88,118 +86,118 @@ module NormalisationCorrect (extFunc : ℚ → ℚ) where
       ext   : ∀ {w w'} (ρ : w' ⇒w w) a b → rel w a b → rel w' a (Right .N.rename (ρ .ren) b)
   open WRel
 
-  record _===>_ (X Y : WRel) : Set where
+  record _==>_ (X Y : WRel) : Set where
     field
-      left    : X .Left → Y .Left
-      right   : X .Right N.==> Y .Right
+      left    : X .Left 𝒮.==> Y .Left
+      right   : X .Right 𝒩.==> Y .Right
       rel-mor : ∀ w lx rx → X .rel w lx rx → Y .rel w (left lx) (right .N.mor rx)
-  open _===>_
+  open _==>_
 
   ------------------------------------------------------------------------------
   -- Composition
 
-  _∘R_ : ∀ {X Y Z} → (Y ===> Z) → (X ===> Y) → (X ===> Z)
-  (f ∘R g) .left x = f .left (g .left x)
-  (f ∘R g) .right = f .right 𝒩.∘ g .right
-  (f ∘R g) .rel-mor w x₁ x₂ r-x₁x₂ = f .rel-mor w _ _ (g .rel-mor w _ _ r-x₁x₂)
+  _∘_ : ∀ {X Y Z} → (Y ==> Z) → (X ==> Y) → (X ==> Z)
+  (f ∘ g) .left  = f .left  𝒮.∘ g .left
+  (f ∘ g) .right = f .right 𝒩.∘ g .right
+  (f ∘ g) .rel-mor w x₁ x₂ r-x₁x₂ = f .rel-mor w _ _ (g .rel-mor w _ _ r-x₁x₂)
 
-  ⟦id⟧R : ∀ {X} → X ===> X
-  ⟦id⟧R .left x = x
-  ⟦id⟧R .right = 𝒩.⟦id⟧
-  ⟦id⟧R .rel-mor w x₁ x₂ r = r
+  ⟦id⟧ : ∀ {X} → X ==> X
+  ⟦id⟧ .left x = x
+  ⟦id⟧ .right = 𝒩.⟦id⟧
+  ⟦id⟧ .rel-mor w x₁ x₂ r = r
 
   ------------------------------------------------------------------------------
   -- Sets
-  FlatR : Set → WRel
-  FlatR X .Left = X
-  FlatR X .Right = N.K X
-  FlatR X .rel w x₁ x₂ = x₁ ≡ x₂
-  FlatR X .ext ρ x₁ x₂ eq = eq
+  Flat : Set → WRel
+  Flat X .Left = X
+  Flat X .Right = N.K X
+  Flat X .rel w x₁ x₂ = x₁ ≡ x₂
+  Flat X .ext ρ x₁ x₂ eq = eq
 
-  elem : ∀ {A X} → A → X ===> FlatR A
+  elem : ∀ {A X} → A → X ==> Flat A
   elem a .left = 𝒮.elem a
   elem a .right = 𝒩.elem a
   elem a .rel-mor w _ _ _ = refl
 
   ------------------------------------------------------------------------------
   -- Products and terminal object
-  ⟦⊤⟧R : WRel
-  ⟦⊤⟧R .Left = ⊤
-  ⟦⊤⟧R .Right = 𝒩.⟦⊤⟧
-  ⟦⊤⟧R .rel w tt tt = ⊤
-  ⟦⊤⟧R .ext ρ tt tt x = x
+  ⟦⊤⟧ : WRel
+  ⟦⊤⟧ .Left = ⊤
+  ⟦⊤⟧ .Right = 𝒩.⟦⊤⟧
+  ⟦⊤⟧ .rel w tt tt = ⊤
+  ⟦⊤⟧ .ext ρ tt tt x = x
 
-  ⟦terminal⟧R : ∀ {X} → X ===> ⟦⊤⟧R
-  ⟦terminal⟧R .left _ = tt
-  ⟦terminal⟧R .right = 𝒩.⟦terminal⟧
-  ⟦terminal⟧R .rel-mor _ _ _ _ = tt
+  ⟦terminal⟧ : ∀ {X} → X ==> ⟦⊤⟧
+  ⟦terminal⟧ .left = 𝒮.⟦terminal⟧
+  ⟦terminal⟧ .right = 𝒩.⟦terminal⟧
+  ⟦terminal⟧ .rel-mor _ _ _ _ = tt
 
-  _⟦×⟧R_ : WRel → WRel → WRel
-  (X ⟦×⟧R Y) .Left = X .Left × Y .Left
-  (X ⟦×⟧R Y) .Right = X .Right 𝒩.⟦×⟧ Y .Right
-  (X ⟦×⟧R Y) .rel w (x , y) (x' , y') = X .rel w x x' × Y .rel w y y'
-  (X ⟦×⟧R Y) .ext ρ (x , y) (x' , y') (r₁ , r₂) =
+  _⟦×⟧_ : WRel → WRel → WRel
+  (X ⟦×⟧ Y) .Left = X .Left 𝒮.⟦×⟧ Y .Left
+  (X ⟦×⟧ Y) .Right = X .Right 𝒩.⟦×⟧ Y .Right
+  (X ⟦×⟧ Y) .rel w (x , y) (x' , y') = X .rel w x x' × Y .rel w y y'
+  (X ⟦×⟧ Y) .ext ρ (x , y) (x' , y') (r₁ , r₂) =
     (X .ext ρ x x' r₁) , (Y .ext ρ y y' r₂)
 
-  ⟨_,_⟩R : ∀ {X Y Z} → (X ===> Y) → (X ===> Z) → (X ===> (Y ⟦×⟧R Z))
-  ⟨ f , g ⟩R .left x = (f .left x) , (g .left x)
+  ⟨_,_⟩R : ∀ {X Y Z} → (X ==> Y) → (X ==> Z) → (X ==> (Y ⟦×⟧ Z))
+  ⟨ f , g ⟩R .left = 𝒮.⟨ f .left , g .left ⟩
   ⟨ f , g ⟩R .right = 𝒩.⟨ f .right , g .right ⟩
   ⟨ f , g ⟩R .rel-mor w x₁ x₂ r-x₁x₂ =
     f .rel-mor w x₁ x₂ r-x₁x₂ ,
     g .rel-mor w x₁ x₂ r-x₁x₂
 
-  ⟦proj₁⟧R : ∀ {X Y} → (X ⟦×⟧R Y) ===> X
-  ⟦proj₁⟧R .left = proj₁
-  ⟦proj₁⟧R .right = 𝒩.⟦proj₁⟧
-  ⟦proj₁⟧R .rel-mor w _ _ r = r .proj₁
+  ⟦proj₁⟧ : ∀ {X Y} → (X ⟦×⟧ Y) ==> X
+  ⟦proj₁⟧ .left = proj₁
+  ⟦proj₁⟧ .right = 𝒩.⟦proj₁⟧
+  ⟦proj₁⟧ .rel-mor w _ _ r = r .proj₁
 
-  ⟦proj₂⟧R : ∀ {X Y} → (X ⟦×⟧R Y) ===> Y
-  ⟦proj₂⟧R .left = proj₂
-  ⟦proj₂⟧R .right = 𝒩.⟦proj₂⟧
-  ⟦proj₂⟧R .rel-mor w _ _ r = r .proj₂
+  ⟦proj₂⟧ : ∀ {X Y} → (X ⟦×⟧ Y) ==> Y
+  ⟦proj₂⟧ .left = proj₂
+  ⟦proj₂⟧ .right = 𝒩.⟦proj₂⟧
+  ⟦proj₂⟧ .rel-mor w _ _ r = r .proj₂
 
   ------------------------------------------------------------------------------
   -- Functions and Universal Quantification
 
-  _⟦⇒⟧R_ : WRel → WRel → WRel
-  (X ⟦⇒⟧R Y) .Left = X .Left → Y .Left
-  (X ⟦⇒⟧R Y) .Right = X .Right 𝒩.⟦⇒⟧ Y .Right
-  (X ⟦⇒⟧R Y) .rel w f g =
+  _⟦⇒⟧_ : WRel → WRel → WRel
+  (X ⟦⇒⟧ Y) .Left = X .Left 𝒮.⟦⇒⟧ Y .Left
+  (X ⟦⇒⟧ Y) .Right = X .Right 𝒩.⟦⇒⟧ Y .Right
+  (X ⟦⇒⟧ Y) .rel w f g =
     ∀ w' (ρ : w' ⇒w w) x y →
        X .rel w' x y →
        Y .rel w' (f x) (g (w' .ctxt) (ρ .ren) y)
-  (X ⟦⇒⟧R Y) .ext ρ f g r =
+  (X ⟦⇒⟧ Y) .ext ρ f g r =
     λ w'' ρ' x y → r w'' (ρ ∘w ρ') x y
 
-  ⟦Λ⟧R : ∀ {X Y Z} → ((X ⟦×⟧R Y) ===> Z) → (X ===> (Y ⟦⇒⟧R Z))
-  ⟦Λ⟧R {X} f .left x y = f .left (x , y)
-  ⟦Λ⟧R {X} f .right = 𝒩.⟦Λ⟧ (f .right)
-  ⟦Λ⟧R {X} f .rel-mor w x₁ x₂ r-x₁x₂ w' ρ y₁ y₂ r-y₁y₂ =
+  ⟦Λ⟧ : ∀ {X Y Z} → ((X ⟦×⟧ Y) ==> Z) → (X ==> (Y ⟦⇒⟧ Z))
+  ⟦Λ⟧ {X} f .left = 𝒮.⟦Λ⟧ (f .left)
+  ⟦Λ⟧ {X} f .right = 𝒩.⟦Λ⟧ (f .right)
+  ⟦Λ⟧ {X} f .rel-mor w x₁ x₂ r-x₁x₂ w' ρ y₁ y₂ r-y₁y₂ =
     f .rel-mor w' (x₁ , y₁)
                   (X .Right .N.rename (ρ .ren) x₂ , y₂)
                   (X .ext ρ x₁ x₂ r-x₁x₂ , r-y₁y₂)
 
-  ⟦eval⟧R : ∀ {X Y} → ((X ⟦⇒⟧R Y) ⟦×⟧R X) ===> Y
-  ⟦eval⟧R .left (f , x) = f x
-  ⟦eval⟧R .right = 𝒩.⟦eval⟧
-  ⟦eval⟧R .rel-mor w (f₁ , x₁) (f₂ , x₂) (r-f₁f₂ , r-x₁x₂) =
+  ⟦eval⟧ : ∀ {X Y} → ((X ⟦⇒⟧ Y) ⟦×⟧ X) ==> Y
+  ⟦eval⟧ .left = 𝒮.⟦eval⟧
+  ⟦eval⟧ .right = 𝒩.⟦eval⟧
+  ⟦eval⟧ .rel-mor w (f₁ , x₁) (f₂ , x₂) (r-f₁f₂ , r-x₁x₂) =
     r-f₁f₂ w id-w x₁ x₂ r-x₁x₂
 
-  ⟦∀⟧R : ∀ {I : Set} → (I → WRel) → WRel
-  ⟦∀⟧R A .Left = ∀ n → A n .Left
-  ⟦∀⟧R A .Right = 𝒩.⟦∀⟧ (λ n → A n .Right)
-  ⟦∀⟧R A .rel w x y = ∀ n → A n .rel w (x n) (y n)
-  ⟦∀⟧R A .ext ρ x y r n = A n .ext ρ (x n) (y n) (r n)
+  ⟦∀⟧ : ∀ {I : Set} → (I → WRel) → WRel
+  ⟦∀⟧ A .Left = 𝒮.⟦∀⟧ (λ n → A n .Left)
+  ⟦∀⟧ A .Right = 𝒩.⟦∀⟧ (λ n → A n .Right)
+  ⟦∀⟧ A .rel w x y = ∀ n → A n .rel w (x n) (y n)
+  ⟦∀⟧ A .ext ρ x y r n = A n .ext ρ (x n) (y n) (r n)
 
-  ⟦∀-intro⟧R : ∀ {I X A} → (∀ (n : I) → X ===> A n) → X ===> ⟦∀⟧R A
-  ⟦∀-intro⟧R f .left x n = f n .left x
-  ⟦∀-intro⟧R f .right = 𝒩.⟦∀-intro⟧ (λ n → f n .right)
-  ⟦∀-intro⟧R f .rel-mor w x₁ x₂ r n = f n .rel-mor w x₁ x₂ r
+  ⟦∀-intro⟧ : ∀ {I X A} → (∀ (n : I) → X ==> A n) → X ==> ⟦∀⟧ A
+  ⟦∀-intro⟧ f .left = 𝒮.⟦∀-intro⟧ (λ n → f n .left)
+  ⟦∀-intro⟧ f .right = 𝒩.⟦∀-intro⟧ (λ n → f n .right)
+  ⟦∀-intro⟧ f .rel-mor w x₁ x₂ r n = f n .rel-mor w x₁ x₂ r
 
-  ⟦∀-elim⟧R : ∀ {I A} (n : I) → ⟦∀⟧R A ===> A n
-  ⟦∀-elim⟧R n .left f = f n
-  ⟦∀-elim⟧R n .right = 𝒩.⟦∀-elim⟧ n
-  ⟦∀-elim⟧R n .rel-mor w f₁ f₂ r = r n
+  ⟦∀-elim⟧ : ∀ {I A} (n : I) → ⟦∀⟧ A ==> A n
+  ⟦∀-elim⟧ n .left = 𝒮.⟦∀-elim⟧ n
+  ⟦∀-elim⟧ n .right = 𝒩.⟦∀-elim⟧ n
+  ⟦∀-elim⟧ n .rel-mor w f₁ f₂ r = r n
 
   ------------------------------------------------------------------------------
   KR : Set → WRel
@@ -208,9 +206,15 @@ module NormalisationCorrect (extFunc : ℚ → ℚ) where
   KR X .rel w x y = x ≡ y
   KR X .ext ρ x y eq = eq
 
-  ⟦Index⟧R : ℕ → WRel
-  ⟦Index⟧R n = KR (Fin n)
+  ⟦Index⟧ : ℕ → WRel
+  ⟦Index⟧ n = KR (Fin n)
 
+  ⟦idx⟧ : (n : ℕ)(i : Fin n) → ∀ {X} → X ==> ⟦Index⟧ n
+  ⟦idx⟧ n i .left = 𝒮.⟦idx⟧ n i
+  ⟦idx⟧ n i .right = 𝒩.⟦idx⟧ n i
+  ⟦idx⟧ n i .rel-mor w _ _ _ = refl
+
+  ------------------------------------------------------------------------------
   ext-evalLinExp :
     ∀ {w₁ w₂} e (ρ : w₂ ⇒w w₁) →
       eval-LinExp e (w₁ .env) ≡ eval-LinExp (rename-LinExp (ρ .ren) e) (w₂ .env)
@@ -233,42 +237,42 @@ module NormalisationCorrect (extFunc : ℚ → ℚ) where
 
   ------------------------------------------------------------------------------
   -- Numbers, and linear expressions
-  ⟦Num⟧R : LinearityVal → WRel
-  ⟦Num⟧R p .Left = 𝒮.⟦Num⟧ p
-  ⟦Num⟧R p .Right = 𝒩.⟦Num⟧ p
-  ⟦Num⟧R const .rel _ q₁ q₂ = q₁ ≡ q₂
-  ⟦Num⟧R const .ext _ _ _ eq = eq
-  ⟦Num⟧R linear .rel w x exp = x ≡ eval-LinExp exp (w .env)
-  ⟦Num⟧R linear .ext ρ x exp eq = trans eq (ext-evalLinExp exp ρ)
-  ⟦Num⟧R nonlinear .rel w x tt = ⊤
-  ⟦Num⟧R nonlinear .ext _ _ _ _ = tt
+  ⟦Num⟧ : LinearityVal → WRel
+  ⟦Num⟧ p .Left = 𝒮.⟦Num⟧ p
+  ⟦Num⟧ p .Right = 𝒩.⟦Num⟧ p
+  ⟦Num⟧ const .rel _ q₁ q₂ = q₁ ≡ q₂
+  ⟦Num⟧ const .ext _ _ _ eq = eq
+  ⟦Num⟧ linear .rel w x exp = x ≡ eval-LinExp exp (w .env)
+  ⟦Num⟧ linear .ext ρ x exp eq = trans eq (ext-evalLinExp exp ρ)
+  ⟦Num⟧ nonlinear .rel w x tt = ⊤
+  ⟦Num⟧ nonlinear .ext _ _ _ _ = tt
 
-  ⟦const⟧R : ∀ {X} → ℚ → X ===> ⟦Num⟧R const
-  ⟦const⟧R q .left _ = q
-  ⟦const⟧R q .right = 𝒩.⟦const⟧ q
-  ⟦const⟧R q .rel-mor w _ _ _ = refl
+  ⟦const⟧ : ∀ {X} → ℚ → X ==> ⟦Num⟧ const
+  ⟦const⟧ q .left _ = q
+  ⟦const⟧ q .right = 𝒩.⟦const⟧ q
+  ⟦const⟧ q .rel-mor w _ _ _ = refl
 
-  ⟦add⟧R : ∀ {l₁ l₂ l₃} →
-           (FlatR (MaxLinRel l₁ l₂ l₃) ⟦×⟧R (⟦Num⟧R l₁ ⟦×⟧R ⟦Num⟧R l₂)) ===> ⟦Num⟧R l₃
-  ⟦add⟧R .left = 𝒮.⟦add⟧
-  ⟦add⟧R .right = 𝒩.⟦add⟧
-  ⟦add⟧R .rel-mor w (const-const   , x₁ , y₁) (_ , x₂ , y₂) (refl , x₁₂ , y₁₂) =
+  ⟦add⟧ : ∀ {l₁ l₂ l₃} →
+           (Flat (MaxLinRel l₁ l₂ l₃) ⟦×⟧ (⟦Num⟧ l₁ ⟦×⟧ ⟦Num⟧ l₂)) ==> ⟦Num⟧ l₃
+  ⟦add⟧ .left = 𝒮.⟦add⟧
+  ⟦add⟧ .right = 𝒩.⟦add⟧
+  ⟦add⟧ .rel-mor w (const-const   , x₁ , y₁) (_ , x₂ , y₂) (refl , x₁₂ , y₁₂) =
     cong₂ _+_ x₁₂ y₁₂
-  ⟦add⟧R .rel-mor w (const-linear  , x₁ , y₁) (_ , x₂ , y₂) (refl , x₁₂ , y₁₂) =
+  ⟦add⟧ .rel-mor w (const-linear  , x₁ , y₁) (_ , x₂ , y₂) (refl , x₁₂ , y₁₂) =
     cong₂ _+_ x₁₂ y₁₂
-  ⟦add⟧R .rel-mor w (linear-const  , x₁ , y₁) (_ , x₂ , y₂) (refl , x₁₂ , y₁₂) =
+  ⟦add⟧ .rel-mor w (linear-const  , x₁ , y₁) (_ , x₂ , y₂) (refl , x₁₂ , y₁₂) =
     cong₂ _+_ x₁₂ y₁₂
-  ⟦add⟧R .rel-mor w (linear-linear , x₁ , y₁) (_ , x₂ , y₂) (refl , x₁₂ , y₁₂) =
+  ⟦add⟧ .rel-mor w (linear-linear , x₁ , y₁) (_ , x₂ , y₂) (refl , x₁₂ , y₁₂) =
     cong₂ _+_ x₁₂ y₁₂
 
-  ⟦mul⟧R : ∀ {l₁ l₂ l₃} → (FlatR (MulRel l₁ l₂ l₃) ⟦×⟧R (⟦Num⟧R l₁ ⟦×⟧R ⟦Num⟧R l₂)) ===> ⟦Num⟧R l₃
-  ⟦mul⟧R .left = 𝒮.⟦mul⟧
-  ⟦mul⟧R .right = 𝒩.⟦mul⟧
-  ⟦mul⟧R .rel-mor w (const-const  , x₁ , y₁) (_ , x₂ , y₂) (refl , x₁₂ , y₁₂) =
+  ⟦mul⟧ : ∀ {l₁ l₂ l₃} → (Flat (MulRel l₁ l₂ l₃) ⟦×⟧ (⟦Num⟧ l₁ ⟦×⟧ ⟦Num⟧ l₂)) ==> ⟦Num⟧ l₃
+  ⟦mul⟧ .left = 𝒮.⟦mul⟧
+  ⟦mul⟧ .right = 𝒩.⟦mul⟧
+  ⟦mul⟧ .rel-mor w (const-const  , x₁ , y₁) (_ , x₂ , y₂) (refl , x₁₂ , y₁₂) =
     cong₂ _*_ x₁₂ y₁₂
-  ⟦mul⟧R .rel-mor w (const-linear , x₁ , y₁) (_ , x₂ , y₂) (refl , x₁₂ , y₁₂) =
+  ⟦mul⟧ .rel-mor w (const-linear , x₁ , y₁) (_ , x₂ , y₂) (refl , x₁₂ , y₁₂) =
     trans (cong₂ _*_ x₁₂ y₁₂) (eval-⊛ x₂ y₂ (w .env))
-  ⟦mul⟧R .rel-mor w (linear-const , x₁ , y₁) (_ , x₂ , y₂) (refl , x₁₂ , y₁₂) =
+  ⟦mul⟧ .rel-mor w (linear-const , x₁ , y₁) (_ , x₂ , y₂) (refl , x₁₂ , y₁₂) =
     trans (cong₂ _*_ x₁₂ y₁₂)
       (trans (*-comm (eval-LinExp x₂ (w .env)) y₂) (eval-⊛ y₂ x₂ (w .env)))
 
@@ -287,7 +291,9 @@ module NormalisationCorrect (extFunc : ℚ → ℚ) where
                    eval-Constraint ϕ (w .env) ≡ false →
                    QueryR w x ψ₂ →
                    QueryR w x ((constraint ϕ and ψ₁) or (constraint (negate ϕ) and ψ₂))
-    q-ex         : ∀ {w k ϕ}   → (∀ q → QueryR (extend-w w q) (k q) ϕ) → QueryR w (S.ex k) (ex ϕ)
+    q-ex         : ∀ {w k ϕ} →
+                   (∀ q → QueryR (extend-w w q) (k q) ϕ) →
+                   QueryR w (S.ex k) (ex ϕ)
     q-ex'        : ∀ {w x ϕ ψ} q →
                    (∀ q' → (q' ≡ q) ⇔ True (eval-Constraint ϕ (extend-env (w .env) q'))) →
                    QueryR (extend-w w q) x ψ →
@@ -316,15 +322,15 @@ module NormalisationCorrect (extFunc : ℚ → ℚ) where
   ext-Query ρ _ _ (q-and r₁ r₂) = q-and (ext-Query ρ _ _ r₁) (ext-Query ρ _ _ r₂)
   ext-Query ρ _ _ (q-or r₁ r₂) = q-or (ext-Query ρ _ _ r₁) (ext-Query ρ _ _ r₂)
 
-  ⟦Bool⟧R : LinearityVal → PolarityVal → WRel
-  ⟦Bool⟧R l p .Left = 𝒮.⟦Bool⟧ l p
-  ⟦Bool⟧R l p .Right = 𝒩.⟦Bool⟧ l p
-  ⟦Bool⟧R l U .rel w b ϕ = b ≡ eval-Constraint ϕ (w .env)
-  ⟦Bool⟧R l U .ext ρ b ϕ eq = trans eq (ext-evalConstraint ϕ ρ)
-  ⟦Bool⟧R l Ex .rel = QueryR
-  ⟦Bool⟧R l Ex .ext = ext-Query
+  ⟦Bool⟧ : LinearityVal → PolarityVal → WRel
+  ⟦Bool⟧ l p .Left = 𝒮.⟦Bool⟧ l p
+  ⟦Bool⟧ l p .Right = 𝒩.⟦Bool⟧ l p
+  ⟦Bool⟧ l U .rel w b ϕ = b ≡ eval-Constraint ϕ (w .env)
+  ⟦Bool⟧ l U .ext ρ b ϕ eq = trans eq (ext-evalConstraint ϕ ρ)
+  ⟦Bool⟧ l Ex .rel = QueryR
+  ⟦Bool⟧ l Ex .ext = ext-Query
 
-  ⟦≤⟧ : ∀ {l₁ l₂ l₃} → (FlatR (MaxLinRel l₁ l₂ l₃) ⟦×⟧R (⟦Num⟧R l₁ ⟦×⟧R ⟦Num⟧R l₂)) ===> ⟦Bool⟧R l₃ U
+  ⟦≤⟧ : ∀ {l₁ l₂ l₃} → (Flat (MaxLinRel l₁ l₂ l₃) ⟦×⟧ (⟦Num⟧ l₁ ⟦×⟧ ⟦Num⟧ l₂)) ==> ⟦Bool⟧ l₃ U
   ⟦≤⟧ .left = 𝒮.⟦≤⟧
   ⟦≤⟧ .right = 𝒩.⟦≤⟧
   ⟦≤⟧ .rel-mor w (const-const   , x₁ , y₁) (_ , x₂ , y₂) (refl , x₁₂ , y₁₂) =
@@ -337,9 +343,9 @@ module NormalisationCorrect (extFunc : ℚ → ℚ) where
     cong₂ _≤ᵇ_ x₁₂ y₁₂
 
   ⟦and⟧ : ∀ {l₁ l₂ l₃ p₁ p₂ p₃} →
-            (FlatR (MaxLinRel l₁ l₂ l₃) ⟦×⟧R
-             (FlatR (MaxPolRel p₁ p₂ p₃) ⟦×⟧R
-              (⟦Bool⟧R l₁ p₁ ⟦×⟧R ⟦Bool⟧R l₂ p₂))) ===> ⟦Bool⟧R l₃ p₃
+            (Flat (MaxLinRel l₁ l₂ l₃) ⟦×⟧
+             (Flat (MaxPolRel p₁ p₂ p₃) ⟦×⟧
+              (⟦Bool⟧ l₁ p₁ ⟦×⟧ ⟦Bool⟧ l₂ p₂))) ==> ⟦Bool⟧ l₃ p₃
   ⟦and⟧ .left = 𝒮.⟦and⟧
   ⟦and⟧ .right = 𝒩.⟦and⟧
   ⟦and⟧ .rel-mor w (p , U-U , x₁ , y₁) (_ , _ , x₂ , y₂) (refl , refl , x₁₂ , y₁₂) =
@@ -352,9 +358,9 @@ module NormalisationCorrect (extFunc : ℚ → ℚ) where
     q-and x₁₂ y₁₂
 
   ⟦or⟧ : ∀ {l₁ l₂ l₃ p₁ p₂ p₃} →
-            (FlatR (MaxLinRel l₁ l₂ l₃) ⟦×⟧R
-             (FlatR (MaxPolRel p₁ p₂ p₃) ⟦×⟧R
-              (⟦Bool⟧R l₁ p₁ ⟦×⟧R ⟦Bool⟧R l₂ p₂))) ===> ⟦Bool⟧R l₃ p₃
+            (Flat (MaxLinRel l₁ l₂ l₃) ⟦×⟧
+             (Flat (MaxPolRel p₁ p₂ p₃) ⟦×⟧
+              (⟦Bool⟧ l₁ p₁ ⟦×⟧ ⟦Bool⟧ l₂ p₂))) ==> ⟦Bool⟧ l₃ p₃
   ⟦or⟧ .left = 𝒮.⟦or⟧
   ⟦or⟧ .right = 𝒩.⟦or⟧
   ⟦or⟧ .rel-mor w (p , U-U , x₁ , y₁) (_ , _ , x₂ , y₂) (refl , refl , x₁₂ , y₁₂) =
@@ -366,7 +372,7 @@ module NormalisationCorrect (extFunc : ℚ → ℚ) where
   ⟦or⟧ .rel-mor w (p , Ex-Ex , x₁ , y₁) (_ , _ , x₂ , y₂) (refl , refl , x₁₂ , y₁₂) =
     q-or x₁₂ y₁₂
 
-  ⟦not⟧ : ∀ {l p₁ p₂} → (FlatR (NegPolRel p₁ p₂) ⟦×⟧R ⟦Bool⟧R l p₁) ===> ⟦Bool⟧R l p₂
+  ⟦not⟧ : ∀ {l p₁ p₂} → (Flat (NegPolRel p₁ p₂) ⟦×⟧ ⟦Bool⟧ l p₁) ==> ⟦Bool⟧ l p₂
   ⟦not⟧ .left = 𝒮.⟦not⟧
   ⟦not⟧ {l} .right = 𝒩.⟦not⟧ {l = l}
   ⟦not⟧ .rel-mor w (U , x₁) (_ , x₂) (refl , x₁₂) =
@@ -403,21 +409,7 @@ module NormalisationCorrect (extFunc : ℚ → ℚ) where
     LiftMR .Right = 𝒩.Mon (X .Right)
     LiftMR .rel = LetLiftR
     LiftMR .ext = ext-lift
-{-
-  eval-Lift : ∀ {Δ} → N.LetLift (𝒩.⟦Bool⟧ constraint .N.Carrier) Δ → Env Δ → 𝔹
-  eval-Lift (return x) η = eval-Constraint extFunc x η
-  eval-Lift (if x x₁ x₂) η = ifᵇ (eval-Constraint extFunc x η) then eval-Lift x₁ η else eval-Lift x₂ η
-  eval-Lift (let-linexp x x₁) η = eval-Lift x₁ (extend-env η (eval-LinExp x η))
-  eval-Lift (let-funexp x x₁) η = eval-Lift x₁ (extend-env η (extFunc (η x)))
 
-  lift-correct : ∀ {w b} e → LetLiftR Constraint-WRel w b e → b ≡ eval-Lift e (w .env)
-  lift-correct (return x) r = r
-  lift-correct {w} (if x e e₁) r with eval-Constraint extFunc x (w .env)
-  ... | true = lift-correct e r
-  ... | false = lift-correct e₁ r
-  lift-correct (let-linexp x e) r = lift-correct e r
-  lift-correct (let-funexp x e) r = lift-correct e r
--}
   let-bindR : ∀ {X Y} w x y →
     (f : X .Left → Y .Left)
     (g : (X .Right .N.Carrier ⇒ₖ N.LetLift (Y .Right .N.Carrier)) (w .ctxt)) →
@@ -430,33 +422,33 @@ module NormalisationCorrect (extFunc : ℚ → ℚ) where
   ... | false = let-bindR w x₁ x₂₂ f g r-x₁x₂ r-fg
   let-bindR w x₁ (N.let-linexp e x₂) f g r-x₁x₂ r-fg =
     let-bindR (extend-w w (eval-LinExp e (w .env)))
-       x₁ x₂ f (λ Δ' ρ → g Δ' (wk-r ∘ ρ))
+       x₁ x₂ f (λ Δ' ρ → g Δ' (wk-r ∘r ρ))
        r-x₁x₂
        λ w' ρ → r-fg w' (wk-w ∘w ρ)
   let-bindR w x₁ (N.let-funexp v x₂) f g r-x₁x₂ r-fg =
     let-bindR (extend-w w (extFunc (w .env v)))
-       x₁ x₂ f (λ Δ' ρ → g Δ' (wk-r ∘ ρ))
+       x₁ x₂ f (λ Δ' ρ → g Δ' (wk-r ∘r ρ))
        r-x₁x₂
        λ w' ρ → r-fg w' (wk-w ∘w ρ)
 
-  ⟦return⟧R : ∀ {X} → X ===> LiftMR X
-  ⟦return⟧R .left = 𝒮.⟦return⟧
-  ⟦return⟧R .right = 𝒩.⟦return⟧
-  ⟦return⟧R .rel-mor w x₁ x₂ r-x₁x₂ = r-x₁x₂
+  ⟦return⟧ : ∀ {X} → X ==> LiftMR X
+  ⟦return⟧ .left = 𝒮.⟦return⟧
+  ⟦return⟧ .right = 𝒩.⟦return⟧
+  ⟦return⟧ .rel-mor w x₁ x₂ r-x₁x₂ = r-x₁x₂
 
-  ⟦extFunc⟧R : ⟦Num⟧R linear ===> LiftMR (⟦Num⟧R linear)
-  ⟦extFunc⟧R .left = 𝒮.⟦extFunc⟧
-  ⟦extFunc⟧R .right = 𝒩.⟦extFunc⟧
-  ⟦extFunc⟧R .rel-mor w x₁ x₂ r-x₁x₂ =
+  ⟦extFunc⟧ : ⟦Num⟧ linear ==> LiftMR (⟦Num⟧ linear)
+  ⟦extFunc⟧ .left = 𝒮.⟦extFunc⟧
+  ⟦extFunc⟧ .right = 𝒩.⟦extFunc⟧
+  ⟦extFunc⟧ .rel-mor w x₁ x₂ r-x₁x₂ =
     trans (cong extFunc r-x₁x₂) (sym (*-identityˡ _))
 
-  ⟦if⟧R : ∀ {X} → ((LiftMR X ⟦×⟧R LiftMR X) ⟦×⟧R ⟦Bool⟧R linear U) ===> LiftMR X
-  ⟦if⟧R .left = 𝒮.⟦if⟧
-  ⟦if⟧R .right = 𝒩.⟦if⟧
-  ⟦if⟧R .rel-mor w ((tr₁ , fa₁) , false) ((tr₂ , fa₂) , ϕ) ((tr₁-tr₂ , fa₁-fa₂) , eq) rewrite sym eq = fa₁-fa₂
-  ⟦if⟧R .rel-mor w ((tr₁ , fa₁) , true) ((tr₂ , fa₂) , ϕ) ((tr₁-tr₂ , fa₁-fa₂) , eq) rewrite sym eq = tr₁-tr₂
+  ⟦if⟧ : ∀ {X} → ((LiftMR X ⟦×⟧ LiftMR X) ⟦×⟧ ⟦Bool⟧ linear U) ==> LiftMR X
+  ⟦if⟧ .left = 𝒮.⟦if⟧
+  ⟦if⟧ .right = 𝒩.⟦if⟧
+  ⟦if⟧ .rel-mor w ((tr₁ , fa₁) , false) ((tr₂ , fa₂) , ϕ) ((tr₁-tr₂ , fa₁-fa₂) , eq) rewrite sym eq = fa₁-fa₂
+  ⟦if⟧ .rel-mor w ((tr₁ , fa₁) , true) ((tr₂ , fa₂) , ϕ) ((tr₁-tr₂ , fa₁-fa₂) , eq) rewrite sym eq = tr₁-tr₂
 
-  extendR : ∀ {X Y Z} → ((X ⟦×⟧R Y) ===> LiftMR Z) → (X ⟦×⟧R LiftMR Y) ===> LiftMR Z
+  extendR : ∀ {X Y Z} → ((X ⟦×⟧ Y) ==> LiftMR Z) → (X ⟦×⟧ LiftMR Y) ==> LiftMR Z
   extendR f .left = 𝒮.⟦extend⟧ (f .left)
   extendR f .right = 𝒩.⟦extend⟧ (f .right)
   extendR {X} f .rel-mor w (x₁ , ly₁) (x₂ , ly₂) (x₁x₂ , ly₁-ly₂) =
@@ -467,7 +459,7 @@ module NormalisationCorrect (extFunc : ℚ → ℚ) where
       λ w' ρ y₁ y₂ y₁y₂ →
         f .rel-mor w' (x₁ , y₁) (X .Right .N.rename (ρ .ren) x₂ , y₂) (X .ext ρ x₁ x₂ x₁x₂ , y₁y₂)
 
-  compile-lemma : ∀ l w x₁ x₂ → LetLiftR (⟦Bool⟧R l Ex) w x₁ x₂ → QueryR w x₁ (N.compile x₂)
+  compile-lemma : ∀ l w x₁ x₂ → LetLiftR (⟦Bool⟧ l Ex) w x₁ x₂ → QueryR w x₁ (N.compile x₂)
   compile-lemma l w x₁ (N.return x) r = r
   compile-lemma l w x₁ (N.if ϕ tr fa) r with is-true-or-false (eval-Constraint ϕ (w .env))
   ... | inj₁ is-true =
@@ -493,7 +485,7 @@ module NormalisationCorrect (extFunc : ℚ → ℚ) where
           q = extFunc (w .env x)
 
   ⟦∃⟧ : ∀ {p₁ p₂ l} →
-       (FlatR (QuantifyRel p₁ p₂) ⟦×⟧R (⟦Num⟧R linear ⟦⇒⟧R LiftMR (⟦Bool⟧R l p₁))) ===> ⟦Bool⟧R l p₂
+       (Flat (QuantifyRel p₁ p₂) ⟦×⟧ (⟦Num⟧ linear ⟦⇒⟧ LiftMR (⟦Bool⟧ l p₁))) ==> ⟦Bool⟧ l p₂
   ⟦∃⟧ .left = 𝒮.⟦∃⟧
   ⟦∃⟧ {l = l} .right = 𝒩.⟦∃⟧ {l = l}
   ⟦∃⟧ {l = l} .rel-mor w (U  , f₁) (_ , f₂) (refl , r) =
@@ -538,6 +530,7 @@ module NormalisationCorrect (extFunc : ℚ → ℚ) where
              (⇔-trans (known q) (cong-∃ (λ q' → ×-cong (x q') ⇔-refl)))
   QueryR-ok w (q-and r₁ r₂) = ×-cong (QueryR-ok w r₁) (QueryR-ok w r₂)
   QueryR-ok w (q-or r₁ r₂) = ⊎-cong (QueryR-ok w r₁) (QueryR-ok w r₂)
+
 
   ext-FlatQuery : ∀ {w₁ w₂} (ρ : w₂ ⇒w w₁) ϕ →
                   eval-FlatQuery ϕ (w₁ .env) ⇔
@@ -603,41 +596,39 @@ module NormalisationCorrect (extFunc : ℚ → ℚ) where
 
   ℳ : Model (suc 0ℓ) 0ℓ
   ℳ .Model.⟦Type⟧ = WRel
-  ℳ .Model._==>_ = _===>_
-  ℳ .Model.Flat = FlatR
+  ℳ .Model._==>_ = _==>_
+  ℳ .Model.Flat = Flat
   ℳ .Model.elem = elem
-  ℳ .Model.⟦id⟧ = ⟦id⟧R
-  ℳ .Model._∘_ = _∘R_
-  ℳ .Model._⟦×⟧_ = _⟦×⟧R_
-  ℳ .Model.⟦⊤⟧ = ⟦⊤⟧R
-  ℳ .Model.⟦terminal⟧ = ⟦terminal⟧R
-  ℳ .Model.⟦proj₁⟧ = ⟦proj₁⟧R
-  ℳ .Model.⟦proj₂⟧ = ⟦proj₂⟧R
+  ℳ .Model.⟦id⟧ = ⟦id⟧
+  ℳ .Model._∘_ = _∘_
+  ℳ .Model._⟦×⟧_ = _⟦×⟧_
+  ℳ .Model.⟦⊤⟧ = ⟦⊤⟧
+  ℳ .Model.⟦terminal⟧ = ⟦terminal⟧
+  ℳ .Model.⟦proj₁⟧ = ⟦proj₁⟧
+  ℳ .Model.⟦proj₂⟧ = ⟦proj₂⟧
   ℳ .Model.⟨_,_⟩ = ⟨_,_⟩R
-  ℳ .Model._⟦⇒⟧_ = _⟦⇒⟧R_
-  ℳ .Model.⟦Λ⟧ = ⟦Λ⟧R
-  ℳ .Model.⟦eval⟧ = ⟦eval⟧R
-  ℳ .Model.⟦∀⟧ = ⟦∀⟧R
-  ℳ .Model.⟦∀-intro⟧ = ⟦∀-intro⟧R
-  ℳ .Model.⟦∀-elim⟧ = ⟦∀-elim⟧R
+  ℳ .Model._⟦⇒⟧_ = _⟦⇒⟧_
+  ℳ .Model.⟦Λ⟧ = ⟦Λ⟧
+  ℳ .Model.⟦eval⟧ = ⟦eval⟧
+  ℳ .Model.⟦∀⟧ = ⟦∀⟧
+  ℳ .Model.⟦∀-intro⟧ = ⟦∀-intro⟧
+  ℳ .Model.⟦∀-elim⟧ = ⟦∀-elim⟧
   ℳ .Model.Mon = LiftMR
-  ℳ .Model.⟦return⟧ = ⟦return⟧R
+  ℳ .Model.⟦return⟧ = ⟦return⟧
   ℳ .Model.⟦extend⟧ = extendR
-  ℳ .Model.⟦Num⟧ = ⟦Num⟧R
-  ℳ .Model.⟦add⟧ = ⟦add⟧R
-  ℳ .Model.⟦mul⟧ = ⟦mul⟧R
-  ℳ .Model.⟦const⟧ = ⟦const⟧R
-  ℳ .Model.⟦extFunc⟧ = ⟦extFunc⟧R
-  ℳ .Model.⟦Bool⟧ = ⟦Bool⟧R
+  ℳ .Model.⟦Num⟧ = ⟦Num⟧
+  ℳ .Model.⟦add⟧ = ⟦add⟧
+  ℳ .Model.⟦mul⟧ = ⟦mul⟧
+  ℳ .Model.⟦const⟧ = ⟦const⟧
+  ℳ .Model.⟦extFunc⟧ = ⟦extFunc⟧
+  ℳ .Model.⟦Bool⟧ = ⟦Bool⟧
   ℳ .Model.⟦not⟧ = ⟦not⟧
   ℳ .Model.⟦and⟧ = ⟦and⟧
   ℳ .Model.⟦or⟧ = ⟦or⟧
   ℳ .Model.⟦≤⟧ = ⟦≤⟧
-  ℳ .Model.⟦if⟧ = ⟦if⟧R
-  ℳ .Model.⟦Index⟧ = ⟦Index⟧R
-  ℳ .Model.⟦idx⟧ n i .left = 𝒮.⟦idx⟧ n i
-  ℳ .Model.⟦idx⟧ n i .right = 𝒩.⟦idx⟧ n i
-  ℳ .Model.⟦idx⟧ n i .rel-mor w _ _ _ = refl
+  ℳ .Model.⟦if⟧ = ⟦if⟧
+  ℳ .Model.⟦Index⟧ = ⟦Index⟧
+  ℳ .Model.⟦idx⟧ = ⟦idx⟧
   ℳ .Model.⟦∃⟧ = ⟦∃⟧
 
   open import MiniVehicle hiding (_⇒ᵣ_; under)
