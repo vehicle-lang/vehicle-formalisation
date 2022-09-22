@@ -1,5 +1,5 @@
 {-# OPTIONS --postfix-projections --safe #-}
-
+.
 module MiniVehicle where
 
 open import Data.Fin using (Fin)
@@ -36,20 +36,22 @@ wk = succ
 
 data _⊢T_ : KindContext → Kind → Set where
   var    : ∀ {Δ κ} → Δ ⊢Tv κ → Δ ⊢T κ
+  _⇒_   : ∀ {Δ} → Δ ⊢T Type → Δ ⊢T Type → Δ ⊢T Type
+  Forall : ∀ {Δ κ} → SmallKind κ → (Δ ,- κ) ⊢T Type → Δ ⊢T Type
+
   Bool   : ∀ {Δ} → Δ ⊢T Linearity → Δ ⊢T Polarity → Δ ⊢T Type
   Num    : ∀ {Δ} → Δ ⊢T Linearity → Δ ⊢T Type
-  _⇒_   : ∀ {Δ} → Δ ⊢T Type → Δ ⊢T Type → Δ ⊢T Type
+
   Index  : ∀ {Δ} → Δ ⊢T Nat → Δ ⊢T Type
   Vec    : ∀ {Δ} → Δ ⊢T Nat → Δ ⊢T Type → Δ ⊢T Type
-  Forall : ∀ {Δ κ} → SmallKind κ → (Δ ,- κ) ⊢T Type → Δ ⊢T Type
   [_]    : ∀ {Δ} → ℕ → Δ ⊢T Nat
 
   LinearityConst : ∀ {Δ} → LinearityVal → Δ ⊢T Linearity
   PolarityConst  : ∀ {Δ} → PolarityVal → Δ ⊢T Polarity
-  MaxLin : ∀ {Δ} → Δ ⊢T Linearity → Δ ⊢T Linearity → Δ ⊢T Linearity → Δ ⊢T Type
-  HasMul : ∀ {Δ} → Δ ⊢T Linearity → Δ ⊢T Linearity → Δ ⊢T Linearity → Δ ⊢T Type
-  MaxPol : ∀ {Δ} → Δ ⊢T Polarity → Δ ⊢T Polarity → Δ ⊢T Polarity → Δ ⊢T Type
-  NegPol : ∀ {Δ} → Δ ⊢T Polarity → Δ ⊢T Polarity → Δ ⊢T Type
+  MaxLin   : ∀ {Δ} → Δ ⊢T Linearity → Δ ⊢T Linearity → Δ ⊢T Linearity → Δ ⊢T Type
+  HasMul   : ∀ {Δ} → Δ ⊢T Linearity → Δ ⊢T Linearity → Δ ⊢T Linearity → Δ ⊢T Type
+  MaxPol   : ∀ {Δ} → Δ ⊢T Polarity → Δ ⊢T Polarity → Δ ⊢T Polarity → Δ ⊢T Type
+  NegPol   : ∀ {Δ} → Δ ⊢T Polarity → Δ ⊢T Polarity → Δ ⊢T Type
   Quantify : ∀ {Δ} → Δ ⊢T Polarity → Δ ⊢T Polarity → Δ ⊢T Type
 
 
