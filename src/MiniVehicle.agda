@@ -1,5 +1,5 @@
 {-# OPTIONS --postfix-projections --safe #-}
-.
+
 module MiniVehicle where
 
 open import Data.Fin using (Fin)
