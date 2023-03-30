@@ -19,6 +19,14 @@ postulate
   fext : ∀ {ℓ₁ ℓ₂}{A : Set ℓ₁}{B : A → Set ℓ₂}{f g : (a : A) → B a} →
          ((a : A) → f a ≡ g a) → f ≡ g
 
+-- TODO:
+-- - Kinds are interpreted as setoids, with Type specially interpreted
+-- - Kind level operations are interpreted as setoid functions
+-- - (equations between kind terms must be respected)
+-- - The rest of the types are generated from this
+-- - So we get an interpretation of the types, derive renaming and subst
+-- - Then require interpretations of the term constructs, given the type interp.
+
 record Model ℓ m : Set (suc ℓ ⊔ suc m) where
   field
     ⟦Type⟧ : Set ℓ

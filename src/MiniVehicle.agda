@@ -52,6 +52,7 @@ module Syntax (S : Signature) where
       -- Built-in types
       _⇒_   : ∀ {K} → K ⊢T Type → K ⊢T Type → K ⊢T Type
       Forall : ∀ {K κ} → (K ,- κ) ⊢T Type → K ⊢T Type
+      -- FIXME: add _×_
 
       -- Constructors from the signature
       Op     : ∀ {K} → (op : S.op) → K ⊢T* S.op-args op → K ⊢T S.op-result op
@@ -59,6 +60,10 @@ module Syntax (S : Signature) where
     data _⊢T*_ : KindContext → List (Kind S.base) → Set where
       []  : ∀ {K} → K ⊢T* []
       _∷_ : ∀ {K κ κs} → K ⊢T κ → K ⊢T* κs → K ⊢T* (κ ∷ κs)
+
+  data _⊢Type* : KindContext → Set where
+    []  : ∀ {K} → K ⊢Type*
+    _∷_ : ∀ {K} → K ⊢T Type → K ⊢Type* → K ⊢Type*
 
   mutual
     ren-Type : ∀ {K₁ K₂ κ} → (K₂ ⇒ᵣ K₁) → K₁ ⊢T κ → K₂ ⊢T κ
@@ -86,15 +91,23 @@ module Syntax (S : Signature) where
     subst-Type σ (Op op args) = Op op (subst-Types σ args)
 
     subst-Types : ∀ {K₁ K₂ κs} → (K₂ ⇒ₛ K₁) → K₁ ⊢T* κs → K₂ ⊢T* κs
-    subst-Types ρ []       = []
-    subst-Types ρ (A ∷ As) = subst-Type ρ A ∷ subst-Types ρ As
+    subst-Types σ []       = []
+    subst-Types σ (A ∷ As) = subst-Type σ A ∷ subst-Types σ As
+
+  subst-Type* : ∀ {K₁ K₂} → (K₂ ⇒ₛ K₁) → K₁ ⊢Type* → K₂ ⊢Type*
+  subst-Type* σ [] = []
+  subst-Type* σ (A ∷ Tys) = (subst-Type σ A) ∷ (subst-Type* σ Tys)
 
   single-sub : ∀ {K κ} → K ⊢T Base κ → K ⇒ₛ (K ,- κ)
   single-sub N zero = N
   single-sub N (succ x) = var x
 
-
-
+  record TermConstant : Set where
+    field
+      kctxt     : KindContext
+      arguments : kctxt ⊢Type*
+      result    : kctxt ⊢T Type
+  open TermConstant
 
   data Context : KindContext → Set where
     ε    : ∀ {Δ} → Context Δ
@@ -110,27 +123,42 @@ module Syntax (S : Signature) where
     zero : ∀ {Δ Γ A}   →             Δ ⊢ (Γ ,- A) ∋ A
     succ : ∀ {Δ Γ A B} → Δ ⊢ Γ ∋ A → Δ ⊢ (Γ ,- B) ∋ A
 
-  data _/_⊢_ : (Δ : KindContext) → Context Δ → Δ ⊢T Type → Set where
-    -- Variables
-    var    : ∀ {Δ Γ A} → Δ ⊢ Γ ∋ A → Δ / Γ ⊢ A
+  module terms (Const : Set) (ConstDetail : Const -> TermConstant) where
 
-    -- Functions
-    ƛ      : ∀ {Δ Γ A B} →
-             Δ / (Γ ,- A) ⊢ B →
-             Δ / Γ ⊢ (A ⇒ B)
-    _∙_    : ∀ {Δ Γ A B} →
-             Δ / Γ ⊢ (A ⇒ B) →
-             Δ / Γ ⊢ A →
-             Δ / Γ ⊢ B
+    mutual
+      data _/_⊢_ : (Δ : KindContext) → Context Δ → Δ ⊢T Type → Set where
+        -- Variables
+        var    : ∀ {Δ Γ A} → Δ ⊢ Γ ∋ A → Δ / Γ ⊢ A
 
-    -- Type quantification
-    Λ      : ∀ {Δ Γ κ A} →
-             (Δ ,- κ) / (ren-Context wk Γ) ⊢ A →
-             Δ / Γ ⊢ Forall A
-    _•_    : ∀ {Δ Γ κ A} →
-             Δ / Γ ⊢ Forall A →
-             (B : Δ ⊢T Base κ) →
-             Δ / Γ ⊢ subst-Type (single-sub B) A
+        -- Functions
+        ƛ      : ∀ {Δ Γ A B} →
+                 Δ / (Γ ,- A) ⊢ B →
+                 Δ / Γ ⊢ (A ⇒ B)
+        _∙_    : ∀ {Δ Γ A B} →
+                 Δ / Γ ⊢ (A ⇒ B) →
+                 Δ / Γ ⊢ A →
+                 Δ / Γ ⊢ B
+
+        -- Type quantification
+        Λ      : ∀ {Δ Γ κ A} →
+                 (Δ ,- κ) / (ren-Context wk Γ) ⊢ A →
+                 Δ / Γ ⊢ Forall A
+        _•_    : ∀ {Δ Γ κ A} →
+                 Δ / Γ ⊢ Forall A →
+                 (B : Δ ⊢T Base κ) →
+                 Δ / Γ ⊢ subst-Type (single-sub B) A
+
+        -- Constants
+        const  : ∀ {Δ Γ c} →
+                 (σ : Δ ⇒ₛ ConstDetail c .kctxt) →
+                 Δ / Γ ⊢* subst-Type* σ (ConstDetail c .arguments) →
+                 Δ / Γ ⊢ subst-Type σ (ConstDetail c .result)
+
+      data _/_⊢*_ : (Δ : KindContext) → Context Δ → Δ ⊢Type* → Set where
+        [] : ∀ {Δ Γ} → Δ / Γ ⊢* []
+        _∷_ : ∀ {Δ Γ Ty Tys} → Δ / Γ ⊢ Ty → Δ / Γ ⊢* Tys → Δ / Γ ⊢* (Ty ∷ Tys)
+
+
 {-
     -- External functions
     func   : ∀ {Δ Γ} → Δ / Γ ⊢ Num (LinearityConst linear) → Δ / Γ ⊢ Num (LinearityConst linear)
