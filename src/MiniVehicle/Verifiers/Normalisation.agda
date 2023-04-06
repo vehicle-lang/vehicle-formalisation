@@ -1,6 +1,5 @@
-{-# OPTIONS --postfix-projections #-}
 
-module Normalisation where
+module MiniVehicle.Verifiers.Normalisation where
 
 open import Level using (Lift; lift; lower; suc; 0ℓ)
 open import Data.Fin using (Fin)
@@ -9,9 +8,9 @@ open import Data.Product using (_×_; proj₁; proj₂; _,_)
 open import Data.Rational using (ℚ; 1ℚ; _+_; _*_)
 open import Data.Unit using (⊤; tt)
 
-open import MiniVehicle.Qualifiers
-open import NormalisedExpr
-open import Interpretation
+open import MiniVehicle.Language.Qualifiers
+open import MiniVehicle.Language.Interpretation
+open import MiniVehicle.Verifiers.NormalisedExpr
 
 record Syn : Set₁ where
   field

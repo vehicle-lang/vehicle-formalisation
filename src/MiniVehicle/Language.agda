@@ -1,8 +1,8 @@
 {-# OPTIONS --postfix-projections --safe #-}
 
-open import MiniVehicle.Restriction
+open import MiniVehicle.Language.SyntaxRestriction
 
-module MiniVehicle (R : SyntaxRestriction) where
+module MiniVehicle.Language (R : SyntaxRestriction) where
 
 open import Data.Fin using (Fin)
 open import Data.Nat using (ℕ)

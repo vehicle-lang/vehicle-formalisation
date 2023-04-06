@@ -1,3 +1,4 @@
 name: vehicle-formalisation
 include: src
 depend: standard-library
+flags: --postfix-projections

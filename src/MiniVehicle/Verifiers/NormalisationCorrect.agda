@@ -1,4 +1,3 @@
-{-# OPTIONS --postfix-projections #-}
 
 open import Level using (0ℓ; suc; lift)
 
@@ -16,15 +15,17 @@ open import Relation.Binary.PropositionalEquality
   using (_≡_; refl; trans; cong; sym; cong₂; subst; module ≡-Reasoning)
 
 open import Util
-open import MiniVehicle.Qualifiers
-open import NormalisedExpr renaming (_∘_ to _∘r_)
-open import Interpretation
+open import MiniVehicle.Language.Qualifiers
+open import MiniVehicle.Verifiers.NormalisedExpr renaming (_∘_ to _∘r_)
+open import MiniVehicle.Language.Interpretation
 open import EquiInhabited
 
-module NormalisationCorrect (extFunc : ℚ → ℚ) where
+import MiniVehicle.Language as MiniVehicle
+import MiniVehicle.Language.StandardSemantics as S
+import MiniVehicle.Verifiers.Normalisation as N
 
-  import StandardSemantics as S
-  import Normalisation as N
+
+module MiniVehicle.Verifiers.NormalisationCorrect (extFunc : ℚ → ℚ) where
 
   open Evaluation extFunc
 
@@ -632,7 +633,7 @@ module NormalisationCorrect (extFunc : ℚ → ℚ) where
   ℳ .Model.⟦idx⟧ = ⟦idx⟧
   ℳ .Model.⟦∃⟧ = ⟦∃⟧
 
-  open import MiniVehicle verifierRestriction hiding (_⇒ᵣ_; under)
+  open MiniVehicle verifierRestriction hiding (_⇒ᵣ_; under)
 
   module ℐ = Interpret verifierRestriction ℳ
 

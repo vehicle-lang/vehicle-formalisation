@@ -1,8 +1,8 @@
-{-# OPTIONS --postfix-projections --safe #-}
+{-# OPTIONS --safe #-}
 
-module MiniVehicle.Qualifiers where
+module MiniVehicle.Language.Qualifiers where
 
-open import MiniVehicle.Restriction
+open import MiniVehicle.Language.SyntaxRestriction
 open import Data.Product
 
 -- Linearity restrictions

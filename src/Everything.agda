@@ -1,7 +1,7 @@
 module Everything where
 
-import MiniVehicle
-import Interpretation
-import StandardSemantics
-import Normalisation
-import NormalisationCorrect
+import MiniVehicle.Language
+import MiniVehicle.Language.Interpretation
+import MiniVehicle.Language.StandardSemantics
+import MiniVehicle.Verifiers.Normalisation
+import MiniVehicle.Verifiers.NormalisationCorrect
