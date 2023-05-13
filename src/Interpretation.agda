@@ -1,6 +1,8 @@
 {-# OPTIONS --postfix-projections #-}
 
-module Interpretation where
+open import MiniVehicle.Restriction
+
+module Interpretation (R : SyntaxRestriction) where
 
 open import Level using (suc; 0ℓ; _⊔_; Lift; lift; lower)
 open import Data.Fin using (Fin)
@@ -12,7 +14,8 @@ open import Relation.Binary.PropositionalEquality
             using (_≡_; refl; cong; trans; cong₂; sym)
 
 open import Util
-open import MiniVehicle.Qualifiers
+
+open SyntaxRestriction R
 
 -- FIXME: try to remove this by defining setoid equalities for each kind
 postulate
@@ -55,39 +58,38 @@ record Model ℓ m : Set (suc ℓ ⊔ suc m) where
     ⟦extend⟧ : ∀ {X Y Z} → ((X ⟦×⟧ Y) ==> Mon Z) → (X ⟦×⟧ Mon Y) ==> Mon Z
 
     -- Actual stuff
-    ⟦Bool⟧ : LinearityVal → PolarityVal → ⟦Type⟧
-    ⟦Num⟧  : LinearityVal → ⟦Type⟧
+    ⟦Bool⟧ : BoolRestriction → ⟦Type⟧
+    ⟦Num⟧  : NumRestriction → ⟦Type⟧
 
-    ⟦not⟧ : ∀ {l p₁ p₂} → (Flat (NegPolRel p₁ p₂) ⟦×⟧ ⟦Bool⟧ l p₁) ==> ⟦Bool⟧ l p₂
-    ⟦and⟧ ⟦or⟧ : ∀ {l₁ l₂ l₃ p₁ p₂ p₃} →
-                (Flat (MaxLinRel l₁ l₂ l₃) ⟦×⟧
-                 (Flat (MaxPolRel p₁ p₂ p₃) ⟦×⟧
-                  (⟦Bool⟧ l₁ p₁ ⟦×⟧ ⟦Bool⟧ l₂ p₂))) ==> ⟦Bool⟧ l₃ p₃
+    ⟦not⟧ : ∀ {b₁ b₂} → (Flat (NotRestriction b₁ b₂) ⟦×⟧ ⟦Bool⟧ b₁) ==> ⟦Bool⟧ b₂
+    ⟦and⟧ : ∀ {b₁ b₂ b₃} → (Flat (AndRestriction b₁ b₂ b₃) ⟦×⟧ (⟦Bool⟧ b₁ ⟦×⟧ ⟦Bool⟧ b₂)) ==> ⟦Bool⟧ b₃
+    ⟦or⟧ : ∀ {b₁ b₂ b₃} → (Flat (OrRestriction b₁ b₂ b₃) ⟦×⟧ (⟦Bool⟧ b₁ ⟦×⟧ ⟦Bool⟧ b₂)) ==> ⟦Bool⟧ b₃
 
-    ⟦if⟧ : ∀ {X} → ((Mon X ⟦×⟧ Mon X) ⟦×⟧ ⟦Bool⟧ linear U) ==> Mon X
+    ⟦if⟧ : ∀ {X b} → ((Mon X ⟦×⟧ Mon X) ⟦×⟧ (Flat (IfRestriction b) ⟦×⟧ (⟦Bool⟧ b))) ==> Mon X
 
-    ⟦∃⟧    : ∀ {p₁ p₂ l} →
-            (Flat (QuantifyRel p₁ p₂) ⟦×⟧ (⟦Num⟧ linear ⟦⇒⟧ Mon (⟦Bool⟧ l p₁))) ==> ⟦Bool⟧ l p₂
+    ⟦∃⟧    : ∀ {l b₁ b₂} → (Flat (QuantRestriction l b₁ b₂) ⟦×⟧ (⟦Num⟧ l ⟦⇒⟧ Mon (⟦Bool⟧ b₁))) ==> ⟦Bool⟧ b₂
 
-    ⟦add⟧     : ∀ {l₁ l₂ l₃} → (Flat (MaxLinRel l₁ l₂ l₃) ⟦×⟧ (⟦Num⟧ l₁ ⟦×⟧ ⟦Num⟧ l₂)) ==> ⟦Num⟧ l₃
-    ⟦mul⟧     : ∀ {l₁ l₂ l₃} → (Flat (MulRel l₁ l₂ l₃) ⟦×⟧ (⟦Num⟧ l₁ ⟦×⟧ ⟦Num⟧ l₂)) ==> ⟦Num⟧ l₃
-    ⟦const⟧   : ∀ {X} → ℚ → X ==> ⟦Num⟧ const
-    ⟦extFunc⟧ : ⟦Num⟧ linear ==> Mon (⟦Num⟧ linear)
-    ⟦≤⟧       : ∀ {l₁ l₂ l₃} → (Flat (MaxLinRel l₁ l₂ l₃) ⟦×⟧ (⟦Num⟧ l₁ ⟦×⟧ ⟦Num⟧ l₂)) ==> ⟦Bool⟧ l₃ U
+    ⟦add⟧     : ∀ {l₁ l₂ l₃} → (Flat (AddRestriction l₁ l₂ l₃) ⟦×⟧ (⟦Num⟧ l₁ ⟦×⟧ ⟦Num⟧ l₂)) ==> ⟦Num⟧ l₃
+    ⟦mul⟧     : ∀ {l₁ l₂ l₃} → (Flat (MulRestriction l₁ l₂ l₃) ⟦×⟧ (⟦Num⟧ l₁ ⟦×⟧ ⟦Num⟧ l₂)) ==> ⟦Num⟧ l₃
+    ⟦const⟧   : ∀ {l₁} → ℚ → (Flat (NumConstRestriction l₁)) ==> ⟦Num⟧ l₁
+    ⟦extFunc⟧ : ∀ {l₁ l₂} → (Flat (FuncRestriction l₁ l₂) ⟦×⟧ ⟦Num⟧ l₁) ==> Mon (⟦Num⟧ l₂)
+    ⟦≤⟧       : ∀ {l₁ l₂ b₃} → (Flat (LeqRestriction l₁ l₂ b₃) ⟦×⟧ (⟦Num⟧ l₁ ⟦×⟧ ⟦Num⟧ l₂)) ==> ⟦Bool⟧ b₃
 
     -- Indexes and Arrays
     ⟦Index⟧ : ℕ → ⟦Type⟧
     ⟦idx⟧   : (n : ℕ)(i : Fin n) → ∀ {X} → X ==> ⟦Index⟧ n
 
+
+
 module Interpret {ℓ}{m} (ℳ : Model ℓ m) where
 
-  open import MiniVehicle
+  open import MiniVehicle R
   open Model ℳ
 
   ⟦_⟧kind : Kind → Set ℓ
   ⟦ Nat ⟧kind = Lift _ ℕ
-  ⟦ Linearity ⟧kind = Lift _ LinearityVal
-  ⟦ Polarity ⟧kind = Lift _ PolarityVal
+  ⟦ NumRes ⟧kind = Lift _ NumRestriction
+  ⟦ BoolRes ⟧kind = Lift _ BoolRestriction
   ⟦ Type ⟧kind = ⟦Type⟧
 
   ⟦_⟧kctxt : KindContext → Set ℓ
@@ -105,28 +107,38 @@ module Interpret {ℓ}{m} (ℳ : Model ℓ m) where
 
   ⟦_⟧ty : ∀ {K κ} → K ⊢T κ → ⟦ K ⟧kctxt → ⟦ κ ⟧kind
   ⟦ var x ⟧ty ks = ⟦ x ⟧tyvar ks
-  ⟦ Bool l x ⟧ty ks = ⟦Bool⟧ (⟦ l ⟧ty ks .lower) (⟦ x ⟧ty ks .lower)
-  ⟦ Num x ⟧ty ks = ⟦Num⟧ (⟦ x ⟧ty ks .lower)
+  ⟦ Bool r ⟧ty ks = ⟦Bool⟧ (⟦ r ⟧ty ks .lower)
+  ⟦ Num r ⟧ty ks = ⟦Num⟧ (⟦ r ⟧ty ks .lower)
   ⟦ A ⇒ B ⟧ty ks = (⟦ A ⟧ty ks) ⟦⇒⟧ Mon (⟦ B ⟧ty ks)
   ⟦ Index N ⟧ty ks = ⟦Index⟧ (⟦ N ⟧ty ks .lower)
   ⟦ Vec N A ⟧ty ks = (⟦Index⟧ (⟦ N ⟧ty ks .lower)) ⟦⇒⟧ Mon (⟦ A ⟧ty ks)
   ⟦ Forall Nat A ⟧ty ks = ⟦∀⟧ (λ n → Mon (⟦ A ⟧ty (ks , lift n)))
-  ⟦ Forall Linearity A ⟧ty ks = ⟦∀⟧ (λ l → Mon (⟦ A ⟧ty (ks , lift l)))
-  ⟦ Forall Polarity A ⟧ty ks = ⟦∀⟧ (λ p → Mon (⟦ A ⟧ty (ks , lift p)))
+  ⟦ Forall NumRes A ⟧ty ks = ⟦∀⟧ (λ l → Mon (⟦ A ⟧ty (ks , lift l)))
+  ⟦ Forall BoolRes A ⟧ty ks = ⟦∀⟧ (λ p → Mon (⟦ A ⟧ty (ks , lift p)))
   ⟦ [ n ] ⟧ty ks = lift n
-  ⟦ LinearityConst l ⟧ty ks = lift l
-  ⟦ PolarityConst p ⟧ty ks = lift p
-  ⟦ MaxLin l₁ l₂ l₃ ⟧ty ks =
-    Flat (MaxLinRel (⟦ l₁ ⟧ty ks .lower) (⟦ l₂ ⟧ty ks .lower) (⟦ l₃ ⟧ty ks .lower))
-  ⟦ HasMul l₁ l₂ l₃ ⟧ty ks =
-    Flat (MulRel (⟦ l₁ ⟧ty ks .lower) (⟦ l₂ ⟧ty ks .lower) (⟦ l₃ ⟧ty ks .lower))
-  ⟦ MaxPol p₁ p₂ p₃ ⟧ty ks =
-    Flat (MaxPolRel (⟦ p₁ ⟧ty ks .lower) (⟦ p₂ ⟧ty ks .lower) (⟦ p₃ ⟧ty ks .lower))
-  ⟦ NegPol p₁ p₂ ⟧ty ks =
-    Flat (NegPolRel (⟦ p₁ ⟧ty ks .lower) (⟦ p₂ ⟧ty ks .lower))
-  ⟦ Quantify p₁ p₂ ⟧ty ks =
-    Flat (QuantifyRel (⟦ p₁ ⟧ty ks .lower) (⟦ p₂ ⟧ty ks .lower))
-
+  -- Number restrictions
+  ⟦ NumRes n ⟧ty ks = lift n
+  ⟦ NumConstRes n ⟧ty ks = Flat (NumConstRestriction (⟦ n ⟧ty ks .lower))
+  ⟦ FuncRes n₁ n₂ ⟧ty ks = Flat (FuncRestriction (⟦ n₁ ⟧ty ks .lower) (⟦ n₂ ⟧ty ks .lower))
+  ⟦ AddRes l₁ l₂ l₃ ⟧ty ks =
+    Flat (AddRestriction (⟦ l₁ ⟧ty ks .lower) (⟦ l₂ ⟧ty ks .lower) (⟦ l₃ ⟧ty ks .lower))
+  ⟦ MulRes l₁ l₂ l₃ ⟧ty ks =
+    Flat (MulRestriction (⟦ l₁ ⟧ty ks .lower) (⟦ l₂ ⟧ty ks .lower) (⟦ l₃ ⟧ty ks .lower))
+  -- Bool restrictions
+  ⟦ BoolRes b ⟧ty ks = lift b
+  ⟦ BoolConstRes b ⟧ty ks = Flat (BoolConstRestriction (⟦ b ⟧ty ks .lower))
+  ⟦ NotRes n₁ n₂ ⟧ty ks = Flat (NotRestriction (⟦ n₁ ⟧ty ks .lower) (⟦ n₂ ⟧ty ks .lower))
+  ⟦ AndRes l₁ l₂ l₃ ⟧ty ks =
+    Flat (AndRestriction (⟦ l₁ ⟧ty ks .lower) (⟦ l₂ ⟧ty ks .lower) (⟦ l₃ ⟧ty ks .lower))
+  ⟦ OrRes l₁ l₂ l₃ ⟧ty ks =
+    Flat (OrRestriction (⟦ l₁ ⟧ty ks .lower) (⟦ l₂ ⟧ty ks .lower) (⟦ l₃ ⟧ty ks .lower))
+  ⟦ LeqRes l₁ l₂ l₃ ⟧ty ks =
+    Flat (LeqRestriction (⟦ l₁ ⟧ty ks .lower) (⟦ l₂ ⟧ty ks .lower) (⟦ l₃ ⟧ty ks .lower))
+  ⟦ QuantRes n p₁ p₂ ⟧ty ks =
+    Flat (QuantRestriction (⟦ n ⟧ty ks .lower) (⟦ p₁ ⟧ty ks .lower) (⟦ p₂ ⟧ty ks .lower))
+  ⟦ IfRes b ⟧ty ks =
+    Flat (IfRestriction (⟦ b ⟧ty ks .lower))
+  
   ⟦_⟧subst : ∀ {K K'} → (K' ⇒ₛ K) → ⟦ K' ⟧kctxt → ⟦ K ⟧kctxt
   ⟦_⟧subst {ε} σ ks = lift tt
   ⟦_⟧subst {K ,- κ} σ ks = ⟦ (λ x → σ (succ x)) ⟧subst ks , ⟦ σ zero ⟧ty ks
@@ -167,8 +179,8 @@ module Interpret {ℓ}{m} (ℳ : Model ℓ m) where
   ren-⟦Type⟧ : ∀ {K K'} (ρ : K' ⇒ᵣ K) {κ} (A : K ⊢T κ) →
              ∀ {ks} → ⟦ ren-Type ρ A ⟧ty ks ≡ ⟦ A ⟧ty (⟦ ρ ⟧ren ks)
   ren-⟦Type⟧ ρ (var x) = ren-⟦tyvar⟧ ρ x
-  ren-⟦Type⟧ ρ (Bool l x) = cong₂ ⟦Bool⟧ (cong lower (ren-⟦Type⟧ ρ l)) (cong lower (ren-⟦Type⟧ ρ x))
-  ren-⟦Type⟧ ρ (Num x) = cong ⟦Num⟧ (cong lower (ren-⟦Type⟧ ρ x))
+  ren-⟦Type⟧ ρ (Bool r) = cong ⟦Bool⟧ (cong lower (ren-⟦Type⟧ ρ r))
+  ren-⟦Type⟧ ρ (Num r) = cong ⟦Num⟧ (cong lower (ren-⟦Type⟧ ρ r))
   ren-⟦Type⟧ ρ (A ⇒ B) =
     cong₂ (λ □₁ □₂ → □₁ ⟦⇒⟧ (Mon □₂)) (ren-⟦Type⟧ ρ A) (ren-⟦Type⟧ ρ B)
   ren-⟦Type⟧ ρ (Index N) =
@@ -176,19 +188,35 @@ module Interpret {ℓ}{m} (ℳ : Model ℓ m) where
   ren-⟦Type⟧ ρ (Vec N A) =
     cong₂ (λ □₁ □₂ → ⟦Index⟧ (□₁ .lower) ⟦⇒⟧ (Mon □₂)) (ren-⟦Type⟧ ρ N) (ren-⟦Type⟧ ρ A)
   ren-⟦Type⟧ ρ (Forall Nat A) = cong ⟦∀⟧ (fext λ n → trans (cong Mon (ren-⟦Type⟧ (under ρ) A)) (cong (λ □ → Mon (⟦ A ⟧ty (□ , lift n))) ⟦ ρ succ⟧ren))
-  ren-⟦Type⟧ ρ (Forall Linearity A) {ks} = cong ⟦∀⟧ (fext λ n → trans (cong Mon (ren-⟦Type⟧ (under ρ) A)) (cong (λ □ → Mon (⟦ A ⟧ty (□ , lift n))) ⟦ ρ succ⟧ren))
-  ren-⟦Type⟧ ρ (Forall Polarity A) {ks} = cong ⟦∀⟧ (fext λ n → trans (cong Mon (ren-⟦Type⟧ (under ρ) A)) (cong (λ □ → Mon (⟦ A ⟧ty (□ , lift n))) ⟦ ρ succ⟧ren))
+  ren-⟦Type⟧ ρ (Forall NumRes A) {ks} = cong ⟦∀⟧ (fext λ n → trans (cong Mon (ren-⟦Type⟧ (under ρ) A)) (cong (λ □ → Mon (⟦ A ⟧ty (□ , lift n))) ⟦ ρ succ⟧ren))
+  ren-⟦Type⟧ ρ (Forall BoolRes A) {ks} = cong ⟦∀⟧ (fext λ n → trans (cong Mon (ren-⟦Type⟧ (under ρ) A)) (cong (λ □ → Mon (⟦ A ⟧ty (□ , lift n))) ⟦ ρ succ⟧ren))
   ren-⟦Type⟧ ρ [ n ] = refl
-  ren-⟦Type⟧ ρ (LinearityConst l) = refl
-  ren-⟦Type⟧ ρ (PolarityConst p) = refl
-  ren-⟦Type⟧ ρ (MaxLin l₁ l₂ l₃) =
-    cong Flat (cong₃ MaxLinRel (cong lower (ren-⟦Type⟧ ρ l₁)) (cong lower (ren-⟦Type⟧ ρ l₂)) (cong lower (ren-⟦Type⟧ ρ l₃)))
-  ren-⟦Type⟧ ρ (HasMul l₁ l₂ l₃) =
-    cong Flat (cong₃ MulRel (cong lower (ren-⟦Type⟧ ρ l₁)) (cong lower (ren-⟦Type⟧ ρ l₂)) (cong lower (ren-⟦Type⟧ ρ l₃)))
-  ren-⟦Type⟧ ρ (MaxPol p₁ p₂ p₃) =
-    cong Flat (cong₃ MaxPolRel (cong lower (ren-⟦Type⟧ ρ p₁)) (cong lower (ren-⟦Type⟧ ρ p₂)) (cong lower (ren-⟦Type⟧ ρ p₃)))
-  ren-⟦Type⟧ ρ (NegPol p₁ p₂) = cong Flat (cong₂ NegPolRel (cong lower (ren-⟦Type⟧ ρ p₁)) (cong lower (ren-⟦Type⟧ ρ p₂)))
-  ren-⟦Type⟧ ρ (Quantify p₁ p₂) = cong Flat (cong₂ QuantifyRel (cong lower (ren-⟦Type⟧ ρ p₁)) (cong lower (ren-⟦Type⟧ ρ p₂)))
+  -- Number restrictions
+  ren-⟦Type⟧ ρ (NumRes l) = refl
+  ren-⟦Type⟧ ρ (NumConstRes l) =
+    cong Flat (cong NumConstRestriction (cong lower (ren-⟦Type⟧ ρ l)))
+  ren-⟦Type⟧ ρ (FuncRes l₁ l₂) =
+    cong Flat (cong₂ FuncRestriction (cong lower (ren-⟦Type⟧ ρ l₁)) (cong lower (ren-⟦Type⟧ ρ l₂)))
+  ren-⟦Type⟧ ρ (AddRes l₁ l₂ l₃) =
+    cong Flat (cong₃ AddRestriction (cong lower (ren-⟦Type⟧ ρ l₁)) (cong lower (ren-⟦Type⟧ ρ l₂)) (cong lower (ren-⟦Type⟧ ρ l₃)))
+  ren-⟦Type⟧ ρ (MulRes l₁ l₂ l₃) =
+    cong Flat (cong₃ MulRestriction (cong lower (ren-⟦Type⟧ ρ l₁)) (cong lower (ren-⟦Type⟧ ρ l₂)) (cong lower (ren-⟦Type⟧ ρ l₃)))
+  -- Bool restrictions
+  ren-⟦Type⟧ ρ (BoolRes p) = refl
+  ren-⟦Type⟧ ρ (BoolConstRes l) =
+    cong Flat (cong BoolConstRestriction (cong lower (ren-⟦Type⟧ ρ l)))
+  ren-⟦Type⟧ ρ (NotRes l₁ l₂) =
+    cong Flat (cong₂ NotRestriction (cong lower (ren-⟦Type⟧ ρ l₁)) (cong lower (ren-⟦Type⟧ ρ l₂)))
+  ren-⟦Type⟧ ρ (AndRes l₁ l₂ l₃) =
+    cong Flat (cong₃ AndRestriction (cong lower (ren-⟦Type⟧ ρ l₁)) (cong lower (ren-⟦Type⟧ ρ l₂)) (cong lower (ren-⟦Type⟧ ρ l₃)))
+  ren-⟦Type⟧ ρ (OrRes l₁ l₂ l₃) =
+    cong Flat (cong₃ OrRestriction (cong lower (ren-⟦Type⟧ ρ l₁)) (cong lower (ren-⟦Type⟧ ρ l₂)) (cong lower (ren-⟦Type⟧ ρ l₃)))
+  ren-⟦Type⟧ ρ (LeqRes l₁ l₂ l₃) =
+    cong Flat (cong₃ LeqRestriction (cong lower (ren-⟦Type⟧ ρ l₁)) (cong lower (ren-⟦Type⟧ ρ l₂)) (cong lower (ren-⟦Type⟧ ρ l₃)))
+  ren-⟦Type⟧ ρ (QuantRes l₁ l₂ l₃) =
+    cong Flat (cong₃ QuantRestriction (cong lower (ren-⟦Type⟧ ρ l₁)) (cong lower (ren-⟦Type⟧ ρ l₂)) (cong lower (ren-⟦Type⟧ ρ l₃)))
+  ren-⟦Type⟧ ρ (IfRes l) =
+    cong Flat (cong IfRestriction (cong lower (ren-⟦Type⟧ ρ l)))
 
   ren-subst : ∀ {K K'}{ks : ⟦ K' ⟧kctxt} → (ρ : K' ⇒ᵣ K) → ⟦ (λ x → var (ρ x)) ⟧subst ks ≡ ⟦ ρ ⟧ren ks
   ren-subst {ε} {K'} {ks} ρ = refl
@@ -208,7 +236,7 @@ module Interpret {ℓ}{m} (ℳ : Model ℓ m) where
   subst-⟦Type⟧ : ∀ {K K'} (σ : K' ⇒ₛ K) {κ} (A : K ⊢T κ) →
                 ∀ {ks} → ⟦ subst-Type σ A ⟧ty ks ≡ ⟦ A ⟧ty (⟦ σ ⟧subst ks)
   subst-⟦Type⟧ σ (var x) = subst-⟦tyvar⟧ σ x
-  subst-⟦Type⟧ σ (Bool l x) = cong₂ ⟦Bool⟧ (cong lower (subst-⟦Type⟧ σ l)) (cong lower (subst-⟦Type⟧ σ x))
+  subst-⟦Type⟧ σ (Bool r) = cong ⟦Bool⟧ (cong lower (subst-⟦Type⟧ σ r))
   subst-⟦Type⟧ σ (Num x) = cong ⟦Num⟧ (cong lower (subst-⟦Type⟧ σ x))
   subst-⟦Type⟧ σ (A ⇒ B) = cong₂ (λ □₁ □₂ → □₁ ⟦⇒⟧ (Mon □₂)) (subst-⟦Type⟧ σ A) (subst-⟦Type⟧ σ B)
   subst-⟦Type⟧ σ (Index N) = cong ⟦Index⟧ (cong lower (subst-⟦Type⟧ σ N))
@@ -219,42 +247,59 @@ module Interpret {ℓ}{m} (ℳ : Model ℓ m) where
       trans (cong Mon (subst-⟦Type⟧ (binder σ) A))
             (cong (λ □ → Mon (⟦ A ⟧ty (□ , lift n)))
                   (trans (subst-ren wk σ) (cong ⟦ σ ⟧subst ⟦wk⟧-eq))))
-  subst-⟦Type⟧ σ (Forall Linearity A) =
+  subst-⟦Type⟧ σ (Forall NumRes A) =
     cong ⟦∀⟧ (fext λ n →
       trans (cong Mon (subst-⟦Type⟧ (binder σ) A))
             (cong (λ □ → Mon (⟦ A ⟧ty (□ , lift n)))
                   (trans (subst-ren wk σ) (cong ⟦ σ ⟧subst ⟦wk⟧-eq))))
-  subst-⟦Type⟧ σ (Forall Polarity A) =
+  subst-⟦Type⟧ σ (Forall BoolRes A) =
     cong ⟦∀⟧ (fext λ n →
       trans (cong Mon (subst-⟦Type⟧ (binder σ) A))
             (cong (λ □ → Mon (⟦ A ⟧ty (□ , lift n)))
                   (trans (subst-ren wk σ) (cong ⟦ σ ⟧subst ⟦wk⟧-eq))))
   subst-⟦Type⟧ σ [ n ] = refl
-  subst-⟦Type⟧ σ (LinearityConst l) = refl
-  subst-⟦Type⟧ σ (PolarityConst p) = refl
-  subst-⟦Type⟧ ρ (MaxLin l₁ l₂ l₃) =
-    cong Flat (cong₃ MaxLinRel (cong lower (subst-⟦Type⟧ ρ l₁)) (cong lower (subst-⟦Type⟧ ρ l₂)) (cong lower (subst-⟦Type⟧ ρ l₃)))
-  subst-⟦Type⟧ ρ (HasMul l₁ l₂ l₃) =
-    cong Flat (cong₃ MulRel (cong lower (subst-⟦Type⟧ ρ l₁)) (cong lower (subst-⟦Type⟧ ρ l₂)) (cong lower (subst-⟦Type⟧ ρ l₃)))
-  subst-⟦Type⟧ ρ (MaxPol p₁ p₂ p₃) =
-    cong Flat (cong₃ MaxPolRel (cong lower (subst-⟦Type⟧ ρ p₁)) (cong lower (subst-⟦Type⟧ ρ p₂)) (cong lower (subst-⟦Type⟧ ρ p₃)))
-  subst-⟦Type⟧ ρ (NegPol p₁ p₂) = cong Flat (cong₂ NegPolRel (cong lower (subst-⟦Type⟧ ρ p₁)) (cong lower (subst-⟦Type⟧ ρ p₂)))
-  subst-⟦Type⟧ ρ (Quantify p₁ p₂) = cong Flat (cong₂ QuantifyRel (cong lower (subst-⟦Type⟧ ρ p₁)) (cong lower (subst-⟦Type⟧ ρ p₂)))
-
+  -- Number constraints
+  subst-⟦Type⟧ σ (NumRes l) = refl
+  subst-⟦Type⟧ σ (NumConstRes l) =
+    cong Flat (cong NumConstRestriction (cong lower (subst-⟦Type⟧ σ l)))
+  subst-⟦Type⟧ σ (FuncRes p₁ p₂) =
+    cong Flat (cong₂ FuncRestriction (cong lower (subst-⟦Type⟧ σ p₁)) (cong lower (subst-⟦Type⟧ σ p₂)))
+  subst-⟦Type⟧ σ (AddRes l₁ l₂ l₃) =
+    cong Flat (cong₃ AddRestriction (cong lower (subst-⟦Type⟧ σ l₁)) (cong lower (subst-⟦Type⟧ σ l₂)) (cong lower (subst-⟦Type⟧ σ l₃)))
+  subst-⟦Type⟧ σ (MulRes l₁ l₂ l₃) =
+    cong Flat (cong₃ MulRestriction (cong lower (subst-⟦Type⟧ σ l₁)) (cong lower (subst-⟦Type⟧ σ l₂)) (cong lower (subst-⟦Type⟧ σ l₃)))
+    
+  -- Bool constraints
+  subst-⟦Type⟧ σ (BoolRes l) = refl
+  subst-⟦Type⟧ σ (BoolConstRes l) =
+    cong Flat (cong BoolConstRestriction (cong lower (subst-⟦Type⟧ σ l)))
+  subst-⟦Type⟧ σ (NotRes p₁ p₂) =
+    cong Flat (cong₂ NotRestriction (cong lower (subst-⟦Type⟧ σ p₁)) (cong lower (subst-⟦Type⟧ σ p₂)))
+  subst-⟦Type⟧ σ (AndRes l₁ l₂ l₃) =
+    cong Flat (cong₃ AndRestriction (cong lower (subst-⟦Type⟧ σ l₁)) (cong lower (subst-⟦Type⟧ σ l₂)) (cong lower (subst-⟦Type⟧ σ l₃)))
+  subst-⟦Type⟧ σ (OrRes l₁ l₂ l₃) =
+    cong Flat (cong₃ OrRestriction (cong lower (subst-⟦Type⟧ σ l₁)) (cong lower (subst-⟦Type⟧ σ l₂)) (cong lower (subst-⟦Type⟧ σ l₃)))
+  subst-⟦Type⟧ σ (LeqRes l₁ l₂ l₃) =
+    cong Flat (cong₃ LeqRestriction (cong lower (subst-⟦Type⟧ σ l₁)) (cong lower (subst-⟦Type⟧ σ l₂)) (cong lower (subst-⟦Type⟧ σ l₃)))
+  subst-⟦Type⟧ σ (QuantRes l₁ l₂ l₃) =
+    cong Flat (cong₃ QuantRestriction (cong lower (subst-⟦Type⟧ σ l₁)) (cong lower (subst-⟦Type⟧ σ l₂)) (cong lower (subst-⟦Type⟧ σ l₃)))
+  subst-⟦Type⟧ σ (IfRes b) =
+    cong Flat (cong IfRestriction (cong lower (subst-⟦Type⟧ σ b)))
+    
   ------------------------------------------------------------------------------
   _×m_ : ∀ {W X Y Z} → (W ==> X) → (Y ==> Z) → (W ⟦×⟧ Y) ==> (X ⟦×⟧ Z)
   f ×m g = ⟨ f ∘ ⟦proj₁⟧ , g ∘ ⟦proj₂⟧ ⟩
 
-  binaryM : ∀ {X Y Z} → ((X ⟦×⟧ Y) ==> Mon Z) → (Mon X ⟦×⟧ Mon Y) ==> Mon Z
-  binaryM f =
-      ⟦extend⟧ (⟦extend⟧ (f ∘ ⟨ ⟦proj₂⟧ , ⟦proj₁⟧ ⟩) ∘ ⟨ ⟦proj₂⟧ , ⟦proj₁⟧ ⟩)
+  seq : ∀ {X Y} → (Mon X ⟦×⟧ Mon Y) ==> Mon (X ⟦×⟧ Y)
+  seq = ⟦extend⟧ ((⟦extend⟧ (⟦return⟧ ∘ ⟨ ⟦proj₂⟧ , ⟦proj₁⟧ ⟩)) ∘ ⟨ ⟦proj₂⟧ , ⟦proj₁⟧ ⟩)
 
   ternaryM : ∀ {W X Y Z} →
              ((W ⟦×⟧ (X ⟦×⟧ Y)) ==> Mon Z) → (Mon W ⟦×⟧ (Mon X ⟦×⟧ Mon Y)) ==> Mon Z
   ternaryM f = (⟦extend⟧ (⟦extend⟧ (⟦extend⟧ (f ∘ ⟨ ⟦proj₂⟧ ∘ ⟦proj₁⟧ , ⟨ ⟦proj₁⟧ ∘ ⟦proj₁⟧ , ⟦proj₂⟧ ⟩ ⟩) ∘ ⟨ ⟨ ⟦proj₂⟧ , ⟦proj₁⟧ ∘ ⟦proj₁⟧ ⟩ , ⟦proj₂⟧ ∘ ⟦proj₁⟧ ⟩) ∘ ⟨ ⟨ ⟦proj₂⟧ , ⟦proj₂⟧ ∘ ⟦proj₁⟧ ⟩ , ⟦proj₁⟧ ∘ ⟦proj₁⟧ ⟩)) ∘ ⟨ ⟦proj₂⟧ , ⟦proj₁⟧ ⟩
 
-  seq : ∀ {X Y} → (Mon X ⟦×⟧ Mon Y) ==> Mon (X ⟦×⟧ Y)
-  seq = ⟦extend⟧ ((⟦extend⟧ (⟦return⟧ ∘ ⟨ ⟦proj₂⟧ , ⟦proj₁⟧ ⟩)) ∘ ⟨ ⟦proj₂⟧ , ⟦proj₁⟧ ⟩)
+  binaryM : ∀ {X Y Z} → ((X ⟦×⟧ Y) ==> Mon Z) → (Mon X ⟦×⟧ Mon Y) ==> Mon Z
+  binaryM f =
+      ⟦extend⟧ (⟦extend⟧ (f ∘ ⟨ ⟦proj₂⟧ , ⟦proj₁⟧ ⟩) ∘ ⟨ ⟦proj₂⟧ , ⟦proj₁⟧ ⟩)
 
   unaryM : ∀ {X Y} → (X ==> Mon Y) → Mon X ==> Mon Y
   unaryM f = ⟦extend⟧ (f ∘ ⟦proj₂⟧) ∘ ⟨ ⟦terminal⟧ , ⟦id⟧ ⟩
@@ -268,6 +313,9 @@ module Interpret {ℓ}{m} (ℳ : Model ℓ m) where
 
   unary : ∀ {X Y} → (X ==> Y) → Mon X ==> Mon Y
   unary f = unaryM (⟦return⟧ ∘ f)
+
+  ⟦elem⟧ : ∀ {X A} → A → X ==> Mon (Flat A)
+  ⟦elem⟧ r = ⟦return⟧ ∘ elem r
 
   ⟦coerce⟧ : ∀ {X Y} → X ≡ Y → X ==> Y
   ⟦coerce⟧ refl = ⟦id⟧
@@ -298,30 +346,29 @@ module Interpret {ℓ}{m} (ℳ : Model ℓ m) where
     ⟦return⟧ ∘ ⟦∀-intro⟧ (λ n → ⟦ t ⟧tm (δ , lift n) ∘ ⟦coerce⟧ (sym eq))
       where eq : ∀ {n} → ⟦ ren-Context (wk {κ = Nat}) Γ ⟧ctxt (δ , lift n) ≡ ⟦ Γ ⟧ctxt δ
             eq = trans (ren-⟦Context⟧ wk Γ) (cong (⟦ Γ ⟧ctxt) ⟦wk⟧-eq)
-  ⟦_⟧tm {Γ = Γ} (Λ Linearity t) δ =
+  ⟦_⟧tm {Γ = Γ} (Λ NumRes t) δ =
     ⟦return⟧ ∘ ⟦∀-intro⟧ (λ n → ⟦ t ⟧tm (δ , lift n) ∘ ⟦coerce⟧ (sym eq))
-      where eq : ∀ {n} → ⟦ ren-Context (wk {κ = Linearity}) Γ ⟧ctxt (δ , lift n) ≡ ⟦ Γ ⟧ctxt δ
+      where eq : ∀ {n} → ⟦ ren-Context (wk {κ = NumRes}) Γ ⟧ctxt (δ , lift n) ≡ ⟦ Γ ⟧ctxt δ
             eq = trans (ren-⟦Context⟧ wk Γ) (cong (⟦ Γ ⟧ctxt) ⟦wk⟧-eq)
-  ⟦_⟧tm {Γ = Γ} (Λ Polarity t) δ =
+  ⟦_⟧tm {Γ = Γ} (Λ BoolRes t) δ =
     ⟦return⟧ ∘ ⟦∀-intro⟧ (λ n → ⟦ t ⟧tm (δ , lift n) ∘ ⟦coerce⟧ (sym eq))
-      where eq : ∀ {n} → ⟦ ren-Context (wk {κ = Polarity}) Γ ⟧ctxt (δ , lift n) ≡ ⟦ Γ ⟧ctxt δ
+      where eq : ∀ {n} → ⟦ ren-Context (wk {κ = BoolRes}) Γ ⟧ctxt (δ , lift n) ≡ ⟦ Γ ⟧ctxt δ
             eq = trans (ren-⟦Context⟧ wk Γ) (cong (⟦ Γ ⟧ctxt) ⟦wk⟧-eq)
   ⟦ _•_ {s = Nat} {A = A} t N ⟧tm δ =
     (unary (⟦coerce⟧ eq) ∘ unaryM (⟦∀-elim⟧ {A = λ n → Mon (⟦ A ⟧ty (δ , lift n))} (⟦ N ⟧ty δ .lower))) ∘ ⟦ t ⟧tm δ
     where eq : ⟦ A ⟧ty (δ , ⟦ N ⟧ty δ) ≡ ⟦ subst-Type (single-sub N) A ⟧ty δ
           eq = trans (cong (λ □ → ⟦ A ⟧ty (□ , ⟦ N ⟧ty δ)) (sym ⟦id⟧-subst))
                      (sym (subst-⟦Type⟧ (single-sub N) A))
-  ⟦ _•_ {s = Linearity} {A = A} t N ⟧tm δ =
+  ⟦ _•_ {s = NumRes} {A = A} t N ⟧tm δ =
     (unary (⟦coerce⟧ eq) ∘ unaryM (⟦∀-elim⟧ {A = λ n → Mon (⟦ A ⟧ty (δ , lift n))} (⟦ N ⟧ty δ .lower))) ∘ ⟦ t ⟧tm δ
     where eq : ⟦ A ⟧ty (δ , ⟦ N ⟧ty δ) ≡ ⟦ subst-Type (single-sub N) A ⟧ty δ
           eq = trans (cong (λ □ → ⟦ A ⟧ty (□ , ⟦ N ⟧ty δ)) (sym ⟦id⟧-subst))
                      (sym (subst-⟦Type⟧ (single-sub N) A))
-  ⟦ _•_ {s = Polarity} {A = A} t N ⟧tm δ =
+  ⟦ _•_ {s = BoolRes} {A = A} t N ⟧tm δ =
     (unary (⟦coerce⟧ eq) ∘ unaryM (⟦∀-elim⟧ {A = λ n → Mon (⟦ A ⟧ty (δ , lift n))} (⟦ N ⟧ty δ .lower))) ∘ ⟦ t ⟧tm δ
     where eq : ⟦ A ⟧ty (δ , ⟦ N ⟧ty δ) ≡ ⟦ subst-Type (single-sub N) A ⟧ty δ
           eq = trans (cong (λ □ → ⟦ A ⟧ty (□ , ⟦ N ⟧ty δ)) (sym ⟦id⟧-subst))
                      (sym (subst-⟦Type⟧ (single-sub N) A))
-
   ⟦ foreach n A t ⟧tm δ = ⟦return⟧ ∘ ⟦Λ⟧ (⟦ t ⟧tm δ)
     -- FIXME: two choices here:
     -- 1. Lazily do the let- and if- lifting so that it gets replicated every time we index
@@ -334,21 +381,27 @@ module Interpret {ℓ}{m} (ℳ : Model ℓ m) where
   ⟦ index n A s t ⟧tm δ = binaryM ⟦eval⟧ ∘ ⟨ ⟦ s ⟧tm δ , ⟦ t ⟧tm δ ⟩
   ⟦ idx i ⟧tm δ = ⟦return⟧ ∘ ⟦idx⟧ _ i
 
-  ⟦ func t ⟧tm δ = unaryM ⟦extFunc⟧ ∘ ⟦ t ⟧tm δ
-  ⟦ const x ⟧tm δ = ⟦return⟧ ∘ ⟦const⟧ x
-  ⟦ (t `+ t₁) t₂ ⟧tm δ = ternary ⟦add⟧ ∘ ⟨ (⟦ t ⟧tm δ) , ⟨ (⟦ t₁ ⟧tm δ) , (⟦ t₂ ⟧tm δ) ⟩ ⟩
-  ⟦ (t `* t₁) t₂ ⟧tm δ = ternary ⟦mul⟧ ∘ ⟨ (⟦ t ⟧tm δ) , ⟨ (⟦ t₁ ⟧tm δ) , (⟦ t₂ ⟧tm δ) ⟩ ⟩
-  ⟦ (t `≤ t₁) t₂ ⟧tm δ = ternary ⟦≤⟧ ∘ ⟨ (⟦ t ⟧tm δ) , ⟨ (⟦ t₁ ⟧tm δ) , (⟦ t₂ ⟧tm δ) ⟩ ⟩
-  ⟦ if s then t else u ⟧tm δ = ⟦extend⟧ ⟦if⟧ ∘ ⟨ ⟨ ⟦ t ⟧tm δ , ⟦ u ⟧tm δ ⟩ , ⟦ s ⟧tm δ ⟩
-  ⟦ (`¬ t) t₁ ⟧tm δ = binary ⟦not⟧ ∘ ⟨ ⟦ t ⟧tm δ , ⟦ t₁ ⟧tm δ ⟩
-  ⟦ (t `∧ t₁) t₂ t₃ ⟧tm δ =
-    (((unary ⟦and⟧ ∘ seq) ∘ (⟦id⟧ ×m seq)) ∘ (⟦id⟧ ×m (⟦id⟧ ×m seq))) ∘ ⟨ ⟦ t ⟧tm δ , ⟨ ⟦ t₁ ⟧tm δ , ⟨ ⟦ t₂ ⟧tm δ , ⟦ t₃ ⟧tm δ ⟩ ⟩ ⟩
-  ⟦ (t `∨ t₁) t₂ t₃ ⟧tm δ =
-    (((unary ⟦or⟧ ∘ seq) ∘ (⟦id⟧ ×m seq)) ∘ (⟦id⟧ ×m (⟦id⟧ ×m seq))) ∘ ⟨ ⟦ t ⟧tm δ , ⟨ ⟦ t₁ ⟧tm δ , ⟨ ⟦ t₂ ⟧tm δ , ⟦ t₃ ⟧tm δ ⟩ ⟩ ⟩
+  ⟦ func r t ⟧tm δ = binaryM ⟦extFunc⟧ ∘ ⟨ ⟦ r ⟧tm δ , ⟦ t ⟧tm δ ⟩
+  ⟦ const r x ⟧tm δ = unary (⟦const⟧ x) ∘ ⟦ r ⟧tm δ
+  ⟦ _`+_ r t₁ t₂ ⟧tm δ = ternary ⟦add⟧ ∘  ⟨ ⟦ r ⟧tm δ , ⟨ (⟦ t₁ ⟧tm δ) , (⟦ t₂ ⟧tm δ) ⟩ ⟩
+
+  ⟦ _`*_ r t₁ t₂ ⟧tm δ = ternary ⟦mul⟧ ∘  ⟨ ⟦ r ⟧tm δ , ⟨ (⟦ t₁ ⟧tm δ) , (⟦ t₂ ⟧tm δ) ⟩ ⟩
+  ⟦ _`≤_ r t₁ t₂ ⟧tm δ = ternary ⟦≤⟧ ∘  ⟨ ⟦ r ⟧tm δ , ⟨ (⟦ t₁ ⟧tm δ) , (⟦ t₂ ⟧tm δ) ⟩ ⟩
+  ⟦_⟧tm {Γ = Γ} (if_then_else_ r b t u) δ = ⟦extend⟧ ⟦if⟧ ∘ ⟨ ⟨ ⟦ t ⟧tm δ , ⟦ u ⟧tm δ ⟩ , seq ∘ ⟨ ⟦ r ⟧tm δ , ⟦ b ⟧tm δ ⟩ ⟩  
+  ⟦ `¬_ r t ⟧tm δ = binary ⟦not⟧ ∘ ⟨ ⟦ r ⟧tm δ , ⟦ t ⟧tm δ ⟩
+  ⟦ _`∧_ r t₁ t₂ ⟧tm δ = ternary ⟦and⟧ ∘ ⟨ ⟦ r ⟧tm δ , ⟨ (⟦ t₁ ⟧tm δ) , (⟦ t₂ ⟧tm δ) ⟩ ⟩
+  ⟦ _`∨_ r t₁ t₂ ⟧tm δ = ternary ⟦or⟧ ∘ ⟨ ⟦ r ⟧tm δ , ⟨ (⟦ t₁ ⟧tm δ) , (⟦ t₂ ⟧tm δ) ⟩ ⟩
   ⟦ ∃ t t₁ ⟧tm δ = binary ⟦∃⟧ ∘ ⟨ ⟦ t ⟧tm δ , ⟦ t₁ ⟧tm δ ⟩
 
-  ⟦ maxlin x ⟧tm δ = ⟦return⟧ ∘ elem x
-  ⟦ hasmul x ⟧tm δ = ⟦return⟧ ∘ elem x
-  ⟦ maxpol x ⟧tm δ = ⟦return⟧ ∘ elem x
-  ⟦ negpol x ⟧tm δ = ⟦return⟧ ∘ elem x
-  ⟦ quantify x ⟧tm δ = ⟦return⟧ ∘ elem x
+  ⟦ numConstRes n ⟧tm δ = ⟦return⟧ ∘ elem n
+  ⟦ funcRes n ⟧tm δ = ⟦return⟧ ∘ elem n
+  ⟦ addRes n ⟧tm δ = ⟦return⟧ ∘ elem n
+  ⟦ mulRes n ⟧tm δ = ⟦return⟧ ∘ elem n
+
+  ⟦ boolConstRes n ⟧tm δ = ⟦return⟧ ∘ elem n
+  ⟦ notRes n ⟧tm δ = ⟦return⟧ ∘ elem n
+  ⟦ andRes n ⟧tm δ = ⟦return⟧ ∘ elem n
+  ⟦ orRes n ⟧tm δ = ⟦return⟧ ∘ elem n
+  ⟦ leqRes n ⟧tm δ = ⟦return⟧ ∘ elem n
+  ⟦ quantRes n ⟧tm δ = ⟦return⟧ ∘ elem n
+  ⟦ ifRes n ⟧tm δ = ⟦return⟧ ∘ elem n

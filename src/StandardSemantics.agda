@@ -30,7 +30,7 @@ eval-Quant (x or y) k = (eval-Quant x k) ⊎ (eval-Quant y k)
 module _ (extFunc : ℚ → ℚ) where
   open Model
 
-  ℳ : Model (suc 0ℓ) 0ℓ
+  ℳ : Model verifierRestriction (suc 0ℓ) 0ℓ
   ℳ .⟦Type⟧ = Set
   ℳ ._==>_ X Y = X → Y
   ℳ .Flat X = X
@@ -56,22 +56,22 @@ module _ (extFunc : ℚ → ℚ) where
   ℳ .⟦add⟧ (_ , x , y)  = x +ℚ y
   ℳ .⟦mul⟧ (_ , x , y)  = x *ℚ y
   ℳ .⟦const⟧ q _ = q
-  ℳ .⟦extFunc⟧ x  = extFunc (x )
-  ℳ .⟦Bool⟧ _ U = 𝔹
-  ℳ .⟦Bool⟧ _ Ex = Quant 𝔹
-  ℳ .⟦not⟧ (U , x) = not x
-  ℳ .⟦and⟧ (p , U-U , x , y) = x ∧ y
-  ℳ .⟦and⟧ (p , U-Ex , x , y) = (return x) and y
-  ℳ .⟦and⟧ (p , Ex-U , x , y) = x and (return y)
-  ℳ .⟦and⟧ (p , Ex-Ex , x , y) = x and y
-  ℳ .⟦or⟧ (_ , U-U , x , y) = x ∨ y
-  ℳ .⟦or⟧ (_ , U-Ex , x , y) = (return x) or y
-  ℳ .⟦or⟧ (_ , Ex-U , x , y) = x or (return y)
-  ℳ .⟦or⟧ (_ , Ex-Ex , x , y) = x or y
-  ℳ .⟦≤⟧ (_ , q₁ , q₂)  = q₁  ≤ᵇ q₂
-  ℳ .⟦if⟧ ((tr , fa) , false) = fa
-  ℳ .⟦if⟧ ((tr , fa) , true) = tr
+  ℳ .⟦extFunc⟧ (_ , v)  = extFunc v
+  ℳ .⟦Bool⟧ (_ , U) = 𝔹
+  ℳ .⟦Bool⟧ (_ , Ex) = Quant 𝔹
+  ℳ .⟦not⟧ (notRes U , x) = not x
+  ℳ .⟦and⟧ (maxBoolRes _ U-U , x , y) = x ∧ y
+  ℳ .⟦and⟧ (maxBoolRes _ U-Ex , x , y) = (return x) and y
+  ℳ .⟦and⟧ (maxBoolRes _ Ex-U , x , y) = x and (return y)
+  ℳ .⟦and⟧ (maxBoolRes _ Ex-Ex , x , y) = x and y
+  ℳ .⟦or⟧ (maxBoolRes _ U-U , x , y) = x ∨ y
+  ℳ .⟦or⟧ (maxBoolRes _ U-Ex , x , y) = (return x) or y
+  ℳ .⟦or⟧ (maxBoolRes _ Ex-U , x , y) = x or (return y)
+  ℳ .⟦or⟧ (maxBoolRes _ Ex-Ex , x , y) = x or y
+  ℳ .⟦≤⟧ (leqRes _ , q₁ , q₂) = q₁  ≤ᵇ q₂
+  ℳ .⟦if⟧ ((tr , fa) , (ifRes _ , true)) = tr
+  ℳ .⟦if⟧ ((tr , fa) , (ifRes _ , false)) = fa
   ℳ .⟦Index⟧ i = Fin i
   ℳ .⟦idx⟧ _ i _  = i
-  ℳ .⟦∃⟧ (U , f) = ex (λ q → return (f q))
-  ℳ .⟦∃⟧ (Ex , f) = ex f
+  ℳ .⟦∃⟧ (quantRes U , f) = ex (λ q → return (f q))
+  ℳ .⟦∃⟧ (quantRes Ex , f) = ex f
