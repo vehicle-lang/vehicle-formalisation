@@ -18,14 +18,14 @@ open import Relation.Binary.PropositionalEquality
   using (_≡_; refl; trans; cong; sym; cong₂; subst; module ≡-Reasoning)
 
 open import Util
-open import MiniVehicle.Language.Qualifiers
+open import MiniVehicle.Language.SyntaxRestriction
 open import MiniVehicle.Verifiers.NormalisedExpr renaming (_∘_ to _∘r_)
 open import MiniVehicle.Language.Interpretation
 open import EquiInhabited
 
 import MiniVehicle.LossFunctions.Compile as N
 import MiniVehicle.Language N.lossRestriction as MiniVehicle
-import MiniVehicle.Language.StandardSemantics N.lossRestriction as S
+import MiniVehicle.Language.StandardSemantics as S
 
 open Evaluation extFunc
 
@@ -76,17 +76,17 @@ wk-w .presv x = refl
 ------------------------------------------------------------------------------
 -- Our category of related interpretations
 
-module 𝒩 = Model N.ℳ
+module 𝒩 = Model (N.ℳ extFunc {!!})
 module 𝒮 = Model (S.ℳ extFunc)
-
+{-
 record WRel : Set (suc 0ℓ) where
   field
     Left  : 𝒮.⟦Type⟧
     Right : 𝒩.⟦Type⟧
-    rel   : (w : World) → Left → Right ? → Set --.N.Carrier (w .ctxt) → Set
+    rel   : (w : World) → Left → ? → Set --.N.Carrier (w .ctxt) → Set
     ext   : ∀ {w w'} (ρ : w' ⇒w w) a b → rel w a b → rel w' a (Right ?) --.N.rename (ρ .ren) b)
 open WRel
-{-
+
 infixr 20 _==>_
 record _==>_ (X Y : WRel) : Set where
   field

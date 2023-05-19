@@ -31,31 +31,8 @@ record SyntaxRestriction : Set₁ where
     QuantRestriction : NumRestriction → BoolRestriction → BoolRestriction → Set
     IfRestriction : BoolRestriction → Set
 
-record _⊆ᵣ_ (S R : SyntaxRestriction) : Set where
-  private
-    module R = SyntaxRestriction S
-    module S = SyntaxRestriction R
-
-  field
-    toₙ : S.NumRestriction → R.NumRestriction
-    toₙ-const : toₙ Pres₁ S.NumConstRestriction ⟶ R.NumConstRestriction
-    toₙ-func : toₙ Pres₂ S.FuncRestriction ⟶ R.FuncRestriction
-    toₙ-add : toₙ Pres₃ S.AddRestriction ⟶ R.AddRestriction
-    toₙ-mul : toₙ Pres₃ S.MulRestriction ⟶ R.MulRestriction
-
-    toᵇ : S.BoolRestriction → R.BoolRestriction
-    toᵇ-const : toᵇ Pres₁ S.BoolConstRestriction ⟶ R.BoolConstRestriction
-    {-
-    BoolConstRestriction : BoolRestriction → Set
-    NotRestriction : BoolRestriction → BoolRestriction → Set
-    AndRestriction : BoolRestriction → BoolRestriction → BoolRestriction → Set
-    OrRestriction : BoolRestriction → BoolRestriction → BoolRestriction → Set
-    LeqRestriction : NumRestriction → NumRestriction → BoolRestriction → Set
-    QuantRestriction : NumRestriction → BoolRestriction → BoolRestriction → Set
-    IfRestriction : BoolRestriction → Set
-    -}
 ------------------------------------------------------------------------------
--- Restriction type
+-- Encoding of polarities to track the quantification status of a Bools
 
 data PolarityVal : Set where
   U Ex : PolarityVal
@@ -80,7 +57,13 @@ data QuantifyRel : PolarityVal → PolarityVal → Set where
 -- The default restriction
 
 -- As Agda is constructive we can't easily represent the standard semantics
--- of `Bool`. Therefore we track the standard polarity of an expression.
+-- of expressions of type `Bool` containing quantifiers. Therefore we use the
+-- default restriction to track the standard polarity of the boolean type,
+-- which then allows us to assign separate semantics for quantified vs
+-- non-quantified Boolean expressions.
+--
+-- This doesn't actually impose any restrictions on the syntax apart from in
+-- the case of `if` whose condition must be an unquantified boolean.
 defaultRestriction : SyntaxRestriction
 defaultRestriction = record
   { NumRestriction      = ⊤

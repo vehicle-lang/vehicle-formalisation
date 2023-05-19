@@ -15,7 +15,7 @@ open import MiniVehicle.Language.SyntaxRestriction
 
 lossRestriction : SyntaxRestriction
 lossRestriction = record
-  { SyntaxRestriction noRestriction
+  { SyntaxRestriction defaultRestriction
   ; IfRestriction = λ _ → ⊥
   }
 
@@ -65,5 +65,5 @@ module _ (extFunc : ℚ → ℚ) (max : (ℚ → ℚ) → ℚ) where
   module 𝒩 = Interpret ℳ
   open import MiniVehicle.Language lossRestriction
 
-  compile : ε / ε ⊢ Bool (BoolRes tt) → ℚ
+  compile : ε / ε ⊢ Bool (BoolRes Ex) → ℚ
   compile t = 𝒩.⟦ t ⟧tm _ tt
