@@ -1,6 +1,5 @@
-{-# OPTIONS --postfix-projections #-}
 
-module StandardSemantics where
+module MiniVehicle.Language.StandardSemantics where
 
 open import Level using (0ℓ; suc)
 open import Data.Bool using (true; false; _∧_; _∨_; not) renaming (Bool to 𝔹; T to True)
@@ -12,8 +11,8 @@ open import Data.Sum using (_⊎_)
 open import Data.Unit using (⊤; tt)
 open import Relation.Binary.PropositionalEquality using (_≡_; refl; trans; cong; sym; cong₂)
 
-open import MiniVehicle.Qualifiers
-open import Interpretation
+open import MiniVehicle.Language.Qualifiers
+open import MiniVehicle.Language.Interpretation
 
 data Quant (A : Set) : Set where
   return : A → Quant A

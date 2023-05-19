@@ -1,6 +1,6 @@
-{-# OPTIONS --postfix-projections --safe #-}
+{-# OPTIONS --safe #-}
 
-module NormalisedExpr where
+module MiniVehicle.Verifiers.NormalisedExpr where
 
 open import Data.Bool
        using (Bool; true; false; _∧_; _∨_; if_then_else_; not)

@@ -1,8 +1,7 @@
-{-# OPTIONS --postfix-projections #-}
 
-open import MiniVehicle.Restriction
+open import MiniVehicle.Language.SyntaxRestriction
 
-module Interpretation (R : SyntaxRestriction) where
+module MiniVehicle.Language.Interpretation (R : SyntaxRestriction) where
 
 open import Level using (suc; 0ℓ; _⊔_; Lift; lift; lower)
 open import Data.Fin using (Fin)
@@ -83,7 +82,7 @@ record Model ℓ m : Set (suc ℓ ⊔ suc m) where
 
 module Interpret {ℓ}{m} (ℳ : Model ℓ m) where
 
-  open import MiniVehicle R
+  open import MiniVehicle.Language R
   open Model ℳ
 
   ⟦_⟧kind : Kind → Set ℓ
