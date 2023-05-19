@@ -5,7 +5,7 @@ open import Data.Bool using (not; _∧_; _∨_; true; false)
                    renaming (Bool to 𝔹; T to True; if_then_else_ to ifᵇ_then_else_)
 open import Data.Fin using (Fin)
 open import Data.Nat using (ℕ)
-open import Data.Product using (_×_; _,_; proj₁; proj₂; Σ-syntax)
+open import Data.Product as Prod using (_×_; _,_; proj₁; proj₂; Σ-syntax)
 open import Data.Rational using (ℚ; _+_; _*_; _≤ᵇ_; _≟_; 1ℚ)
 open import Data.Rational.Properties using (*-identityˡ; *-comm)
 open import Data.Sum using (_⊎_; inj₁; inj₂)
@@ -15,13 +15,14 @@ open import Relation.Binary.PropositionalEquality
   using (_≡_; refl; trans; cong; sym; cong₂; subst; module ≡-Reasoning)
 
 open import Util
-open import MiniVehicle.Language.Qualifiers
+open import MiniVehicle.Verifiers.SyntaxRestriction
 open import MiniVehicle.Verifiers.NormalisedExpr renaming (_∘_ to _∘r_)
 open import MiniVehicle.Language.Interpretation
 open import EquiInhabited
 
 import MiniVehicle.Language as MiniVehicle
 import MiniVehicle.Language.StandardSemantics as S
+open import MiniVehicle.Language.SyntaxRestriction
 import MiniVehicle.Verifiers.Normalisation as N
 
 
@@ -241,7 +242,7 @@ module MiniVehicle.Verifiers.NormalisationCorrect (extFunc : ℚ → ℚ) where
   ------------------------------------------------------------------------------
   -- Numbers, and linear expressions
   ⟦Num⟧ : LinearityVal → WRel
-  ⟦Num⟧ p .Left = 𝒮.⟦Num⟧ p
+  ⟦Num⟧ p .Left = 𝒮.⟦Num⟧ tt
   ⟦Num⟧ p .Right = 𝒩.⟦Num⟧ p
   ⟦Num⟧ const .rel _ q₁ q₂ = q₁ ≡ q₂
   ⟦Num⟧ const .ext _ _ _ eq = eq
@@ -255,9 +256,8 @@ module MiniVehicle.Verifiers.NormalisationCorrect (extFunc : ℚ → ℚ) where
   ⟦const⟧ q .right = 𝒩.⟦const⟧ q
   ⟦const⟧ q .rel-mor w const const _ = refl
 
-  ⟦add⟧ : ∀ {l₁ l₂ l₃} →
-           (Flat (MaxLinRel l₁ l₂ l₃) ⟦×⟧ (⟦Num⟧ l₁ ⟦×⟧ ⟦Num⟧ l₂)) ==> ⟦Num⟧ l₃
-  ⟦add⟧ .left = 𝒮.⟦add⟧
+  ⟦add⟧ : ∀ {l₁ l₂ l₃} → (Flat (MaxLinRel l₁ l₂ l₃) ⟦×⟧ (⟦Num⟧ l₁ ⟦×⟧ ⟦Num⟧ l₂)) ==> ⟦Num⟧ l₃
+  ⟦add⟧ .left = λ {(_ , (u , v)) → 𝒮.⟦add⟧ (_ , (u , v))}
   ⟦add⟧ .right = 𝒩.⟦add⟧
   ⟦add⟧ .rel-mor w (const-const   , x₁ , y₁) (_ , x₂ , y₂) (refl , x₁₂ , y₁₂) =
     cong₂ _+_ x₁₂ y₁₂
@@ -269,7 +269,7 @@ module MiniVehicle.Verifiers.NormalisationCorrect (extFunc : ℚ → ℚ) where
     cong₂ _+_ x₁₂ y₁₂
 
   ⟦mul⟧ : ∀ {l₁ l₂ l₃} → (Flat (MulLinRel l₁ l₂ l₃) ⟦×⟧ (⟦Num⟧ l₁ ⟦×⟧ ⟦Num⟧ l₂)) ==> ⟦Num⟧ l₃
-  ⟦mul⟧ .left = 𝒮.⟦mul⟧
+  ⟦mul⟧ .left = λ {(x , (u , v)) → 𝒮.⟦mul⟧ (_ , (u , v))}
   ⟦mul⟧ .right = 𝒩.⟦mul⟧
   ⟦mul⟧ .rel-mor w (const-const  , x₁ , y₁) (_ , x₂ , y₂) (refl , x₁₂ , y₁₂) =
     cong₂ _*_ x₁₂ y₁₂
@@ -326,7 +326,7 @@ module MiniVehicle.Verifiers.NormalisationCorrect (extFunc : ℚ → ℚ) where
   ext-ExFormula ρ _ _ (q-or r₁ r₂) = q-or (ext-ExFormula ρ _ _ r₁) (ext-ExFormula ρ _ _ r₂)
 
   ⟦Bool⟧ : LinearityVal × PolarityVal → WRel
-  ⟦Bool⟧ (l , p) .Left = 𝒮.⟦Bool⟧ (l , p)
+  ⟦Bool⟧ (l , p) .Left = 𝒮.⟦Bool⟧ p
   ⟦Bool⟧ (l , p) .Right = 𝒩.⟦Bool⟧ (l , p)
   ⟦Bool⟧ (l , U) .rel w b ϕ = b ≡ eval-Constraint ϕ (w .env)
   ⟦Bool⟧ (l , U) .ext ρ b ϕ eq = trans eq (ext-evalConstraint ϕ ρ)
@@ -334,7 +334,7 @@ module MiniVehicle.Verifiers.NormalisationCorrect (extFunc : ℚ → ℚ) where
   ⟦Bool⟧ (l , Ex) .ext = ext-ExFormula
 
   ⟦≤⟧ : ∀ {l₁ l₂ l₃} → (Flat (LeqRes l₁ l₂ l₃) ⟦×⟧ (⟦Num⟧ l₁ ⟦×⟧ ⟦Num⟧ l₂)) ==> ⟦Bool⟧ l₃
-  ⟦≤⟧ .left = 𝒮.⟦≤⟧
+  ⟦≤⟧ .left = λ { (leqRes _ , u) → 𝒮.⟦≤⟧ (U , u) }
   ⟦≤⟧ .right = 𝒩.⟦≤⟧
   ⟦≤⟧ .rel-mor w (leqRes const-const   , x₁ , y₁) (_ , x₂ , y₂) (refl , x₁₂ , y₁₂) =
     cong₂ _≤ᵇ_ x₁₂ y₁₂
@@ -348,7 +348,7 @@ module MiniVehicle.Verifiers.NormalisationCorrect (extFunc : ℚ → ℚ) where
   ⟦and⟧ : ∀ {l₁ l₂ l₃} →
             (Flat (MaxBoolRes l₁ l₂ l₃) ⟦×⟧
               (⟦Bool⟧ l₁ ⟦×⟧ ⟦Bool⟧ l₂)) ==> ⟦Bool⟧ l₃
-  ⟦and⟧ .left = 𝒮.⟦and⟧
+  ⟦and⟧ .left = λ { (maxBoolRes _ v , x) → 𝒮.⟦and⟧ (v , x)}
   ⟦and⟧ .right = 𝒩.⟦and⟧
   ⟦and⟧ .rel-mor w (maxBoolRes _ U-U , _) (maxBoolRes _ U-U , _) (eq , x₁₂ , y₁₂) =
     cong₂ _∧_ x₁₂ y₁₂
@@ -362,7 +362,7 @@ module MiniVehicle.Verifiers.NormalisationCorrect (extFunc : ℚ → ℚ) where
   ⟦or⟧ : ∀ {l₁ l₂ l₃} →
             (Flat (MaxBoolRes l₁ l₂ l₃) ⟦×⟧
               (⟦Bool⟧ l₁ ⟦×⟧ ⟦Bool⟧ l₂)) ==> ⟦Bool⟧ l₃
-  ⟦or⟧ .left = 𝒮.⟦or⟧
+  ⟦or⟧ .left = λ { (maxBoolRes _ v , x) → 𝒮.⟦or⟧ (v , x)}
   ⟦or⟧ .right = 𝒩.⟦or⟧
   ⟦or⟧ .rel-mor w (maxBoolRes _ U-U , _) (maxBoolRes _ U-U , _) (_ , x₁₂ , y₁₂) =
     cong₂ _∨_ x₁₂ y₁₂
@@ -375,7 +375,7 @@ module MiniVehicle.Verifiers.NormalisationCorrect (extFunc : ℚ → ℚ) where
 
 
   ⟦not⟧ : ∀ {p₁ p₂} → (Flat (NotRes p₁ p₂) ⟦×⟧ ⟦Bool⟧ p₁) ==> ⟦Bool⟧ p₂
-  ⟦not⟧ .left = 𝒮.⟦not⟧
+  ⟦not⟧ .left = λ { (notRes v , x) → 𝒮.⟦not⟧ (v , x)}
   ⟦not⟧ .right = 𝒩.⟦not⟧
   ⟦not⟧ .rel-mor w (notRes U , x₁) (_ , x₂) (refl , x₁₂) =
     trans (cong not x₁₂) (eval-negate x₂ (w .env))
@@ -439,13 +439,13 @@ module MiniVehicle.Verifiers.NormalisationCorrect (extFunc : ℚ → ℚ) where
   ⟦return⟧ .rel-mor w x₁ x₂ r-x₁x₂ = r-x₁x₂
 
   ⟦extFunc⟧ : ∀ {l₁ l₂} → (Flat (FuncRel l₁ l₂) ⟦×⟧ ⟦Num⟧ l₁) ==> LiftMR (⟦Num⟧ l₂)
-  ⟦extFunc⟧ .left = 𝒮.⟦extFunc⟧
+  ⟦extFunc⟧ .left = λ {(_ , u) → 𝒮.⟦extFunc⟧ (_ , u) }
   ⟦extFunc⟧ .right = 𝒩.⟦extFunc⟧
   ⟦extFunc⟧ .rel-mor w (linear-linear , x₁) (linear-linear , x₂) (_ , r-x₁x₂) =
     trans (cong extFunc r-x₁x₂) (sym (*-identityˡ _))
 
   ⟦if⟧ : ∀ {X b} → ((LiftMR X ⟦×⟧ LiftMR X) ⟦×⟧ (Flat (IfRes b) ⟦×⟧ (⟦Bool⟧ b))) ==> LiftMR X
-  ⟦if⟧ .left = 𝒮.⟦if⟧
+  ⟦if⟧ .left = λ { (a , ifRes u , s) → 𝒮.⟦if⟧ (a , U , s) }
   ⟦if⟧ .right = 𝒩.⟦if⟧
   ⟦if⟧ .rel-mor w ((tr₁ , fa₁) , (ifRes _ , false)) ((tr₂ , fa₂) , (ifRes _ , ϕ)) ((tr₁-tr₂ , fa₁-fa₂) , (_ , eq)) rewrite sym eq = fa₁-fa₂
   ⟦if⟧ .rel-mor w ((tr₁ , fa₁) , (ifRes _ , true)) ((tr₂ , fa₂) , (ifRes _ , ϕ)) ((tr₁-tr₂ , fa₁-fa₂) , (_ , eq)) rewrite sym eq = tr₁-tr₂
@@ -488,7 +488,7 @@ module MiniVehicle.Verifiers.NormalisationCorrect (extFunc : ℚ → ℚ) where
 
   ⟦∃⟧ : ∀ {p₁ p₂ l} →
        (Flat (QuantRes l p₁ p₂) ⟦×⟧ (⟦Num⟧ l ⟦⇒⟧ LiftMR (⟦Bool⟧ p₁))) ==> ⟦Bool⟧ p₂
-  ⟦∃⟧ .left = 𝒮.⟦∃⟧
+  ⟦∃⟧ .left = λ { (quantRes u , v) → 𝒮.⟦∃⟧ (u , v) }
   ⟦∃⟧ {l = l} .right = 𝒩.⟦∃⟧ {l = l}
   ⟦∃⟧ {l = l} .rel-mor w (quantRes U  , f₁) (quantRes U , f₂) (refl , r) =
     q-ex (λ q → compile-lemma l (extend-w w q)
@@ -532,7 +532,6 @@ module MiniVehicle.Verifiers.NormalisationCorrect (extFunc : ℚ → ℚ) where
              (⇔-trans (known q) (cong-∃ (λ q' → ×-cong (x q') ⇔-refl)))
   ExFormulaR-ok w (q-and r₁ r₂) = ×-cong (ExFormulaR-ok w r₁) (ExFormulaR-ok w r₂)
   ExFormulaR-ok w (q-or r₁ r₂) = ⊎-cong (ExFormulaR-ok w r₁) (ExFormulaR-ok w r₂)
-
 
   ext-PrenexFormula : ∀ {w₁ w₂} (ρ : w₂ ⇒w w₁) ϕ →
                   eval-PrenexFormula ϕ (w₁ .env) ⇔

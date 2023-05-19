@@ -1,9 +1,10 @@
 {-# OPTIONS --safe #-}
 
-module MiniVehicle.Language.Qualifiers where
+module MiniVehicle.Verifiers.SyntaxRestriction where
+
+open import Data.Product
 
 open import MiniVehicle.Language.SyntaxRestriction
-open import Data.Product
 
 -- Linearity restrictions
 
@@ -26,28 +27,6 @@ data MulLinRel : LinearityVal → LinearityVal → LinearityVal → Set where
   const-const  : MulLinRel const const const
   const-linear : MulLinRel const linear linear
   linear-const : MulLinRel linear const linear
-
--- Polarity
-
-data PolarityVal : Set where
-  U Ex : PolarityVal
-
-data ConstPolRel : PolarityVal → Set where
-  U : ConstPolRel U
-
-data MaxPolRel : PolarityVal → PolarityVal → PolarityVal → Set where
-  U-U   : MaxPolRel U U U
-  U-Ex  : MaxPolRel U Ex Ex
-  Ex-U  : MaxPolRel Ex U Ex
-  Ex-Ex : MaxPolRel Ex Ex Ex
-
-data NegPolRel : PolarityVal → PolarityVal → Set where
-  U  : NegPolRel U U
-
-data QuantifyRel : PolarityVal → PolarityVal → Set where
-  U  : QuantifyRel U Ex
-  Ex : QuantifyRel Ex Ex
-
 
 -- Restrictions
 

@@ -8,9 +8,10 @@ open import Data.Product using (_×_; proj₁; proj₂; _,_)
 open import Data.Rational using (ℚ; 1ℚ; _+_; _*_)
 open import Data.Unit using (⊤; tt)
 
-open import MiniVehicle.Language.Qualifiers
+open import MiniVehicle.Language.SyntaxRestriction
 open import MiniVehicle.Language.Interpretation
 open import MiniVehicle.Verifiers.NormalisedExpr
+open import MiniVehicle.Verifiers.SyntaxRestriction
 
 record Syn : Set₁ where
   field

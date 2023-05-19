@@ -64,6 +64,7 @@ record Model ℓ m : Set (suc ℓ ⊔ suc m) where
     ⟦and⟧ : ∀ {b₁ b₂ b₃} → (Flat (AndRestriction b₁ b₂ b₃) ⟦×⟧ (⟦Bool⟧ b₁ ⟦×⟧ ⟦Bool⟧ b₂)) ==> ⟦Bool⟧ b₃
     ⟦or⟧ : ∀ {b₁ b₂ b₃} → (Flat (OrRestriction b₁ b₂ b₃) ⟦×⟧ (⟦Bool⟧ b₁ ⟦×⟧ ⟦Bool⟧ b₂)) ==> ⟦Bool⟧ b₃
 
+    -- TODO: can we move the restriction to the front like the rest?
     ⟦if⟧ : ∀ {X b} → ((Mon X ⟦×⟧ Mon X) ⟦×⟧ (Flat (IfRestriction b) ⟦×⟧ (⟦Bool⟧ b))) ==> Mon X
 
     ⟦∃⟧    : ∀ {l b₁ b₂} → (Flat (QuantRestriction l b₁ b₂) ⟦×⟧ (⟦Num⟧ l ⟦⇒⟧ Mon (⟦Bool⟧ b₁))) ==> ⟦Bool⟧ b₂

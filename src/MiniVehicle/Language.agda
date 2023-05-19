@@ -192,11 +192,8 @@ data _/_⊢_ : (Δ : KindContext) → Context Δ → Δ ⊢T Type → Set where
 
   -- Logic
   _`∧_ : ∀ {r₁ r₂ r₃} → Δ / Γ ⊢ AndRes r₁ r₂ r₃ → Δ / Γ ⊢ Bool r₁ → Δ / Γ ⊢ Bool r₂ → Δ / Γ ⊢ Bool r₃
-  _`∨_ : ∀ {b₁ b₂ b₃} → Δ / Γ ⊢ OrRes b₁ b₂ b₃ → Δ / Γ ⊢ Bool b₁ →
-            Δ / Γ ⊢ Bool b₂ →
-            Δ / Γ ⊢ Bool b₃
-  `¬_ : ∀ {b₁ b₂} → Δ / Γ ⊢ NotRes b₁ b₂ → Δ / Γ ⊢ Bool b₁ →
-        Δ / Γ ⊢ Bool b₂
+  _`∨_ : ∀ {b₁ b₂ b₃} → Δ / Γ ⊢ OrRes b₁ b₂ b₃ → Δ / Γ ⊢ Bool b₁ → Δ / Γ ⊢ Bool b₂ → Δ / Γ ⊢ Bool b₃
+  `¬_ : ∀ {b₁ b₂} → Δ / Γ ⊢ NotRes b₁ b₂ → Δ / Γ ⊢ Bool b₁ → Δ / Γ ⊢ Bool b₂
   ∃   : ∀ {n₁ b₁ b₂} →
         Δ / Γ ⊢ QuantRes n₁ b₁ b₂ →
         Δ / Γ ⊢ (Num n₁ ⇒ Bool b₁) →

@@ -1,5 +1,5 @@
 
-module MiniVehicle.LossFunctions.Model where
+module MiniVehicle.LossFunctions.Compile where
 
 open import Data.Fin
 open import Data.Empty
@@ -11,6 +11,7 @@ open import Function.Base as Function using ()
 open import Data.Rational as ℚ
 
 open import MiniVehicle.Language.SyntaxRestriction
+
 
 lossRestriction : SyntaxRestriction
 lossRestriction = record
@@ -60,3 +61,9 @@ module _ (extFunc : ℚ → ℚ) (max : (ℚ → ℚ) → ℚ) where
   ℳ .⟦Index⟧ i = Fin i
   ℳ .⟦idx⟧ _ i _  = i
   ℳ .⟦∃⟧ (_ , f) = max f
+
+  module 𝒩 = Interpret ℳ
+  open import MiniVehicle.Language lossRestriction
+
+  compile : ε / ε ⊢ Bool (BoolRes tt) → ℚ
+  compile t = 𝒩.⟦ t ⟧tm _ tt
