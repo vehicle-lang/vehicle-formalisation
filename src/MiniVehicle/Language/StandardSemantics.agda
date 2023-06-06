@@ -9,10 +9,16 @@ open import Data.Product using (_×_; _,_; proj₁; proj₂; Σ-syntax)
 open import Data.Rational using (ℚ; _≤ᵇ_) renaming (_+_ to _+ℚ_; _*_ to _*ℚ_)
 open import Data.Sum using (_⊎_)
 open import Data.Unit using (⊤; tt)
+open import Function using (_⇔_)
+open import Relation.Binary using (REL)
 open import Relation.Binary.PropositionalEquality using (_≡_; refl; trans; cong; sym; cong₂)
 
 open import MiniVehicle.Language.SyntaxRestriction
 open import MiniVehicle.Language.Interpretation
+open import Util
+
+------------------------------------------------------------------------------
+-- Quantifiers
 
 data Quant (A : Set) : Set where
   return : A → Quant A
@@ -25,6 +31,25 @@ eval-Quant (return x) k = k x
 eval-Quant (ex x)     k = Σ[ q ∈ ℚ ] eval-Quant (x q) k
 eval-Quant (x and y) k = (eval-Quant x k) × (eval-Quant y k)
 eval-Quant (x or y) k = (eval-Quant x k) ⊎ (eval-Quant y k)
+
+data QuantRel {A B : Set} (R : REL A B 0ℓ) : REL (Quant A) (Quant B) 0ℓ where
+  return : ∀ {a b} → R a b → QuantRel R (return a) (return b)
+  _and_ : ∀ {a b c d} → QuantRel R a b → QuantRel R c d → QuantRel R (a and c) (b and d)
+  _or_ : ∀ {a b c d} → QuantRel R a b → QuantRel R c d → QuantRel R (a or c) (b or d)
+  ex : ∀ {f g} → (∀ q → QuantRel R (f q) (g q)) → QuantRel R (ex f) (ex g)
+
+eval-Quant⇔ :
+  ∀ {A B} {R : REL A B 0ℓ} → 
+  {x : Quant A} {y : Quant B} → QuantRel R x y →
+  {f : A → Set} {g : B → Set} → (∀ {x y} → R x y → f x ⇔ g y) →
+  eval-Quant x f ⇔ eval-Quant y g
+eval-Quant⇔ {x = return _} {return _} (return Rxy) Rfg = Rfg Rxy
+eval-Quant⇔ {x = _ and _} {_ and _} (Rxy₁ and Rxy₂) Rfg = eval-Quant⇔ Rxy₁ Rfg ×-⇔ eval-Quant⇔ Rxy₂ Rfg
+eval-Quant⇔ {x = _ or _} {_ or _} (Rxy₁ or Rxy₂) Rfg = eval-Quant⇔ Rxy₁ Rfg ⊎-⇔ eval-Quant⇔ Rxy₂ Rfg
+eval-Quant⇔ {x = ex _} {ex _} (ex Rxy) Rfg = Σ-⇔ (λ {x} → eval-Quant⇔ (Rxy x) Rfg)
+
+------------------------------------------------------------------------------
+-- Standard model
 
 module _ (extFunc : ℚ → ℚ) where
   open Model

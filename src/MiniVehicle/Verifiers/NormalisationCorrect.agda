@@ -637,7 +637,7 @@ module MiniVehicle.Verifiers.NormalisationCorrect (extFunc : ℚ → ℚ) where
   module ℐ = Interpret verifierRestriction ℳ
 
   standard : ε / ε ⊢ Bool (BoolRes (linear , Ex)) → Set
-  standard t = S.eval-Quant (ℐ.⟦ t ⟧tm (lift tt) .left tt) True
+  standard t = S.eval-Quant (ℐ.⟦_⟧tm t (lift tt) .left tt) True
 
   normalise : ε / ε ⊢ Bool (BoolRes (linear , Ex)) → PrenexFormula ε
   normalise t = toPrenexForm (N.compile (ℐ.⟦ t ⟧tm (lift tt) .right .N.mor tt))
