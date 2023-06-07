@@ -1,7 +1,9 @@
 
 open import Data.Rational using (ℚ; _+_; _*_; _≤ᵇ_; _≟_; 1ℚ)
+open import MiniVehicle.LossFunctions.DifferentiableLogic
 
-module MiniVehicle.LossFunctions.Correctness (extFunc : ℚ → ℚ) where
+module MiniVehicle.LossFunctions.Correctness
+  (extFunc : ℚ → ℚ) (dl : DifferentiableLogic) (dl-valid : ValidDifferentiableLogic dl) where
 
 open import Level using (0ℓ; suc; lift)
 
@@ -11,11 +13,12 @@ open import Data.Empty using (⊥)
 open import Data.Fin using (Fin)
 open import Data.Nat using (ℕ)
 open import Data.Product using (_×_; _,_; proj₁; proj₂; Σ-syntax)
-import Data.Rational as ℚ
-open import Data.Rational.Properties using (*-identityˡ; *-comm)
+open import Data.Rational as ℚ
+open import Relation.Nullary.Decidable using (⌊_⌋)
+open import Data.Rational.Properties using (*-identityˡ; *-comm; ≤ᵇ⇒≤; ≤⇒≤ᵇ; module ≤-Reasoning)
 open import Data.Sum using (_⊎_; inj₁; inj₂)
 open import Data.Unit using (⊤; tt)
-open import Function using (_⇔_; mk⇔)
+open import Function using (_⇔_; mk⇔; id)
 open import Relation.Binary.PropositionalEquality
   using (_≡_; refl; trans; cong; sym; cong₂; subst; module ≡-Reasoning)
 
@@ -28,10 +31,13 @@ import MiniVehicle.LossFunctions.Compile as N
 import MiniVehicle.Language N.lossRestriction as MiniVehicle
 import MiniVehicle.Language.StandardSemantics as S
 
+open DifferentiableLogic dl
+open ValidDifferentiableLogic dl-valid
+
 ------------------------------------------------------------------------------
 -- Our category of related interpretations
 
-module 𝒩 = Model (N.ℳ extFunc)
+module 𝒩 = Model (N.ℳ extFunc dl)
 module 𝒮 = Model (S.ℳ extFunc)
 
 record WRel : Set (suc 0ℓ) where
@@ -184,27 +190,21 @@ _⟦⇒⟧_ : WRel → WRel → WRel
 ------------------------------------------------------------------------------
 -- Booleans and constraints
 
-𝔹ℚ-equivalence : 𝔹 → ℚ → Set
-𝔹ℚ-equivalence b ϕ = b ≡ (ϕ ℚ.≤ᵇ ℚ.0ℚ)
-
-True⇔Truish : ∀ {x : 𝔹} {y : ℚ} → 𝔹ℚ-equivalence x y → True x ⇔ N.Truish y
-True⇔Truish refl = Function.mk⇔ {!!} {!!}
-
 ⟦Bool⟧ : PolarityVal → WRel
 ⟦Bool⟧ p .Left = 𝒮.⟦Bool⟧ p
 ⟦Bool⟧ p .Right = 𝒩.⟦Bool⟧ p
-⟦Bool⟧ U .rel = 𝔹ℚ-equivalence
-⟦Bool⟧ Ex .rel = S.QuantRel 𝔹ℚ-equivalence
+⟦Bool⟧ U .rel = _⇿_
+⟦Bool⟧ Ex .rel = S.QuantRel _⇿_
 
 ⟦≤⟧ : ∀ {l₁ l₂ l₃} → (Flat (ConstPolRel l₃) ⟦×⟧ (⟦Num⟧ l₁ ⟦×⟧ ⟦Num⟧ l₂)) ==> ⟦Bool⟧ l₃
 ⟦≤⟧ .left = 𝒮.⟦≤⟧
 ⟦≤⟧ .right = 𝒩.⟦≤⟧
-⟦≤⟧ .rel-mor (U  , x₁ , y₁) (_ , x₂ , y₂) (refl , x₁₂ , y₁₂) = {!!}
-
+⟦≤⟧ .rel-mor (U , x , y) (_ , .x , .y) (refl , refl , refl) = ⟪≤⟫-⇿
+ 
 ⟦and⟧ : ∀ {l₁ l₂ l₃} → (Flat (MaxPolRel l₁ l₂ l₃) ⟦×⟧ (⟦Bool⟧ l₁ ⟦×⟧ ⟦Bool⟧ l₂)) ==> ⟦Bool⟧ l₃
 ⟦and⟧ .left = 𝒮.⟦and⟧
 ⟦and⟧ .right = 𝒩.⟦and⟧
-⟦and⟧ .rel-mor (U-U , x₁ , y₁) (U-U , x₂ , y₂) (eq , x₁₂ , y₁₂) = {!!}
+⟦and⟧ .rel-mor (U-U , x₁ , y₁) (U-U , x₂ , y₂) (_ , x₁₂ , y₁₂) = ⟪and⟫-⇿ x₁₂ y₁₂
 ⟦and⟧ .rel-mor (U-Ex , _) (U-Ex , _) (_ , x₁₂ , y₁₂) = S.return x₁₂ S.and y₁₂
 ⟦and⟧ .rel-mor (Ex-U , _) (Ex-U , _) (_ , x₁₂ , y₁₂) = x₁₂ S.and S.return y₁₂
 ⟦and⟧ .rel-mor (Ex-Ex , _) (Ex-Ex , _) (_ ,  x₁₂ , y₁₂) = x₁₂ S.and y₁₂
@@ -214,7 +214,7 @@ True⇔Truish refl = Function.mk⇔ {!!} {!!}
             (⟦Bool⟧ l₁ ⟦×⟧ ⟦Bool⟧ l₂)) ==> ⟦Bool⟧ l₃
 ⟦or⟧ .left = 𝒮.⟦or⟧
 ⟦or⟧ .right = 𝒩.⟦or⟧
-⟦or⟧ .rel-mor (U-U , _) (U-U , _) (_ , x₁₂ , y₁₂) = {!!}
+⟦or⟧ .rel-mor (U-U , _) (U-U , _) (_ , x₁₂ , y₁₂) = ⟪or⟫-⇿ x₁₂ y₁₂
 ⟦or⟧ .rel-mor (U-Ex , _) (U-Ex , _) (_ , x₁₂ , y₁₂) = S.return x₁₂ S.or y₁₂
 ⟦or⟧ .rel-mor (Ex-U , _) (Ex-U , _) (_ , x₁₂ , y₁₂) = x₁₂ S.or S.return y₁₂
 ⟦or⟧ .rel-mor (Ex-Ex , _) (Ex-Ex , _) (_ , x₁₂ , y₁₂) = x₁₂ S.or y₁₂
@@ -223,7 +223,7 @@ True⇔Truish refl = Function.mk⇔ {!!} {!!}
 ⟦not⟧ : ∀ {p₁ p₂} → (Flat (NegPolRel p₁ p₂) ⟦×⟧ ⟦Bool⟧ p₁) ==> ⟦Bool⟧ p₂
 ⟦not⟧ .left = 𝒮.⟦not⟧
 ⟦not⟧ .right = 𝒩.⟦not⟧
-⟦not⟧ .rel-mor (U , x₁) (_ , x₂) (refl , x₁₂) = {!!}
+⟦not⟧ .rel-mor (U , x₁) (_ , x₂) (refl , x₁₂) = ⟪not⟫-⇿ x₁₂
 
 ------------------------------------------------------------------------------
 -- Monad (identity)
@@ -305,7 +305,7 @@ standard : ε / ε ⊢ Bool (BoolRes Ex) → Set
 standard t = S.eval-Quant (ℐ.⟦_⟧tm t (lift tt) .left tt) True
 
 lossFunction : ε / ε ⊢ Bool (BoolRes Ex) → Set
-lossFunction t = S.eval-Quant (ℐ.⟦ t ⟧tm (lift tt) .right tt) N.Truish
+lossFunction t = S.eval-Quant (ℐ.⟦ t ⟧tm (lift tt) .right tt) Truish
 
 full-correctness : (t : ε / ε ⊢ Bool (BoolRes Ex)) → standard t ⇔ lossFunction t
-full-correctness t = S.eval-Quant⇔ (ℐ.⟦ t ⟧tm (lift tt) .rel-mor tt tt tt) True⇔Truish
+full-correctness t = S.eval-Quant⇔ (ℐ.⟦ t ⟧tm (lift tt) .rel-mor tt tt tt) id
