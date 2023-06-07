@@ -1,9 +1,10 @@
 
 open import Data.Rational using (ℚ; _+_; _*_; _≤ᵇ_; _≟_; 1ℚ)
-open import MiniVehicle.LossFunctions.DifferentiableLogic
+open import MiniVehicle.LossFunctions.GenericDifferentiableLogic
+open import MiniVehicle.Language.StandardSemantics using (Relationship)
 
-module MiniVehicle.LossFunctions.Correctness
-  (extFunc : ℚ → ℚ) (dl : DifferentiableLogic) (dl-valid : ValidDifferentiableLogic dl) where
+module MiniVehicle.LossFunctions.GenericCorrectness
+  (extFunc : ℚ → ℚ) (dl : DifferentiableLogic) (relation : Relationship) (dl-valid : ValidDifferentiableLogic dl relation) where
 
 open import Level using (0ℓ; suc; lift)
 
@@ -27,11 +28,12 @@ open import MiniVehicle.Language.SyntaxRestriction
 open import MiniVehicle.Language.Interpretation
 open import EquiInhabited
 
-import MiniVehicle.LossFunctions.Compile as N
+import MiniVehicle.LossFunctions.GenericCompilation as N
 import MiniVehicle.Language N.lossRestriction as MiniVehicle
 import MiniVehicle.Language.StandardSemantics as S
 
 open DifferentiableLogic dl
+open Relationship relation using (R)
 open ValidDifferentiableLogic dl-valid
 
 ------------------------------------------------------------------------------
@@ -307,5 +309,5 @@ standard t = S.eval-Quant (ℐ.⟦_⟧tm t (lift tt) .left tt) True
 lossFunction : ε / ε ⊢ Bool (BoolRes Ex) → Set
 lossFunction t = S.eval-Quant (ℐ.⟦ t ⟧tm (lift tt) .right tt) Truish
 
-full-correctness : (t : ε / ε ⊢ Bool (BoolRes Ex)) → standard t ⇔ lossFunction t
-full-correctness t = S.eval-Quant⇔ (ℐ.⟦ t ⟧tm (lift tt) .rel-mor tt tt tt) id
+full-correctness : (t : ε / ε ⊢ Bool (BoolRes Ex)) → R (standard t) (lossFunction t)
+full-correctness t = S.eval-QuantRel relation (ℐ.⟦ t ⟧tm (lift tt) .rel-mor tt tt tt)

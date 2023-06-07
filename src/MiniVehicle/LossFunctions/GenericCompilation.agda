@@ -1,5 +1,5 @@
 
-module MiniVehicle.LossFunctions.Compile where
+module MiniVehicle.LossFunctions.GenericCompilation where
 
 open import Data.Fin
 open import Data.Empty
@@ -13,7 +13,7 @@ open import Data.Rational as ℚ
 open import MiniVehicle.Language.SyntaxRestriction
 import MiniVehicle.Language.StandardSemantics as S
 open S.Quant
-open import MiniVehicle.LossFunctions.DifferentiableLogic
+open import MiniVehicle.LossFunctions.GenericDifferentiableLogic
 
 lossRestriction : SyntaxRestriction
 lossRestriction = record

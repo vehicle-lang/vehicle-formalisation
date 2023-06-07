@@ -3,14 +3,18 @@
 module Util where
 
 open import Data.Sum as Sum using (_⊎_; inj₁; inj₂)
-open import Data.Bool using (Bool; true; false)
-open import Relation.Binary.PropositionalEquality as P using (_≡_; refl)
+open import Data.Bool using (Bool; true; false; _∧_; _∨_; not) renaming (T to True)
 open import Data.Product as Prod
-open import Function
-open import Level using (Level)
 open import Data.Rational
 open import Data.Rational.Properties
+open import Data.Empty
+open import Data.Unit using (tt)
+open import Function
 open import Function.Properties.Equivalence
+open import Level using (Level)
+open import Relation.Nullary
+open import Relation.Nullary.Negation
+open import Relation.Binary.PropositionalEquality as P using (_≡_; refl)
 
 open Equivalence
  
@@ -18,6 +22,7 @@ private
   variable
     a b c d : Level
     A B C D : Set a
+    p q : ℚ
     
 ------------------------------------------------------------------------------
 -- Basics
@@ -37,6 +42,40 @@ f Pres₂ P ⟶ Q = ∀ {x y} → P x y → Q (f x) (f y)
 
 _Pres₃_⟶_ : ∀ (f : A → B) → (A → A → A → Set a) → (B → B → B → Set c) → Set _
 f Pres₃ P ⟶ Q = ∀ {x y z} → P x y z → Q (f x) (f y) (f z)
+
+------------------------------------------------------------------------------
+-- Boolean
+
+True-∧⁺ : ∀ {a b} → True a × True b → True (a ∧ b)
+True-∧⁺ {true} {true} _ = _
+
+True-∧⁻ : ∀ {a b} → True (a ∧ b) → True a × True b
+True-∧⁻ {true} {true} _ = _ , _
+
+True-∧-⇔ : ∀ {a b} → (True a × True b) ⇔ True (a ∧ b)
+True-∧-⇔ = mk⇔ True-∧⁺ True-∧⁻
+
+True-∨⁺ : ∀ {a b} → True a ⊎ True b → True (a ∨ b)
+True-∨⁺ {true} {_} (inj₁ _) = _
+True-∨⁺ {true} {true} (inj₂ _) = tt
+True-∨⁺ {false} {true} (inj₂ _) = tt
+
+True-∨⁻ : ∀ {a b} → True (a ∨ b) → True a ⊎ True b
+True-∨⁻ {_} {true} _ = inj₂ _
+True-∨⁻ {true} {_} _ = inj₁ _
+
+True-∨-⇔ : ∀ {a b} → (True a ⊎ True b) ⇔ True (a ∨ b)
+True-∨-⇔ = mk⇔ True-∨⁺ True-∨⁻
+
+True-not⁻ : ∀ {a} → True (not a) → ¬ True a
+True-not⁻ {false} _ = id
+
+True-not⁺ : ∀ {a} → ¬ True a → True (not a)
+True-not⁺ {false} _ = _
+True-not⁺ {true}  v = v _
+
+True-not-⇔ : ∀ {a} → (¬ True a) ⇔ True (not a)
+True-not-⇔ = mk⇔ True-not⁺ True-not⁻
 
 ------------------------------------------------------------------------------
 -- Equivalence reasoning
@@ -73,19 +112,33 @@ A⇔B ⊎-⇔ C⇔D = mk⇔ (Sum.map (f A⇔B) (f C⇔D)) (Sum.map (g A⇔B) (g 
       (∀ {x} → B₁ x ⇔ B₂ x) →
       Σ A B₁ ⇔ Σ A B₂
 Σ-⇔ B₁⇔B₂ = mk⇔ (Prod.map₂ (f B₁⇔B₂)) (Prod.map₂ (g B₁⇔B₂))
-  
+
+¬-⇔ : A ⇔ B → (¬ A) ⇔ (¬ B)
+¬-⇔ A⇔B = mk⇔ (_∘ g A⇔B) (_∘ f A⇔B)
+
+¬?-→ : Dec A → Dec B → (¬ A → ¬ B) → B → A
+¬?-→ (yes A) _       ¬A⇔¬B = const A
+¬?-→ (no ¬A) (yes B) ¬A⇔¬B = contradiction B (¬A⇔¬B ¬A)
+¬?-→ (no ¬A) (no ¬B) ¬A⇔¬B = ⊥-elim ∘ ¬B
+
+¬?-⇔ : Dec A → Dec B → (¬ A) ⇔ (¬ B) → A ⇔ B
+¬?-⇔ (yes A) (yes B) ¬A⇔¬B = mk⇔ (const B) (const A)
+¬?-⇔ (yes A) (no ¬B) ¬A⇔¬B = contradiction A (g ¬A⇔¬B ¬B)
+¬?-⇔ (no ¬A) (yes B) ¬A⇔¬B = contradiction B (f ¬A⇔¬B ¬A)
+¬?-⇔ (no ¬A) (no ¬B) ¬A⇔¬B = mk⇔ (⊥-elim ∘ ¬A )(⊥-elim ∘ ¬B)
+
 ------------------------------------------------------------------------------
 -- Rational proofs
 
 -- Should be in v2.0
-p≤q⇒p-q≤0 : ∀ {p q} → p ≤ q → p - q ≤ 0ℚ
+p≤q⇒p-q≤0 : p ≤ q → p - q ≤ 0ℚ
 p≤q⇒p-q≤0 {p} {q} p≤q = begin
   p - q ≤⟨ +-monoˡ-≤ (- q) p≤q ⟩
   q - q ≡⟨ +-inverseʳ q ⟩
   0ℚ    ∎ where open ≤-Reasoning
 
 -- Should be in v2.0
-p-q≤0⇒p≤q : ∀ {p q} → p - q ≤ 0ℚ → p ≤ q
+p-q≤0⇒p≤q : p - q ≤ 0ℚ → p ≤ q
 p-q≤0⇒p≤q {p} {q} p-q≤0 = begin
   p             ≡˘⟨ +-identityʳ p ⟩
   p + 0ℚ       ≡⟨ P.cong (p +_) (P.sym (+-inverseˡ q)) ⟩
@@ -93,3 +146,13 @@ p-q≤0⇒p≤q {p} {q} p-q≤0 = begin
   (p - q) + q   ≤⟨ +-monoˡ-≤ q p-q≤0 ⟩
   0ℚ + q       ≡⟨ +-identityˡ q ⟩
   q             ∎ where open ≤-Reasoning
+
+p≤q⇔p-q≤0 : p ≤ q ⇔ p - q ≤ 0ℚ
+p≤q⇔p-q≤0 = mk⇔ p≤q⇒p-q≤0 p-q≤0⇒p≤q
+
+≤ᵇ⇔≤ : True (p ≤ᵇ q) ⇔ p ≤ q
+≤ᵇ⇔≤ = mk⇔ ≤ᵇ⇒≤ ≤⇒≤ᵇ
+{-
+<⇔≱ : p < q ⇔ p ≱ q
+<⇔≱ = mk⇔ {!!} {!!}
+-}
