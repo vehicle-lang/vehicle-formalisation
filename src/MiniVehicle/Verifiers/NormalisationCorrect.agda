@@ -15,14 +15,14 @@ open import Relation.Binary.PropositionalEquality
   using (_≡_; refl; trans; cong; sym; cong₂; subst; module ≡-Reasoning)
 
 open import Util
-open import MiniVehicle.Verifiers.SyntaxRestriction
+open import MiniVehicle.Language.Syntax.Restriction
+open import MiniVehicle.Verifiers.Syntax.Restriction
 open import MiniVehicle.Verifiers.NormalisedExpr renaming (_∘_ to _∘r_)
 open import MiniVehicle.Language.Interpretation
 open import EquiInhabited
 
-import MiniVehicle.Language as MiniVehicle
+import MiniVehicle.Language.Syntax as MiniVehicle
 import MiniVehicle.Language.StandardSemantics as S
-open import MiniVehicle.Language.SyntaxRestriction
 import MiniVehicle.Verifiers.Normalisation as N
 
 

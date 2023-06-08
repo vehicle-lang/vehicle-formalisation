@@ -1,7 +1,7 @@
 
-open import MiniVehicle.Language.SyntaxRestriction
+open import MiniVehicle.Language.Syntax.Restriction
 
-module MiniVehicle.Language.Interpretation (R : SyntaxRestriction) where
+module MiniVehicle.Language.Interpretation (R : Restriction) where
 
 open import Level using (suc; 0ℓ; _⊔_; Lift; lift; lower)
 open import Data.Fin using (Fin)
@@ -14,7 +14,7 @@ open import Relation.Binary.PropositionalEquality
 
 open import Util
 
-open SyntaxRestriction R
+open Restriction R
 
 -- FIXME: try to remove this by defining setoid equalities for each kind
 postulate
@@ -83,7 +83,7 @@ record Model ℓ m : Set (suc ℓ ⊔ suc m) where
 
 module Interpret {ℓ}{m} (ℳ : Model ℓ m) where
 
-  open import MiniVehicle.Language R
+  open import MiniVehicle.Language.Syntax R
   open Model ℳ
 
   ⟦_⟧kind : Kind → Set ℓ
@@ -138,14 +138,14 @@ module Interpret {ℓ}{m} (ℳ : Model ℓ m) where
     Flat (QuantRestriction (⟦ n ⟧ty ks .lower) (⟦ p₁ ⟧ty ks .lower) (⟦ p₂ ⟧ty ks .lower))
   ⟦ IfRes b ⟧ty ks =
     Flat (IfRestriction (⟦ b ⟧ty ks .lower))
-  
+
   ⟦_⟧subst : ∀ {K K'} → (K' ⇒ₛ K) → ⟦ K' ⟧kctxt → ⟦ K ⟧kctxt
   ⟦_⟧subst {ε} σ ks = lift tt
   ⟦_⟧subst {K ,- κ} σ ks = ⟦ (λ x → σ (succ x)) ⟧subst ks , ⟦ σ zero ⟧ty ks
 
   ⟦_succ⟧ren : ∀ {K K'} (ρ : K' ⇒ᵣ K) →
               ∀ {ks κ v} →
-              ⟦ (λ x → succ {κ' = κ} (ρ x)) ⟧ren (ks , v) ≡ ⟦ ρ ⟧ren ks
+              ⟦ (λ x → succ {κ′ = κ} (ρ x)) ⟧ren (ks , v) ≡ ⟦ ρ ⟧ren ks
   ⟦_succ⟧ren {ε} ρ = refl
   ⟦_succ⟧ren {K ,- κ} ρ {ks} =
     cong (λ □ → (□ , ⟦ ρ zero ⟧tyvar ks)) ⟦ (λ x → ρ (succ x)) succ⟧ren
@@ -268,7 +268,7 @@ module Interpret {ℓ}{m} (ℳ : Model ℓ m) where
     cong Flat (cong₃ AddRestriction (cong lower (subst-⟦Type⟧ σ l₁)) (cong lower (subst-⟦Type⟧ σ l₂)) (cong lower (subst-⟦Type⟧ σ l₃)))
   subst-⟦Type⟧ σ (MulRes l₁ l₂ l₃) =
     cong Flat (cong₃ MulRestriction (cong lower (subst-⟦Type⟧ σ l₁)) (cong lower (subst-⟦Type⟧ σ l₂)) (cong lower (subst-⟦Type⟧ σ l₃)))
-    
+
   -- Bool constraints
   subst-⟦Type⟧ σ (BoolRes l) = refl
   subst-⟦Type⟧ σ (BoolConstRes l) =
@@ -285,7 +285,7 @@ module Interpret {ℓ}{m} (ℳ : Model ℓ m) where
     cong Flat (cong₃ QuantRestriction (cong lower (subst-⟦Type⟧ σ l₁)) (cong lower (subst-⟦Type⟧ σ l₂)) (cong lower (subst-⟦Type⟧ σ l₃)))
   subst-⟦Type⟧ σ (IfRes b) =
     cong Flat (cong IfRestriction (cong lower (subst-⟦Type⟧ σ b)))
-    
+
   ------------------------------------------------------------------------------
   _×m_ : ∀ {W X Y Z} → (W ==> X) → (Y ==> Z) → (W ⟦×⟧ Y) ==> (X ⟦×⟧ Z)
   f ×m g = ⟨ f ∘ ⟦proj₁⟧ , g ∘ ⟦proj₂⟧ ⟩
@@ -387,7 +387,7 @@ module Interpret {ℓ}{m} (ℳ : Model ℓ m) where
 
   ⟦ _`*_ r t₁ t₂ ⟧tm δ = ternary ⟦mul⟧ ∘  ⟨ ⟦ r ⟧tm δ , ⟨ (⟦ t₁ ⟧tm δ) , (⟦ t₂ ⟧tm δ) ⟩ ⟩
   ⟦ _`≤_ r t₁ t₂ ⟧tm δ = ternary ⟦≤⟧ ∘  ⟨ ⟦ r ⟧tm δ , ⟨ (⟦ t₁ ⟧tm δ) , (⟦ t₂ ⟧tm δ) ⟩ ⟩
-  ⟦_⟧tm {Γ = Γ} (if_then_else_ r b t u) δ = ⟦extend⟧ ⟦if⟧ ∘ ⟨ ⟨ ⟦ t ⟧tm δ , ⟦ u ⟧tm δ ⟩ , seq ∘ ⟨ ⟦ r ⟧tm δ , ⟦ b ⟧tm δ ⟩ ⟩  
+  ⟦_⟧tm {Γ = Γ} (if_then_else_ r b t u) δ = ⟦extend⟧ ⟦if⟧ ∘ ⟨ ⟨ ⟦ t ⟧tm δ , ⟦ u ⟧tm δ ⟩ , seq ∘ ⟨ ⟦ r ⟧tm δ , ⟦ b ⟧tm δ ⟩ ⟩
   ⟦ `¬_ r t ⟧tm δ = binary ⟦not⟧ ∘ ⟨ ⟦ r ⟧tm δ , ⟦ t ⟧tm δ ⟩
   ⟦ _`∧_ r t₁ t₂ ⟧tm δ = ternary ⟦and⟧ ∘ ⟨ ⟦ r ⟧tm δ , ⟨ (⟦ t₁ ⟧tm δ) , (⟦ t₂ ⟧tm δ) ⟩ ⟩
   ⟦ _`∨_ r t₁ t₂ ⟧tm δ = ternary ⟦or⟧ ∘ ⟨ ⟦ r ⟧tm δ , ⟨ (⟦ t₁ ⟧tm δ) , (⟦ t₂ ⟧tm δ) ⟩ ⟩

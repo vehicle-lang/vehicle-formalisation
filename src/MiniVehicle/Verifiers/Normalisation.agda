@@ -8,10 +8,10 @@ open import Data.Product using (_×_; proj₁; proj₂; _,_)
 open import Data.Rational using (ℚ; 1ℚ; _+_; _*_)
 open import Data.Unit using (⊤; tt)
 
-open import MiniVehicle.Language.SyntaxRestriction
+open import MiniVehicle.Language.Syntax.Restriction
 open import MiniVehicle.Language.Interpretation
 open import MiniVehicle.Verifiers.NormalisedExpr
-open import MiniVehicle.Verifiers.SyntaxRestriction
+open import MiniVehicle.Verifiers.Syntax.Restriction
 
 record Syn : Set₁ where
   field
@@ -185,7 +185,7 @@ _∘S_ : ∀ {X Y Z} → (Y ==> Z) → (X ==> Y) → (X ==> Z)
 ⟦∃⟧ .mor {Δ} (quantRes U , f) =
   ex (compile (bind-let (f (Δ ,∙) succ (var 1ℚ zero))
                                      λ Δ' ρ ϕ → return (constraint ϕ)))
-⟦∃⟧ .mor {Δ} (quantRes Ex , f) = 
+⟦∃⟧ .mor {Δ} (quantRes Ex , f) =
   ex (compile (f (Δ ,∙) succ (var 1ℚ zero)))
 
 ℳ : Model verifierRestriction (suc 0ℓ) 0ℓ

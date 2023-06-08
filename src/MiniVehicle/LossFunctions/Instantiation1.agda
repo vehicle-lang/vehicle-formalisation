@@ -27,13 +27,13 @@ private
 
 postulate p≤r×q≤r⇔p⊔q≤r : (p ≤ r × q ≤ r) ⇔ p ⊔ q ≤ r
 postulate p≤r⊎q≤r⇔p⊓q≤r : (p ≤ r ⊎ q ≤ r) ⇔ p ⊓ q ≤ r
-    
+
 logic : DifferentiableLogic
 logic .⟪Bool⟫ = ℚ
 logic ._⟪and⟫_ = _⊔_
 logic ._⟪or⟫_ = _⊓_
 logic .⟪not⟫ = -_
-logic ._⟪≤⟫_ = _-_ 
+logic ._⟪≤⟫_ = _-_
 
 Truish : ℚ → Set
 Truish = _≤ 0ℚ

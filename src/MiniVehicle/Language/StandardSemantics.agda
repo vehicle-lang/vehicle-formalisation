@@ -13,7 +13,7 @@ open import Function using (_⇔_)
 open import Relation.Binary using (REL)
 open import Relation.Binary.PropositionalEquality using (_≡_; refl; trans; cong; sym; cong₂)
 
-open import MiniVehicle.Language.SyntaxRestriction
+open import MiniVehicle.Language.Syntax.Restriction
 open import MiniVehicle.Language.Interpretation
 open import Util
 
@@ -67,7 +67,7 @@ data QuantRel {A B : Set} (R : REL A B 0ℓ) : REL (Quant A) (Quant B) 0ℓ wher
 module _ (Rel : Relationship) where
 
   open Relationship Rel
-  
+
   eval-QuantRel : ∀ {A B} {x : Quant A} {y : Quant B} {f : A → Set} {g : B → Set} →
                  QuantRel (λ a b → R (f a) (g b)) x y →
                  R (eval-Quant x f) (eval-Quant y g)

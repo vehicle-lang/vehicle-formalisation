@@ -24,12 +24,12 @@ open import Relation.Binary.PropositionalEquality
   using (_≡_; refl; trans; cong; sym; cong₂; subst; module ≡-Reasoning)
 
 open import Util
-open import MiniVehicle.Language.SyntaxRestriction
+open import MiniVehicle.Language.Syntax.Restriction
 open import MiniVehicle.Language.Interpretation
 open import EquiInhabited
 
 import MiniVehicle.LossFunctions.GenericCompilation as N
-import MiniVehicle.Language N.lossRestriction as MiniVehicle
+import MiniVehicle.Language.Syntax N.lossRestriction as MiniVehicle
 import MiniVehicle.Language.StandardSemantics as S
 
 open DifferentiableLogic dl
@@ -202,7 +202,7 @@ _⟦⇒⟧_ : WRel → WRel → WRel
 ⟦≤⟧ .left = 𝒮.⟦≤⟧
 ⟦≤⟧ .right = 𝒩.⟦≤⟧
 ⟦≤⟧ .rel-mor (U , x , y) (_ , .x , .y) (refl , refl , refl) = ⟪≤⟫-⇿
- 
+
 ⟦and⟧ : ∀ {l₁ l₂ l₃} → (Flat (MaxPolRel l₁ l₂ l₃) ⟦×⟧ (⟦Bool⟧ l₁ ⟦×⟧ ⟦Bool⟧ l₂)) ==> ⟦Bool⟧ l₃
 ⟦and⟧ .left = 𝒮.⟦and⟧
 ⟦and⟧ .right = 𝒩.⟦and⟧

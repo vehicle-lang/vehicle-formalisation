@@ -20,11 +20,11 @@ record DifferentiableLogic : Set₁ where
 record ValidDifferentiableLogic (dl : DifferentiableLogic) (Rel : Relationship) : Set₁ where
   open DifferentiableLogic dl
   open Relationship Rel
-  
+
   field
     -- Predicate defining which subset of the set ⟪Bool⟫ maps to true.
     Truish : ⟪Bool⟫ → Set
-  
+
   infix 2 _⇿_
   _⇿_ : 𝔹 → ⟪Bool⟫ → Set
   b ⇿ q = R (True b) (Truish q)

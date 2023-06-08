@@ -1,6 +1,6 @@
 module Everything where
 
-import MiniVehicle.Language
+import MiniVehicle.Language.Syntax
 import MiniVehicle.Language.Interpretation
 import MiniVehicle.Language.StandardSemantics
 import MiniVehicle.Verifiers.Normalisation

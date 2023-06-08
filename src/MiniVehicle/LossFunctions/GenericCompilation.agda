@@ -1,4 +1,3 @@
-
 module MiniVehicle.LossFunctions.GenericCompilation where
 
 open import Data.Fin
@@ -10,14 +9,14 @@ open import Level as Level using (0ℓ)
 open import Function.Base as Function using ()
 open import Data.Rational as ℚ
 
-open import MiniVehicle.Language.SyntaxRestriction
+open import MiniVehicle.Language.Syntax.Restriction
 import MiniVehicle.Language.StandardSemantics as S
 open S.Quant
 open import MiniVehicle.LossFunctions.GenericDifferentiableLogic
 
-lossRestriction : SyntaxRestriction
+lossRestriction : Restriction
 lossRestriction = record
-  { SyntaxRestriction defaultRestriction
+  { Restriction defaultRestriction
   ; IfRestriction = λ _ → ⊥
   }
 
@@ -74,7 +73,7 @@ module _ (extFunc : ℚ → ℚ) (dl : DifferentiableLogic) where
   ℳ .⟦∃⟧ (Ex , f) = ex f
 
   module 𝒩 = Interpret ℳ
-  open import MiniVehicle.Language lossRestriction
+  open import MiniVehicle.Language.Syntax lossRestriction
 
   compile : ε / ε ⊢ Bool (BoolRes Ex) → S.Quant ⟪Bool⟫
   compile t = 𝒩.⟦ t ⟧tm _ tt
