@@ -196,3 +196,9 @@ p≤q⇔p-q≤0 = mk⇔ p≤q⇒p-q≤0 p-q≤0⇒p≤q
 ⊓-pres-nonNegative {p} {q} p⁺ q⁺ with p ≤ᵇ q
 ... | true  = p⁺
 ... | false = q⁺
+
++-pres-nonNegative : ∀ {p q} → NonNegative p → NonNegative q → NonNegative (p + q)
++-pres-nonNegative {p} {q} p⁺ q⁺ = nonNegative (+-mono-≤ (nonNegative⁻¹ {p} p⁺) (nonNegative⁻¹ {q} q⁺))
+
+nonNegative+pos⇒pos : NonNegative p → Positive q → Positive (p + q)
+nonNegative+pos⇒pos {p} {q} p⁺ q⁺ = positive (+-mono-≤-< (nonNegative⁻¹ {p} p⁺) (positive⁻¹ {q} q⁺))

@@ -72,7 +72,9 @@ module _ (extFunc : ℚ → ℚ) (dl : DifferentiableLogic) where
   ℳ .⟦idx⟧ _ i _  = i
   ℳ .⟦∃⟧ (U , f) = ex (λ q → return (f q))
   ℳ .⟦∃⟧ (Ex , f) = ex f
-
+   -- (ℚ⁺∞ × ℚ⁺∞)   -- (Encode ℚ⁺ as set of rationals greater than a given rational)
+   -- (x+ , x-) ⟦and⟧ (y+ , y-) = (x+ + y+, (y- - x+) /\ (x- - y+)) 
+   -- (if true then (x ℚ.- y , ∞) else (∞ , x ℚ.- y)
   module 𝒩 = Interpret ℳ
   open import MiniVehicle.Language.Syntax lossRestriction
 

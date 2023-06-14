@@ -327,6 +327,21 @@ open MiniVehicle hiding (_⇒ᵣ_; under)
 
 module ℐ = Interpret N.lossRestriction ℳ
 
+------------------------------------------------------------------------------
+-- Propositional compilation
+
+standardProp : ε / ε ⊢ Bool (BoolRes U) → 𝔹
+standardProp t = ℐ.⟦ t ⟧tm (lift tt) .left tt
+
+lossFunctionProp : ε / ε ⊢ Bool (BoolRes U) → ⟪Bool⟫
+lossFunctionProp t = ℐ.⟦ t ⟧tm (lift tt) .right tt
+
+prop-correctness : (t : ε / ε ⊢ Bool (BoolRes U)) → standardProp t ⇿ lossFunctionProp t
+prop-correctness t = ℐ.⟦ t ⟧tm (lift tt) .rel-mor tt tt tt
+
+------------------------------------------------------------------------------
+-- Quantified compilation
+
 standard : ε / ε ⊢ Bool (BoolRes Ex) → Set
 standard t = S.eval-Quant (ℐ.⟦_⟧tm t (lift tt) .left tt) True
 

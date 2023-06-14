@@ -7,20 +7,21 @@ open import Data.Rational
 open import Data.Rational.Properties
 open import Data.Bool hiding (_≤_; _<_; _<?_; _≤?_) renaming (Bool to 𝔹; T to True)
 open import Data.Bool.Properties hiding (_<?_; _≤?_)
+open import Data.Integer using (+_)
 open import Data.Empty using (⊥-elim)
 open import Algebra
 open import Function
 open import Function.Reasoning
 open import Relation.Nullary
-open import Relation.Binary.PropositionalEquality using (cong)
+open import Relation.Binary.PropositionalEquality using (_≡_; cong; refl)
 open import Relation.Unary using (Decidable)
+open import Relation.Nullary.Negation
 
 open import Util
 open import MiniVehicle.Language.StandardSemantics
 open import MiniVehicle.LossFunctions.GenericDifferentiableLogic
 
 open DifferentiableLogic
-open ⇔-Reasoning
 
 {-
   Chu alternative
@@ -40,6 +41,9 @@ max⁺ (p , p⁺) (q , q⁺) = p ⊔ q , ⊔-pres-nonNegative p⁺ q⁺
 
 min⁺ : Op₂ ℚ⁺
 min⁺ (p , p⁺) (q , q⁺) = p ⊓ q , ⊓-pres-nonNegative p⁺ q⁺
+
+_+⁺_ : Op₂ ℚ⁺
+(p , p⁺) +⁺ (q , q⁺) = p + q , +-pres-nonNegative {p} {q} p⁺ q⁺
 
 ------------------------------------------------------------------------------
 -- Define the signed non-negative rationals.
@@ -133,3 +137,36 @@ valid = record
   ; ⟪<⟫-⇿ = ⟪<⟫-⇿
   ; ⟪≤⟫-⇿ = ⟪≤⟫-⇿
   }
+
+------------------------------------------------------------------------------
+-- Compilation
+
+module _ (extFunc : ℚ → ℚ) where
+
+  open import MiniVehicle.LossFunctions.GenericCompilation
+    using (lossRestriction)
+  open import MiniVehicle.Language.Syntax lossRestriction
+
+  open import MiniVehicle.Language.Syntax.Restriction
+
+  open import MiniVehicle.LossFunctions.GenericCorrectness extFunc logic valid as L
+  open Equivalence
+  
+  prec : ℚ
+  prec = + 1 / 10000000
+
+  -- The calculation of the loss of any term
+  loss : ε / ε ⊢ Bool (BoolRes U) → ℚ
+  loss t with L.lossFunctionProp t
+  ... | pos _ = 0ℚ
+  ... | neg (l , _) = l + prec
+
+  -- Correspondance with standard semantics
+  true⇒loss≡0 : ∀ t → True (standardProp t) → loss t ≡ 0ℚ
+  true⇒loss≡0 t tr with L.lossFunctionProp t | f (prop-correctness t) tr
+  ... | pos p | x = refl
+
+  false⇒loss>0 : ∀ t → ¬ (True (standardProp t)) → loss t > 0ℚ
+  false⇒loss>0 t ¬tr with L.lossFunctionProp t | g (prop-correctness t)
+  ... | pos p | x = contradiction (x (truth p)) ¬tr
+  ... | neg (l , l⁺) | x = positive⁻¹ (nonNegative+pos⇒pos {l} {prec} l⁺ _)
