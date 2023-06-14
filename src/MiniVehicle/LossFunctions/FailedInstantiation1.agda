@@ -2,7 +2,8 @@
 module MiniVehicle.LossFunctions.FailedInstantiation1 where
 
 -- Tries to use the domain (-∞ , ∞) unsuccessfully and illustrates
--- the problems that occur with negation around zero.
+-- the problems that occur with negation around zero and with
+-- strict inequalities.
 
 open import Data.Sum as Sum
 open import Data.Product as Prod
@@ -37,6 +38,7 @@ logic ._⟪and⟫_ = _⊔_
 logic ._⟪or⟫_ = _⊓_
 logic .⟪not⟫ = -_
 logic ._⟪≤⟫_ = _-_
+logic ._⟪<⟫_ = _-_
 
 Truish : ℚ → Set
 Truish = _≤ 0ℚ
@@ -63,6 +65,12 @@ Truish? = _≤? 0ℚ
   p ≤ q         ⇔⟨ p≤q⇔p-q≤0 ⟩
   p - q ≤ 0ℚ    ∎
 
+⟪<⟫-⇿ : ∀ p q → True (p <ᵇ q) ⇔ Truish (p - q)
+⟪<⟫-⇿ p q = begin
+  True (p <ᵇ q) ⇔⟨ <ᵇ⇔< ⟩
+  p < q         ⇔⟨ {!!} ⟩ -- PROBLEM
+  p - q ≤ 0ℚ    ∎
+  
 valid : ValidDifferentiableLogic logic
 valid = record
   { Truish = Truish
@@ -71,4 +79,5 @@ valid = record
   ; ⟪or⟫-⇿ = ⟪or⟫-⇿
   ; ⟪not⟫-⇿ = ⟪not⟫-⇿
   ; ⟪≤⟫-⇿ = ⟪≤⟫-⇿
+  ; ⟪<⟫-⇿ = {!!}
   }

@@ -53,7 +53,8 @@ data _/_⊢_ : (Δ : KindContext) → Context Δ → Δ ⊢T Type → Set where
   -- FIXME: crush/fold/reduce
 
   -- Comparisons
-  _`≤_   : ∀ {l₁ l₂ l₃} → Δ / Γ ⊢ LeqRes l₁ l₂ l₃ → Δ / Γ ⊢ Num l₁ → Δ / Γ ⊢ Num l₂ → Δ / Γ ⊢ Bool l₃
+  _`≤_   : ∀ {l₁ l₂ l₃} → Δ / Γ ⊢ CompRes l₁ l₂ l₃ → Δ / Γ ⊢ Num l₁ → Δ / Γ ⊢ Num l₂ → Δ / Γ ⊢ Bool l₃
+  _`<_   : ∀ {l₁ l₂ l₃} → Δ / Γ ⊢ CompRes l₁ l₂ l₃ → Δ / Γ ⊢ Num l₁ → Δ / Γ ⊢ Num l₂ → Δ / Γ ⊢ Bool l₃
 
   -- Polymorphic if-then-else
   if_then_else_ : ∀ {A r₁} → Δ / Γ ⊢ IfRes r₁ →
@@ -89,8 +90,8 @@ data _/_⊢_ : (Δ : KindContext) → Context Δ → Δ ⊢T Type → Set where
            Δ / Γ ⊢ AndRes (BoolRes p₁) (BoolRes p₂) (BoolRes p₃)
   orRes  : ∀ {p₁ p₂ p₃} → OrRestriction p₁ p₂ p₃ →
            Δ / Γ ⊢ OrRes (BoolRes p₁) (BoolRes p₂) (BoolRes p₃)
-  leqRes : ∀ {n₁ n₂ b} → LeqRestriction n₁ n₂ b →
-           Δ / Γ ⊢ LeqRes (NumRes n₁) (NumRes n₂) (BoolRes b)
+  compRes : ∀ {n₁ n₂ b} → CompRestriction n₁ n₂ b →
+           Δ / Γ ⊢ CompRes (NumRes n₁) (NumRes n₂) (BoolRes b)
   quantRes : ∀ {n p₁ p₂} → QuantRestriction n p₁ p₂ →
              Δ / Γ ⊢ QuantRes (NumRes n) (BoolRes p₁) (BoolRes p₂)
   ifRes : ∀ {b} → IfRestriction b →

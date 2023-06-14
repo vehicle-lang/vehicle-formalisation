@@ -91,7 +91,8 @@ module _ (extFunc : ℚ → ℚ) where
   ℳ .⟦or⟧ (U-Ex , x , y) = (return x) or y
   ℳ .⟦or⟧ (Ex-U , x , y) = x or (return y)
   ℳ .⟦or⟧ (Ex-Ex , x , y) = x or y
-  ℳ .⟦≤⟧ (U , q₁ , q₂) = q₁  ≤ᵇ q₂
+  ℳ .⟦≤⟧ (U , q₁ , q₂) = q₁ ≤ᵇ q₂
+  ℳ .⟦<⟧ (U , q₁ , q₂) = q₁ <ᵇ q₂
   ℳ .⟦if⟧ ((tr , fa) , (U , true)) = tr
   ℳ .⟦if⟧ ((tr , fa) , (U , false)) = fa
   ℳ .⟦Index⟧ i = Fin i

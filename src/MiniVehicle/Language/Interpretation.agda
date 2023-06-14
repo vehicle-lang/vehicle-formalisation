@@ -73,7 +73,8 @@ record Model ℓ m : Set (suc ℓ ⊔ suc m) where
     ⟦mul⟧     : ∀ {l₁ l₂ l₃} → (Flat (MulRestriction l₁ l₂ l₃) ⟦×⟧ (⟦Num⟧ l₁ ⟦×⟧ ⟦Num⟧ l₂)) ==> ⟦Num⟧ l₃
     ⟦const⟧   : ∀ {l₁} → ℚ → (Flat (NumConstRestriction l₁)) ==> ⟦Num⟧ l₁
     ⟦extFunc⟧ : ∀ {l₁ l₂} → (Flat (FuncRestriction l₁ l₂) ⟦×⟧ ⟦Num⟧ l₁) ==> Mon (⟦Num⟧ l₂)
-    ⟦≤⟧       : ∀ {l₁ l₂ b₃} → (Flat (LeqRestriction l₁ l₂ b₃) ⟦×⟧ (⟦Num⟧ l₁ ⟦×⟧ ⟦Num⟧ l₂)) ==> ⟦Bool⟧ b₃
+    ⟦≤⟧       : ∀ {l₁ l₂ b₃} → (Flat (CompRestriction l₁ l₂ b₃) ⟦×⟧ (⟦Num⟧ l₁ ⟦×⟧ ⟦Num⟧ l₂)) ==> ⟦Bool⟧ b₃
+    ⟦<⟧       : ∀ {l₁ l₂ b₃} → (Flat (CompRestriction l₁ l₂ b₃) ⟦×⟧ (⟦Num⟧ l₁ ⟦×⟧ ⟦Num⟧ l₂)) ==> ⟦Bool⟧ b₃
 
     -- Indexes and Arrays
     ⟦Index⟧ : ℕ → ⟦Type⟧
@@ -132,8 +133,8 @@ module Interpret {ℓ}{m} (ℳ : Model ℓ m) where
     Flat (AndRestriction (⟦ l₁ ⟧ty ks .lower) (⟦ l₂ ⟧ty ks .lower) (⟦ l₃ ⟧ty ks .lower))
   ⟦ OrRes l₁ l₂ l₃ ⟧ty ks =
     Flat (OrRestriction (⟦ l₁ ⟧ty ks .lower) (⟦ l₂ ⟧ty ks .lower) (⟦ l₃ ⟧ty ks .lower))
-  ⟦ LeqRes l₁ l₂ l₃ ⟧ty ks =
-    Flat (LeqRestriction (⟦ l₁ ⟧ty ks .lower) (⟦ l₂ ⟧ty ks .lower) (⟦ l₃ ⟧ty ks .lower))
+  ⟦ CompRes l₁ l₂ l₃ ⟧ty ks =
+    Flat (CompRestriction (⟦ l₁ ⟧ty ks .lower) (⟦ l₂ ⟧ty ks .lower) (⟦ l₃ ⟧ty ks .lower))
   ⟦ QuantRes n p₁ p₂ ⟧ty ks =
     Flat (QuantRestriction (⟦ n ⟧ty ks .lower) (⟦ p₁ ⟧ty ks .lower) (⟦ p₂ ⟧ty ks .lower))
   ⟦ IfRes b ⟧ty ks =
@@ -211,8 +212,8 @@ module Interpret {ℓ}{m} (ℳ : Model ℓ m) where
     cong Flat (cong₃ AndRestriction (cong lower (ren-⟦Type⟧ ρ l₁)) (cong lower (ren-⟦Type⟧ ρ l₂)) (cong lower (ren-⟦Type⟧ ρ l₃)))
   ren-⟦Type⟧ ρ (OrRes l₁ l₂ l₃) =
     cong Flat (cong₃ OrRestriction (cong lower (ren-⟦Type⟧ ρ l₁)) (cong lower (ren-⟦Type⟧ ρ l₂)) (cong lower (ren-⟦Type⟧ ρ l₃)))
-  ren-⟦Type⟧ ρ (LeqRes l₁ l₂ l₃) =
-    cong Flat (cong₃ LeqRestriction (cong lower (ren-⟦Type⟧ ρ l₁)) (cong lower (ren-⟦Type⟧ ρ l₂)) (cong lower (ren-⟦Type⟧ ρ l₃)))
+  ren-⟦Type⟧ ρ (CompRes l₁ l₂ l₃) =
+    cong Flat (cong₃ CompRestriction (cong lower (ren-⟦Type⟧ ρ l₁)) (cong lower (ren-⟦Type⟧ ρ l₂)) (cong lower (ren-⟦Type⟧ ρ l₃)))
   ren-⟦Type⟧ ρ (QuantRes l₁ l₂ l₃) =
     cong Flat (cong₃ QuantRestriction (cong lower (ren-⟦Type⟧ ρ l₁)) (cong lower (ren-⟦Type⟧ ρ l₂)) (cong lower (ren-⟦Type⟧ ρ l₃)))
   ren-⟦Type⟧ ρ (IfRes l) =
@@ -279,8 +280,8 @@ module Interpret {ℓ}{m} (ℳ : Model ℓ m) where
     cong Flat (cong₃ AndRestriction (cong lower (subst-⟦Type⟧ σ l₁)) (cong lower (subst-⟦Type⟧ σ l₂)) (cong lower (subst-⟦Type⟧ σ l₃)))
   subst-⟦Type⟧ σ (OrRes l₁ l₂ l₃) =
     cong Flat (cong₃ OrRestriction (cong lower (subst-⟦Type⟧ σ l₁)) (cong lower (subst-⟦Type⟧ σ l₂)) (cong lower (subst-⟦Type⟧ σ l₃)))
-  subst-⟦Type⟧ σ (LeqRes l₁ l₂ l₃) =
-    cong Flat (cong₃ LeqRestriction (cong lower (subst-⟦Type⟧ σ l₁)) (cong lower (subst-⟦Type⟧ σ l₂)) (cong lower (subst-⟦Type⟧ σ l₃)))
+  subst-⟦Type⟧ σ (CompRes l₁ l₂ l₃) =
+    cong Flat (cong₃ CompRestriction (cong lower (subst-⟦Type⟧ σ l₁)) (cong lower (subst-⟦Type⟧ σ l₂)) (cong lower (subst-⟦Type⟧ σ l₃)))
   subst-⟦Type⟧ σ (QuantRes l₁ l₂ l₃) =
     cong Flat (cong₃ QuantRestriction (cong lower (subst-⟦Type⟧ σ l₁)) (cong lower (subst-⟦Type⟧ σ l₂)) (cong lower (subst-⟦Type⟧ σ l₃)))
   subst-⟦Type⟧ σ (IfRes b) =
@@ -387,6 +388,7 @@ module Interpret {ℓ}{m} (ℳ : Model ℓ m) where
 
   ⟦ _`*_ r t₁ t₂ ⟧tm δ = ternary ⟦mul⟧ ∘  ⟨ ⟦ r ⟧tm δ , ⟨ (⟦ t₁ ⟧tm δ) , (⟦ t₂ ⟧tm δ) ⟩ ⟩
   ⟦ _`≤_ r t₁ t₂ ⟧tm δ = ternary ⟦≤⟧ ∘  ⟨ ⟦ r ⟧tm δ , ⟨ (⟦ t₁ ⟧tm δ) , (⟦ t₂ ⟧tm δ) ⟩ ⟩
+  ⟦ _`<_ r t₁ t₂ ⟧tm δ = ternary ⟦<⟧ ∘  ⟨ ⟦ r ⟧tm δ , ⟨ (⟦ t₁ ⟧tm δ) , (⟦ t₂ ⟧tm δ) ⟩ ⟩
   ⟦_⟧tm {Γ = Γ} (if_then_else_ r b t u) δ = ⟦extend⟧ ⟦if⟧ ∘ ⟨ ⟨ ⟦ t ⟧tm δ , ⟦ u ⟧tm δ ⟩ , seq ∘ ⟨ ⟦ r ⟧tm δ , ⟦ b ⟧tm δ ⟩ ⟩
   ⟦ `¬_ r t ⟧tm δ = binary ⟦not⟧ ∘ ⟨ ⟦ r ⟧tm δ , ⟦ t ⟧tm δ ⟩
   ⟦ _`∧_ r t₁ t₂ ⟧tm δ = ternary ⟦and⟧ ∘ ⟨ ⟦ r ⟧tm δ , ⟨ (⟦ t₁ ⟧tm δ) , (⟦ t₂ ⟧tm δ) ⟩ ⟩
@@ -402,6 +404,6 @@ module Interpret {ℓ}{m} (ℳ : Model ℓ m) where
   ⟦ notRes n ⟧tm δ = ⟦return⟧ ∘ elem n
   ⟦ andRes n ⟧tm δ = ⟦return⟧ ∘ elem n
   ⟦ orRes n ⟧tm δ = ⟦return⟧ ∘ elem n
-  ⟦ leqRes n ⟧tm δ = ⟦return⟧ ∘ elem n
+  ⟦ compRes n ⟧tm δ = ⟦return⟧ ∘ elem n
   ⟦ quantRes n ⟧tm δ = ⟦return⟧ ∘ elem n
   ⟦ ifRes n ⟧tm δ = ⟦return⟧ ∘ elem n

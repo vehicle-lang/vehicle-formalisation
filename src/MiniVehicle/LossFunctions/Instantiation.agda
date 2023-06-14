@@ -22,6 +22,13 @@ open import MiniVehicle.LossFunctions.GenericDifferentiableLogic
 open DifferentiableLogic
 open ⇔-Reasoning
 
+{-
+  Chu alternative
+   -- (ℚ⁺∞ × ℚ⁺∞)   -- (Encode ℚ⁺ as set of rationals greater than a given rational)
+   -- (x+ , x-) ⟦and⟧ (y+ , y-) = (x+ + y+, (y- - x+) /\ (x- - y+)) 
+   -- p ≤ q = (if p ≤ᵇ q then (x ℚ.- y , ∞) else (∞ , x ℚ.- y)
+-}
+
 ------------------------------------------------------------------------------
 -- Define the set of non-negative rationals and operations over them.
 
@@ -63,12 +70,18 @@ x ⟦≤⟧ y with x ≤? y
 ... | yes x≤y = truth (y - x , nonNegative (p≥q⇒p-q≥0 x≤y))
 ... | no  x≰y = falsity (x - y , nonNegative (p≥q⇒p-q≥0 (≰⇒≥ x≰y)))
 
+_⟦<⟧_ : ℚ → ℚ → ℚ²
+x ⟦<⟧ y with x <? y
+... | yes x<y = truth (y - x , nonNegative (p≥q⇒p-q≥0 (<⇒≤ x<y)))
+... | no  x≮y = falsity (x - y , nonNegative (p≥q⇒p-q≥0 (≮⇒≥ x≮y)))
+
 logic : DifferentiableLogic
 logic .⟪Bool⟫ = ℚ²
 logic ._⟪and⟫_ = _⟦and⟧_
 logic ._⟪or⟫_ = _⟦or⟧_
 logic .⟪not⟫ = ⟦not⟧_
 logic ._⟪≤⟫_ = _⟦≤⟧_
+logic ._⟪<⟫_ = _⟦<⟧_
 
 ------------------------------------------------------------------------------
 -- Correctness
@@ -101,6 +114,11 @@ Truish? (falsity p) = no λ()
 ⟪not⟫-⇿ (truth p)   = mk⇔ (λ _ ()) (λ _ → truth p)
 ⟪not⟫-⇿ (falsity p) = mk⇔ (λ()) (λ f → ⊥-elim (f (truth p)))
 
+⟪<⟫-⇿ : ∀ p q → True (p <ᵇ q) ⇔ Truish (p ⟦<⟧ q)
+⟪<⟫-⇿ p q with p <? q
+... | yes p<q = mk⇔ (λ p<ᵇq → truth _) (λ _ → <⇒<ᵇ p<q)
+... | no  p≮q = mk⇔ (λ p<ᵇq → ⊥-elim (p≮q (<ᵇ⇒< p<ᵇq))) λ()
+
 ⟪≤⟫-⇿ : ∀ p q → True (p ≤ᵇ q) ⇔ Truish (p ⟦≤⟧ q)
 ⟪≤⟫-⇿ p q with p ≤? q
 ... | yes p≤q = mk⇔ (λ p≤ᵇq → truth _) (λ _ → ≤⇒≤ᵇ p≤q)
@@ -113,5 +131,6 @@ valid = record
   ; ⟪and⟫-⇿ = ⟪and⟫-⇿
   ; ⟪or⟫-⇿ = ⟪or⟫-⇿
   ; ⟪not⟫-⇿ = ⟪not⟫-⇿
+  ; ⟪<⟫-⇿ = ⟪<⟫-⇿
   ; ⟪≤⟫-⇿ = ⟪≤⟫-⇿
   }

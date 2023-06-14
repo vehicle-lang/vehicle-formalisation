@@ -39,8 +39,8 @@ data MaxBoolRes : LinearityVal × PolarityVal → LinearityVal × PolarityVal �
 data NotRes : LinearityVal × PolarityVal → LinearityVal × PolarityVal → Set where
   notRes : ∀ {l p₁ p₂} → NegPolRel p₁ p₂ → NotRes (l , p₁) (l , p₂)
 
-data LeqRes : LinearityVal → LinearityVal → LinearityVal × PolarityVal → Set where
-  leqRes : ∀ {l₁ l₂ l₃} → MaxLinRel l₁ l₂ l₃ → LeqRes l₁ l₂ (l₃ , U)
+data CompRes : LinearityVal → LinearityVal → LinearityVal × PolarityVal → Set where
+  compRes : ∀ {l₁ l₂ l₃} → MaxLinRel l₁ l₂ l₃ → CompRes l₁ l₂ (l₃ , U)
 
 data IfRes : LinearityVal × PolarityVal → Set where
   ifRes : ∀ l → IfRes (l , U)
@@ -59,7 +59,7 @@ verifierRestriction = record
   ; AndRestriction = MaxBoolRes
   ; OrRestriction  = MaxBoolRes
   ; NotRestriction = NotRes
-  ; LeqRestriction = LeqRes
+  ; CompRestriction = CompRes
   ; QuantRestriction = QuantRes
   ; IfRestriction = IfRes
 

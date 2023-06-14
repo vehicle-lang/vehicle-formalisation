@@ -11,6 +11,7 @@ open import Relation.Nullary using (¬_)
 open import Relation.Unary using (Decidable)
 
 open import MiniVehicle.Language.StandardSemantics
+open import Util
 
 record DifferentiableLogic : Set₁ where
   field
@@ -19,6 +20,7 @@ record DifferentiableLogic : Set₁ where
     _⟪or⟫_ : Op₂ ⟪Bool⟫
     ⟪not⟫ : Op₁ ⟪Bool⟫
     _⟪≤⟫_ : ℚ → ℚ → ⟪Bool⟫
+    _⟪<⟫_ : ℚ → ℚ → ⟪Bool⟫
 
 
 record ValidDifferentiableLogic (dl : DifferentiableLogic) : Set₁ where
@@ -37,3 +39,4 @@ record ValidDifferentiableLogic (dl : DifferentiableLogic) : Set₁ where
     ⟪or⟫-⇿ : ∀ p q → (Truish p ⊎ Truish q) ⇔ (Truish (p ⟪or⟫ q))
     ⟪not⟫-⇿ : ∀ p → Truish p ⇔ (¬ (Truish (⟪not⟫ p)))
     ⟪≤⟫-⇿ : ∀ p q → p ≤ᵇ q ⇿ p ⟪≤⟫ q
+    ⟪<⟫-⇿ : ∀ p q → p <ᵇ q ⇿ p ⟪<⟫ q

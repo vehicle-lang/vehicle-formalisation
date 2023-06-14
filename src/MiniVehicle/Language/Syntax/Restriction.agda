@@ -27,7 +27,7 @@ record Restriction : Set₁ where
     NotRestriction       : BoolRestriction → BoolRestriction → Set
     AndRestriction       : BoolRestriction → BoolRestriction → BoolRestriction → Set
     OrRestriction        : BoolRestriction → BoolRestriction → BoolRestriction → Set
-    LeqRestriction       : NumRestriction → NumRestriction → BoolRestriction → Set
+    CompRestriction      : NumRestriction → NumRestriction → BoolRestriction → Set
     QuantRestriction     : NumRestriction → BoolRestriction → BoolRestriction → Set
     IfRestriction        : BoolRestriction → Set
 
@@ -76,7 +76,7 @@ defaultRestriction = record
   ; NotRestriction       = NegPolRel
   ; AndRestriction       = MaxPolRel
   ; OrRestriction        = MaxPolRel
-  ; LeqRestriction       = λ _ _ → ConstPolRel
+  ; CompRestriction      = λ _ _ → ConstPolRel
   ; QuantRestriction     = λ _ → QuantifyRel
   ; IfRestriction        = ConstPolRel
   }

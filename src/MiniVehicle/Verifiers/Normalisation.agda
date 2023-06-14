@@ -142,11 +142,17 @@ _∘S_ : ∀ {X Y Z} → (Y ==> Z) → (X ==> Y) → (X ==> Z)
 ⟦mul⟧ .mor (const-linear , x , y) = x ⊛ y
 ⟦mul⟧ .mor (linear-const , x , y) = y ⊛ x
 
-⟦≤⟧ : ∀ {l₁ l₂ l₃} → (Flat (LeqRes l₁ l₂ l₃) ⟦×⟧ (⟦Num⟧ l₁ ⟦×⟧ ⟦Num⟧ l₂)) ==> ⟦Bool⟧ l₃
-⟦≤⟧ .mor (leqRes const-const ,   x , y) = const x `≤` const y
-⟦≤⟧ .mor (leqRes const-linear ,  x , y) = const x `≤` y
-⟦≤⟧ .mor (leqRes linear-const ,  x , y) = x `≤` const y
-⟦≤⟧ .mor (leqRes linear-linear , x , y) = x `≤` y
+⟦≤⟧ : ∀ {l₁ l₂ l₃} → (Flat (CompRes l₁ l₂ l₃) ⟦×⟧ (⟦Num⟧ l₁ ⟦×⟧ ⟦Num⟧ l₂)) ==> ⟦Bool⟧ l₃
+⟦≤⟧ .mor (compRes const-const ,   x , y) = const x `≤` const y
+⟦≤⟧ .mor (compRes const-linear ,  x , y) = const x `≤` y
+⟦≤⟧ .mor (compRes linear-const ,  x , y) = x `≤` const y
+⟦≤⟧ .mor (compRes linear-linear , x , y) = x `≤` y
+
+⟦<⟧ : ∀ {l₁ l₂ l₃} → (Flat (CompRes l₁ l₂ l₃) ⟦×⟧ (⟦Num⟧ l₁ ⟦×⟧ ⟦Num⟧ l₂)) ==> ⟦Bool⟧ l₃
+⟦<⟧ .mor (compRes const-const ,   x , y) = const x `<` const y
+⟦<⟧ .mor (compRes const-linear ,  x , y) = const x `<` y
+⟦<⟧ .mor (compRes linear-const ,  x , y) = x `<` const y
+⟦<⟧ .mor (compRes linear-linear , x , y) = x `<` y
 
 ⟦not⟧ : ∀ {p₁ p₂} → (Flat (NotRes p₁ p₂) ⟦×⟧ ⟦Bool⟧ p₁) ==> ⟦Bool⟧ p₂
 ⟦not⟧ .mor (notRes U , x) = negate x
@@ -220,6 +226,7 @@ _∘S_ : ∀ {X Y Z} → (Y ==> Z) → (X ==> Y) → (X ==> Z)
 ℳ .Model.⟦and⟧ = ⟦and⟧
 ℳ .Model.⟦or⟧ = ⟦or⟧
 ℳ .Model.⟦≤⟧ = ⟦≤⟧
+ℳ .Model.⟦<⟧ = ⟦<⟧
 ℳ .Model.⟦if⟧ = ⟦if⟧
 ℳ .Model.⟦Index⟧ = ⟦Index⟧
 ℳ .Model.⟦idx⟧ n i .mor _ = i

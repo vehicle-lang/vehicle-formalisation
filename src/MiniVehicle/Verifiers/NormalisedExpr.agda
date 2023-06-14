@@ -14,6 +14,8 @@ open import Data.Rational.Properties using (*-assoc; *-distribˡ-+)
 open import Relation.Nullary using (does)
 open import Relation.Binary.PropositionalEquality using (_≡_; refl; sym; trans; cong₂)
 
+open import Util
+
 ------------------------------------------------------------------------------
 -- Linear variable contexts and renaming
 
@@ -56,7 +58,7 @@ data LinExp (Δ : LinVarCtxt) : Set where
 
 data Constraint (Δ : LinVarCtxt) : Set where
   _`≤`_ : LinExp Δ → LinExp Δ → Constraint Δ
-  _`>`_ : LinExp Δ → LinExp Δ → Constraint Δ
+  _`<`_ : LinExp Δ → LinExp Δ → Constraint Δ
   _`=`_ : LinExp Δ → LinExp Δ → Constraint Δ
   _`≠`_ : LinExp Δ → LinExp Δ → Constraint Δ
   _`=`f_ : Var Δ → Var Δ → Constraint Δ
@@ -71,7 +73,7 @@ rename-LinExp ρ (e₁ `+` e₂) = (rename-LinExp ρ e₁) `+` (rename-LinExp ρ
 
 rename-Constraint : Renameable Constraint
 rename-Constraint ρ (e₁ `≤` e₂) = rename-LinExp ρ e₁ `≤` rename-LinExp ρ e₂
-rename-Constraint ρ (e₁ `>` e₂) = rename-LinExp ρ e₁ `>` rename-LinExp ρ e₂
+rename-Constraint ρ (e₁ `<` e₂) = rename-LinExp ρ e₁ `<` rename-LinExp ρ e₂
 rename-Constraint ρ (p and q)   = (rename-Constraint ρ p) and (rename-Constraint ρ q)
 rename-Constraint ρ (p or q)    = (rename-Constraint ρ p) or (rename-Constraint ρ q)
 rename-Constraint ρ (e₁ `=` e₂) = rename-LinExp ρ e₁ `=` rename-LinExp ρ e₂
@@ -88,8 +90,8 @@ q ⊛ var r v     = var (q ℚ.* r) v
 q ⊛ (e₁ `+` e₂) = (q ⊛ e₁) `+` (q ⊛ e₂)
 
 negate : ∀ {Δ} → Constraint Δ → Constraint Δ
-negate (e₁ `≤` e₂) = e₁ `>` e₂
-negate (e₁ `>` e₂) = e₁ `≤` e₂
+negate (e₁ `≤` e₂) = e₂ `<` e₁
+negate (e₁ `<` e₂) = e₂ `≤` e₁
 negate (p and q) = negate p or negate q
 negate (p or q) = negate p and negate q
 negate (e₁ `=` e₂) = e₁ `≠` e₂
@@ -100,7 +102,7 @@ negate (x₁ `≠`f x₂) = x₁ `=`f x₂
 rename-negate : ∀ {Δ' Δ} (ρ : Δ' ⇒ᵣ Δ) (ϕ : Constraint Δ)  →
                 rename-Constraint ρ (negate ϕ) ≡ negate (rename-Constraint ρ ϕ)
 rename-negate ρ (x `≤` x₁) = refl
-rename-negate ρ (x `>` x₁) = refl
+rename-negate ρ (x `<` x₁) = refl
 rename-negate ρ (x `=` x₁) = refl
 rename-negate ρ (x `≠` x₁) = refl
 rename-negate ρ (x `=`f x₁) = refl
@@ -178,7 +180,7 @@ module Evaluation (extFunc : ℚ → ℚ) where
 
   eval-Constraint : ∀ {Δ} → Constraint Δ → Env Δ → Bool
   eval-Constraint (e₁ `≤` e₂)  η = eval-LinExp e₁ η ≤ᵇ eval-LinExp e₂ η
-  eval-Constraint (e₁ `>` e₂)  η = not (eval-LinExp e₁ η ≤ᵇ eval-LinExp e₂ η)
+  eval-Constraint (e₁ `<` e₂)  η = eval-LinExp e₁ η <ᵇ eval-LinExp e₂ η
   eval-Constraint (e₁ `=` e₂)  η = (eval-LinExp e₁ η ≟ eval-LinExp e₂ η) .does
   eval-Constraint (e₁ `≠` e₂)  η = not ((eval-LinExp e₁ η ≟ eval-LinExp e₂ η) .does)
   eval-Constraint (p and q)    η = eval-Constraint p η ∧ eval-Constraint q η
@@ -190,7 +192,7 @@ module Evaluation (extFunc : ℚ → ℚ) where
   eval-negate : ∀ {Δ} (p : Constraint Δ) η →
                 not (eval-Constraint p η) ≡ eval-Constraint (negate p) η
   eval-negate (x `≤` x₁) η = refl
-  eval-negate (x `>` x₁) η = not-involutive _
+  eval-negate (x `<` x₁) η = not-involutive _
   eval-negate (x `=` x₁) η = refl
   eval-negate (x `≠` x₁) η = not-involutive _
   eval-negate (p and q)  η rewrite sym (eval-negate p η)

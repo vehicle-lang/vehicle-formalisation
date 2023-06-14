@@ -4,26 +4,29 @@ module Util where
 
 open import Data.Sum as Sum using (_⊎_; inj₁; inj₂)
 open import Data.Bool using (Bool; true; false; _∧_; _∨_; not) renaming (T to True)
+open import Data.Bool.Properties using ()
 open import Data.Product as Prod
 open import Data.Rational
 open import Data.Rational.Properties
 open import Data.Empty
 open import Data.Unit using (tt)
+import Data.Integer.Properties as ℤ
 open import Function
 open import Function.Properties.Equivalence
 open import Level using (Level)
 open import Relation.Nullary
 open import Relation.Nullary.Negation
+open import Relation.Binary using (_⇒_)
 open import Relation.Binary.PropositionalEquality as P using (_≡_; refl)
 
 open Equivalence
-
+ 
 private
   variable
     a b c d : Level
     A B C D : Set a
     p q : ℚ
-
+    
 ------------------------------------------------------------------------------
 -- Basics
 
@@ -100,7 +103,7 @@ module ⇔-Reasoning {ℓ} where
   syntax step-⇔ x y∼z x⇔y = x ⇔⟨  x⇔y ⟩ y∼z
   syntax step-⇔˘ x y∼z y⇔x = x ⇔˘⟨ y⇔x ⟩ y∼z
   syntax step-≡ x y∼z y⇔x = x ≡⟨ y⇔x ⟩ y∼z
-
+  
 -- Will be in stdlib v2.0
 _×-⇔_ : A ⇔ B → C ⇔ D → (A × C) ⇔ (B × D)
 A⇔B ×-⇔ C⇔D = mk⇔ (Prod.map (f A⇔B) (f C⇔D)) (Prod.map (g A⇔B) (g C⇔D))
@@ -130,7 +133,11 @@ A⇔B ⊎-⇔ C⇔D = mk⇔ (Sum.map (f A⇔B) (f C⇔D)) (Sum.map (g A⇔B) (g 
 ¬?-⇔ (no ¬A) (no ¬B) ¬A⇔¬B = mk⇔ (⊥-elim ∘ ¬A )(⊥-elim ∘ ¬B)
 
 ------------------------------------------------------------------------------
--- Rational proofs
+-- Additional ℚ utilities
+
+infix 4 _<ᵇ_
+_<ᵇ_ : ℚ → ℚ → Bool
+p <ᵇ q = not (q ≤ᵇ p)
 
 -- Should be in v2.0
 p≥q⇒p-q≥0 : p ≥ q → p - q ≥ 0ℚ
@@ -161,14 +168,23 @@ p≤q⇔p-q≤0 : p ≤ q ⇔ p - q ≤ 0ℚ
 p≤q⇔p-q≤0 = mk⇔ p≤q⇒p-q≤0 p-q≤0⇒p≤q
 
 ≰⇒≥ : p ≰ q → p ≥ q
+
 ≰⇒≥ = <⇒≤ ∘ ≰⇒>
+
+<⇒≱ : _<_ ⇒ _≱_
+<⇒≱ p<q = ℤ.<⇒≱ (drop-*<* p<q) ∘ drop-*≤*
 
 ≤ᵇ⇔≤ : True (p ≤ᵇ q) ⇔ p ≤ q
 ≤ᵇ⇔≤ = mk⇔ ≤ᵇ⇒≤ ≤⇒≤ᵇ
-{-
-<⇔≱ : p < q ⇔ p ≱ q
-<⇔≱ = mk⇔ {!!} {!!}
--}
+
+<⇒<ᵇ : p < q → True (p <ᵇ q)
+<⇒<ᵇ p<q = True-not⁺ (<⇒≱ p<q ∘ ≤ᵇ⇒≤)
+
+<ᵇ⇒< : True (p <ᵇ q) → p < q
+<ᵇ⇒< p<ᵇq = ≰⇒> (True-not⁻ p<ᵇq ∘ ≤⇒≤ᵇ)
+
+<ᵇ⇔< : True (p <ᵇ q) ⇔ p < q
+<ᵇ⇔< = mk⇔ <ᵇ⇒< <⇒<ᵇ
 
 ⊔-pres-nonNegative : ∀ {p q} → NonNegative p → NonNegative q → NonNegative (p ⊔ q)
 ⊔-pres-nonNegative {p} {q} p⁺ q⁺ with p ≤ᵇ q

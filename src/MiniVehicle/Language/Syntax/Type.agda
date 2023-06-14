@@ -48,7 +48,7 @@ data _⊢T_ : KindContext → Kind → Set where
   NotRes       : Δ ⊢T BoolRes → Δ ⊢T BoolRes → Δ ⊢T Type
   AndRes       : Δ ⊢T BoolRes → Δ ⊢T BoolRes → Δ ⊢T BoolRes → Δ ⊢T Type
   OrRes        : Δ ⊢T BoolRes → Δ ⊢T BoolRes → Δ ⊢T BoolRes → Δ ⊢T Type
-  LeqRes       : Δ ⊢T NumRes → Δ ⊢T NumRes → Δ ⊢T BoolRes → Δ ⊢T Type
+  CompRes      : Δ ⊢T NumRes → Δ ⊢T NumRes → Δ ⊢T BoolRes → Δ ⊢T Type
   QuantRes     : Δ ⊢T NumRes → Δ ⊢T BoolRes → Δ ⊢T BoolRes → Δ ⊢T Type
   IfRes        : Δ ⊢T BoolRes → Δ ⊢T Type
 
@@ -100,7 +100,7 @@ ren-Type ρ (BoolRes p) = BoolRes p
 ren-Type ρ (BoolConstRes p) = BoolConstRes (ren-Type ρ p)
 ren-Type ρ (AndRes p₁ p₂ p₃) = AndRes (ren-Type ρ p₁) (ren-Type ρ p₂) (ren-Type ρ p₃)
 ren-Type ρ (OrRes p₁ p₂ p₃) = OrRes (ren-Type ρ p₁) (ren-Type ρ p₂) (ren-Type ρ p₃)
-ren-Type ρ (LeqRes p₁ p₂ p₃) = LeqRes (ren-Type ρ p₁) (ren-Type ρ p₂) (ren-Type ρ p₃)
+ren-Type ρ (CompRes p₁ p₂ p₃) = CompRes (ren-Type ρ p₁) (ren-Type ρ p₂) (ren-Type ρ p₃)
 ren-Type ρ (NotRes p₁ p₂)  = NotRes (ren-Type ρ p₁) (ren-Type ρ p₂)
 ren-Type ρ (QuantRes l p₁ p₂)  = QuantRes (ren-Type ρ l) (ren-Type ρ p₁) (ren-Type ρ p₂)
 ren-Type ρ (IfRes p)  = IfRes (ren-Type ρ p)
@@ -141,7 +141,7 @@ subst-Type σ (BoolRes p) = BoolRes p
 subst-Type σ (BoolConstRes p) = BoolConstRes (subst-Type σ p)
 subst-Type σ (AndRes p₁ p₂ p₃) = AndRes (subst-Type σ p₁) (subst-Type σ p₂) (subst-Type σ p₃)
 subst-Type σ (OrRes p₁ p₂ p₃) = OrRes (subst-Type σ p₁) (subst-Type σ p₂) (subst-Type σ p₃)
-subst-Type σ (LeqRes p₁ p₂ p₃) = LeqRes (subst-Type σ p₁) (subst-Type σ p₂) (subst-Type σ p₃)
+subst-Type σ (CompRes p₁ p₂ p₃) = CompRes (subst-Type σ p₁) (subst-Type σ p₂) (subst-Type σ p₃)
 subst-Type σ (NotRes p₁ p₂)  = NotRes (subst-Type σ p₁) (subst-Type σ p₂)
 subst-Type σ (QuantRes l p₁ p₂)  = QuantRes (subst-Type σ l) (subst-Type σ p₁) (subst-Type σ p₂)
 subst-Type σ (IfRes p)  = IfRes (subst-Type σ p)

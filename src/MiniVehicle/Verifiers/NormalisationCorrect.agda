@@ -231,7 +231,7 @@ module MiniVehicle.Verifiers.NormalisationCorrect (extFunc : ℚ → ℚ) where
       eval-Constraint p (w₁ .env)
       ≡ eval-Constraint (rename-Constraint (ρ .ren) p) (w₂ .env)
   ext-evalConstraint (e₁ `≤` e₂) ρ rewrite ext-evalLinExp e₁ ρ rewrite ext-evalLinExp e₂ ρ = refl
-  ext-evalConstraint (e₁ `>` e₂) ρ rewrite ext-evalLinExp e₁ ρ rewrite ext-evalLinExp e₂ ρ = refl
+  ext-evalConstraint (e₁ `<` e₂) ρ rewrite ext-evalLinExp e₁ ρ rewrite ext-evalLinExp e₂ ρ = refl
   ext-evalConstraint (e₁ `=` e₂) ρ rewrite ext-evalLinExp e₁ ρ rewrite ext-evalLinExp e₂ ρ = refl
   ext-evalConstraint (e₁ `≠` e₂) ρ rewrite ext-evalLinExp e₁ ρ rewrite ext-evalLinExp e₂ ρ = refl
   ext-evalConstraint (p and q)   ρ rewrite ext-evalConstraint p ρ rewrite ext-evalConstraint q ρ = refl
@@ -333,18 +333,30 @@ module MiniVehicle.Verifiers.NormalisationCorrect (extFunc : ℚ → ℚ) where
   ⟦Bool⟧ (l , Ex) .rel = ExFormulaR
   ⟦Bool⟧ (l , Ex) .ext = ext-ExFormula
 
-  ⟦≤⟧ : ∀ {l₁ l₂ l₃} → (Flat (LeqRes l₁ l₂ l₃) ⟦×⟧ (⟦Num⟧ l₁ ⟦×⟧ ⟦Num⟧ l₂)) ==> ⟦Bool⟧ l₃
-  ⟦≤⟧ .left = λ { (leqRes _ , u) → 𝒮.⟦≤⟧ (U , u) }
+  ⟦≤⟧ : ∀ {l₁ l₂ l₃} → (Flat (CompRes l₁ l₂ l₃) ⟦×⟧ (⟦Num⟧ l₁ ⟦×⟧ ⟦Num⟧ l₂)) ==> ⟦Bool⟧ l₃
+  ⟦≤⟧ .left = λ { (compRes _ , u) → 𝒮.⟦≤⟧ (U , u) }
   ⟦≤⟧ .right = 𝒩.⟦≤⟧
-  ⟦≤⟧ .rel-mor w (leqRes const-const   , x₁ , y₁) (_ , x₂ , y₂) (refl , x₁₂ , y₁₂) =
+  ⟦≤⟧ .rel-mor w (compRes const-const   , x₁ , y₁) (_ , x₂ , y₂) (refl , x₁₂ , y₁₂) =
     cong₂ _≤ᵇ_ x₁₂ y₁₂
-  ⟦≤⟧ .rel-mor w (leqRes const-linear  , x₁ , y₁) (_ , x₂ , y₂) (refl , x₁₂ , y₁₂) =
+  ⟦≤⟧ .rel-mor w (compRes const-linear  , x₁ , y₁) (_ , x₂ , y₂) (refl , x₁₂ , y₁₂) =
     cong₂ _≤ᵇ_ x₁₂ y₁₂
-  ⟦≤⟧ .rel-mor w (leqRes linear-const  , x₁ , y₁) (_ , x₂ , y₂) (refl , x₁₂ , y₁₂) =
+  ⟦≤⟧ .rel-mor w (compRes linear-const  , x₁ , y₁) (_ , x₂ , y₂) (refl , x₁₂ , y₁₂) =
     cong₂ _≤ᵇ_ x₁₂ y₁₂
-  ⟦≤⟧ .rel-mor w (leqRes linear-linear , x₁ , y₁) (_ , x₂ , y₂) (refl , x₁₂ , y₁₂) =
+  ⟦≤⟧ .rel-mor w (compRes linear-linear , x₁ , y₁) (_ , x₂ , y₂) (refl , x₁₂ , y₁₂) =
     cong₂ _≤ᵇ_ x₁₂ y₁₂
 
+  ⟦<⟧ : ∀ {l₁ l₂ l₃} → (Flat (CompRes l₁ l₂ l₃) ⟦×⟧ (⟦Num⟧ l₁ ⟦×⟧ ⟦Num⟧ l₂)) ==> ⟦Bool⟧ l₃
+  ⟦<⟧ .left = λ { (compRes _ , u) → 𝒮.⟦<⟧ (U , u) }
+  ⟦<⟧ .right = 𝒩.⟦<⟧
+  ⟦<⟧ .rel-mor w (compRes const-const   , x₁ , y₁) (_ , x₂ , y₂) (refl , x₁₂ , y₁₂) =
+    cong₂ _<ᵇ_ x₁₂ y₁₂
+  ⟦<⟧ .rel-mor w (compRes const-linear  , x₁ , y₁) (_ , x₂ , y₂) (refl , x₁₂ , y₁₂) =
+    cong₂ _<ᵇ_ x₁₂ y₁₂
+  ⟦<⟧ .rel-mor w (compRes linear-const  , x₁ , y₁) (_ , x₂ , y₂) (refl , x₁₂ , y₁₂) =
+    cong₂ _<ᵇ_ x₁₂ y₁₂
+  ⟦<⟧ .rel-mor w (compRes linear-linear , x₁ , y₁) (_ , x₂ , y₂) (refl , x₁₂ , y₁₂) =
+    cong₂ _<ᵇ_ x₁₂ y₁₂
+  
   ⟦and⟧ : ∀ {l₁ l₂ l₃} →
             (Flat (MaxBoolRes l₁ l₂ l₃) ⟦×⟧
               (⟦Bool⟧ l₁ ⟦×⟧ ⟦Bool⟧ l₂)) ==> ⟦Bool⟧ l₃
@@ -627,6 +639,7 @@ module MiniVehicle.Verifiers.NormalisationCorrect (extFunc : ℚ → ℚ) where
   ℳ .Model.⟦and⟧ = ⟦and⟧
   ℳ .Model.⟦or⟧ = ⟦or⟧
   ℳ .Model.⟦≤⟧ = ⟦≤⟧
+  ℳ .Model.⟦<⟧ = ⟦<⟧
   ℳ .Model.⟦if⟧ = ⟦if⟧
   ℳ .Model.⟦Index⟧ = ⟦Index⟧
   ℳ .Model.⟦idx⟧ = ⟦idx⟧

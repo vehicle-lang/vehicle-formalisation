@@ -54,10 +54,10 @@ module _ (extFunc : ℚ → ℚ) (dl : DifferentiableLogic) where
   ℳ .⟦mul⟧ (_ , x , y)  = x ℚ.* y
   ℳ .⟦const⟧ q _ = q
   ℳ .⟦extFunc⟧ (_ , v)  = extFunc v
-  ℳ .⟦Bool⟧ U = ⟪Bool⟫       -- (ℚ⁺∞ × ℚ⁺∞)   -- (Encode ℚ⁺ as set of rationals greater than a given rational)
+  ℳ .⟦Bool⟧ U = ⟪Bool⟫
   ℳ .⟦Bool⟧ Ex = S.Quant ⟪Bool⟫
   ℳ .⟦not⟧ (U , x) = ⟪not⟫ x   -- swap
-  ℳ .⟦and⟧ (U-U , x , y) = x ⟪and⟫ y  -- (x+ , x-) ⟦and⟧ (y+ , y-) = (x+ + y+, (y- - x+) /\ (x- - y+))
+  ℳ .⟦and⟧ (U-U , x , y) = x ⟪and⟫ y 
   ℳ .⟦and⟧ (U-Ex , x , y) = (return x) and y
   ℳ .⟦and⟧ (Ex-U , x , y) = x and (return y)
   ℳ .⟦and⟧ (Ex-Ex , x , y) = x and y
@@ -65,7 +65,8 @@ module _ (extFunc : ℚ → ℚ) (dl : DifferentiableLogic) where
   ℳ .⟦or⟧ (U-Ex , x , y) = (return x) or y
   ℳ .⟦or⟧ (Ex-U , x , y) = x or (return y)
   ℳ .⟦or⟧ (Ex-Ex , x , y) = x or y
-  ℳ .⟦≤⟧ (U , x , y) = x ⟪≤⟫ y   -- (if true then (x ℚ.- y , ∞) else (∞ , x ℚ.- y)
+  ℳ .⟦≤⟧ (U , x , y) = x ⟪≤⟫ y
+  ℳ .⟦<⟧ (U , x , y) = x ⟪<⟫ y
   ℳ .⟦if⟧ ((tr , fa) , (() , _))
   ℳ .⟦Index⟧ i = Fin i
   ℳ .⟦idx⟧ _ i _  = i

@@ -204,6 +204,11 @@ _⟦⇒⟧_ : WRel → WRel → WRel
 ⟦≤⟧ .right = 𝒩.⟦≤⟧
 ⟦≤⟧ .rel-mor (U , x , y) (_ , p , q) (refl , refl , refl) = ⟪≤⟫-⇿ p q
 
+⟦<⟧ : ∀ {l₁ l₂ l₃} → (Flat (ConstPolRel l₃) ⟦×⟧ (⟦Num⟧ l₁ ⟦×⟧ ⟦Num⟧ l₂)) ==> ⟦Bool⟧ l₃
+⟦<⟧ .left = 𝒮.⟦<⟧
+⟦<⟧ .right = 𝒩.⟦<⟧
+⟦<⟧ .rel-mor (U , x , y) (_ , p , q) (refl , refl , refl) = ⟪<⟫-⇿ p q
+
 ⟦and⟧ : ∀ {l₁ l₂ l₃} → (Flat (MaxPolRel l₁ l₂ l₃) ⟦×⟧ (⟦Bool⟧ l₁ ⟦×⟧ ⟦Bool⟧ l₂)) ==> ⟦Bool⟧ l₃
 ⟦and⟧ .left = 𝒮.⟦and⟧
 ⟦and⟧ .right = 𝒩.⟦and⟧
@@ -312,6 +317,7 @@ extendR {X} f .rel-mor p₁ p₂ p₁-p₂ = f .rel-mor p₁ p₂ p₁-p₂
 ℳ .Model.⟦and⟧ = ⟦and⟧
 ℳ .Model.⟦or⟧ = ⟦or⟧
 ℳ .Model.⟦≤⟧ = ⟦≤⟧
+ℳ .Model.⟦<⟧ = ⟦<⟧
 ℳ .Model.⟦if⟧ {X} {b} = ⟦if⟧ {X} {b}
 ℳ .Model.⟦Index⟧ = ⟦Index⟧
 ℳ .Model.⟦idx⟧ = ⟦idx⟧

@@ -5,3 +5,6 @@ import MiniVehicle.Language.Interpretation
 import MiniVehicle.Language.StandardSemantics
 import MiniVehicle.Verifiers.Normalisation
 import MiniVehicle.Verifiers.NormalisationCorrect
+import MiniVehicle.LossFunctions.GenericCompilation
+import MiniVehicle.LossFunctions.GenericCorrectness
+import MiniVehicle.LossFunctions.Instantiation
