@@ -42,41 +42,40 @@ min⁺ : Op₂ ℚ⁺
 min⁺ (p , p⁺) (q , q⁺) = p ⊓ q , ⊓-pres-nonNegative p⁺ q⁺
 
 ------------------------------------------------------------------------------
--- Define the sum type of two non-negative rationals. One of which represents
--- truthiness and one which reprsents falsiness.
+-- Define the signed non-negative rationals.
 
-data ℚ² : Set where
-  truth : (p : ℚ⁺) → ℚ²
-  falsity : (p : ℚ⁺) → ℚ²
+data ±ℚ : Set where
+  pos : (p : ℚ⁺) → ±ℚ
+  neg : (p : ℚ⁺) → ±ℚ
 
-_⟦and⟧_ : ℚ² → ℚ² → ℚ²
-truth x ⟦and⟧ truth y = truth (max⁺ x y)
-truth x ⟦and⟧ falsity y = falsity y
-falsity x ⟦and⟧ truth y = falsity x
-falsity x ⟦and⟧ falsity y = falsity (min⁺ x y)
+_⟦and⟧_ : ±ℚ → ±ℚ → ±ℚ
+pos x ⟦and⟧ pos y = pos (max⁺ x y)
+pos x ⟦and⟧ neg y = neg y
+neg x ⟦and⟧ pos y = neg x
+neg x ⟦and⟧ neg y = neg (min⁺ x y)
 
-_⟦or⟧_ : ℚ² → ℚ² → ℚ²
-truth x ⟦or⟧ truth y = truth (min⁺ x y)
-truth x ⟦or⟧ falsity y = truth y
-falsity x ⟦or⟧ truth y = truth x
-falsity x ⟦or⟧ falsity y = falsity (max⁺ x y)
+_⟦or⟧_ : ±ℚ → ±ℚ → ±ℚ
+pos x ⟦or⟧ pos y = pos (min⁺ x y)
+pos x ⟦or⟧ neg y = pos y
+neg x ⟦or⟧ pos y = pos x
+neg x ⟦or⟧ neg y = neg (max⁺ x y)
 
-⟦not⟧_ : ℚ² → ℚ²
-⟦not⟧ truth   x = falsity x
-⟦not⟧ falsity x = truth x
+⟦not⟧_ : ±ℚ → ±ℚ
+⟦not⟧ pos   x = neg x
+⟦not⟧ neg x = pos x
 
-_⟦≤⟧_ : ℚ → ℚ → ℚ²
+_⟦≤⟧_ : ℚ → ℚ → ±ℚ
 x ⟦≤⟧ y with x ≤? y
-... | yes x≤y = truth (y - x , nonNegative (p≥q⇒p-q≥0 x≤y))
-... | no  x≰y = falsity (x - y , nonNegative (p≥q⇒p-q≥0 (≰⇒≥ x≰y)))
+... | yes x≤y = pos (y - x , nonNegative (p≥q⇒p-q≥0 x≤y))
+... | no  x≰y = neg (x - y , nonNegative (p≥q⇒p-q≥0 (≰⇒≥ x≰y)))
 
-_⟦<⟧_ : ℚ → ℚ → ℚ²
+_⟦<⟧_ : ℚ → ℚ → ±ℚ
 x ⟦<⟧ y with x <? y
-... | yes x<y = truth (y - x , nonNegative (p≥q⇒p-q≥0 (<⇒≤ x<y)))
-... | no  x≮y = falsity (x - y , nonNegative (p≥q⇒p-q≥0 (≮⇒≥ x≮y)))
+... | yes x<y = pos (y - x , nonNegative (p≥q⇒p-q≥0 (<⇒≤ x<y)))
+... | no  x≮y = neg (x - y , nonNegative (p≥q⇒p-q≥0 (≮⇒≥ x≮y)))
 
 logic : DifferentiableLogic
-logic .⟪Bool⟫ = ℚ²
+logic .⟪Bool⟫ = ±ℚ
 logic ._⟪and⟫_ = _⟦and⟧_
 logic ._⟪or⟫_ = _⟦or⟧_
 logic .⟪not⟫ = ⟦not⟧_
@@ -89,30 +88,30 @@ logic ._⟪<⟫_ = _⟦<⟧_
 private
   variable
     a b : 𝔹
-    p q r : ℚ²
+    p q r : ±ℚ
 
-data Truish : ℚ² → Set where
-  truth : ∀ q → Truish (truth q)
+data Truish : ±ℚ → Set where
+  truth : ∀ q → Truish (pos q)
 
 Truish? : Decidable Truish
-Truish? (truth p) = yes (truth p)
-Truish? (falsity p) = no λ()
+Truish? (pos p) = yes (truth p)
+Truish? (neg p) = no λ()
 
 ⟪and⟫-⇿ : ∀ p q → (Truish p × Truish q) ⇔ (Truish (p ⟦and⟧ q))
-⟪and⟫-⇿ (truth p) (truth q) = mk⇔ (λ _ → truth (max⁺ p q)) (λ _ → truth p , truth q)
-⟪and⟫-⇿ (truth p) (falsity q) = mk⇔ (λ()) (λ())
-⟪and⟫-⇿ (falsity p) (truth q) = mk⇔ (λ()) (λ())
-⟪and⟫-⇿ (falsity p) (falsity q) = mk⇔ (λ()) (λ())
+⟪and⟫-⇿ (pos p) (pos q) = mk⇔ (λ _ → truth (max⁺ p q)) (λ _ → truth p , truth q)
+⟪and⟫-⇿ (pos p) (neg q) = mk⇔ (λ()) (λ())
+⟪and⟫-⇿ (neg p) (pos q) = mk⇔ (λ()) (λ())
+⟪and⟫-⇿ (neg p) (neg q) = mk⇔ (λ()) (λ())
 
 ⟪or⟫-⇿ : ∀ p q → (Truish p ⊎ Truish q) ⇔ (Truish (p ⟦or⟧ q))
-⟪or⟫-⇿ (truth p) (truth q) = mk⇔ (λ _ → truth (min⁺ p q)) (λ _ → inj₁ (truth p))
-⟪or⟫-⇿ (truth p) (falsity q) = mk⇔ (λ _ → truth q) (λ _ → inj₁ (truth p))
-⟪or⟫-⇿ (falsity p) (truth q) = mk⇔ (λ _ → truth p) (λ _ → inj₂ (truth q))
-⟪or⟫-⇿ (falsity p) (falsity q) = mk⇔ (λ {(inj₁ ()); (inj₂ ())}) (λ())
+⟪or⟫-⇿ (pos p) (pos q) = mk⇔ (λ _ → truth (min⁺ p q)) (λ _ → inj₁ (truth p))
+⟪or⟫-⇿ (pos p) (neg q) = mk⇔ (λ _ → truth q) (λ _ → inj₁ (truth p))
+⟪or⟫-⇿ (neg p) (pos q) = mk⇔ (λ _ → truth p) (λ _ → inj₂ (truth q))
+⟪or⟫-⇿ (neg p) (neg q) = mk⇔ (λ {(inj₁ ()); (inj₂ ())}) (λ())
 
 ⟪not⟫-⇿ : ∀ p → Truish p ⇔ (¬ (Truish (⟦not⟧ p)))
-⟪not⟫-⇿ (truth p)   = mk⇔ (λ _ ()) (λ _ → truth p)
-⟪not⟫-⇿ (falsity p) = mk⇔ (λ()) (λ f → ⊥-elim (f (truth p)))
+⟪not⟫-⇿ (pos p)   = mk⇔ (λ _ ()) (λ _ → truth p)
+⟪not⟫-⇿ (neg p) = mk⇔ (λ()) (λ f → ⊥-elim (f (truth p)))
 
 ⟪<⟫-⇿ : ∀ p q → True (p <ᵇ q) ⇔ Truish (p ⟦<⟧ q)
 ⟪<⟫-⇿ p q with p <? q
