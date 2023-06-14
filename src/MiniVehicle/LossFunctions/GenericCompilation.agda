@@ -75,5 +75,5 @@ module _ (extFunc : ℚ → ℚ) (dl : DifferentiableLogic) where
   module 𝒩 = Interpret ℳ
   open import MiniVehicle.Language.Syntax lossRestriction
 
-  compile : ε / ε ⊢ Bool (BoolRes Ex) → S.Quant ⟪Bool⟫
+  compile : ∀ {t} → ε / ε ⊢ t → 𝒩.⟦ t ⟧ty _
   compile t = 𝒩.⟦ t ⟧tm _ tt

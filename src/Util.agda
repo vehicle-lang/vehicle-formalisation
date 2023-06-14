@@ -17,13 +17,13 @@ open import Relation.Nullary.Negation
 open import Relation.Binary.PropositionalEquality as P using (_≡_; refl)
 
 open Equivalence
- 
+
 private
   variable
     a b c d : Level
     A B C D : Set a
     p q : ℚ
-    
+
 ------------------------------------------------------------------------------
 -- Basics
 
@@ -89,16 +89,18 @@ module ⇔-Reasoning {ℓ} where
     ; isEquivalence = ⇔-isEquivalence
     })
 
-  open Reasoning public hiding (step-≈; step-≈˘)
+  open Reasoning public hiding (step-≈; step-≈˘; step-≡)
 
-  infixr 1 step-⇔ step-⇔˘
+  infixr 1 step-⇔ step-⇔˘ step-≡
 
   step-⇔  = Reasoning.step-≈
   step-⇔˘ = Reasoning.step-≈˘
+  step-≡ = Reasoning.step-≡
 
   syntax step-⇔ x y∼z x⇔y = x ⇔⟨  x⇔y ⟩ y∼z
   syntax step-⇔˘ x y∼z y⇔x = x ⇔˘⟨ y⇔x ⟩ y∼z
-  
+  syntax step-≡ x y∼z y⇔x = x ≡⟨ y⇔x ⟩ y∼z
+
 -- Will be in stdlib v2.0
 _×-⇔_ : A ⇔ B → C ⇔ D → (A × C) ⇔ (B × D)
 A⇔B ×-⇔ C⇔D = mk⇔ (Prod.map (f A⇔B) (f C⇔D)) (Prod.map (g A⇔B) (g C⇔D))
@@ -131,6 +133,14 @@ A⇔B ⊎-⇔ C⇔D = mk⇔ (Sum.map (f A⇔B) (f C⇔D)) (Sum.map (g A⇔B) (g 
 -- Rational proofs
 
 -- Should be in v2.0
+p≥q⇒p-q≥0 : p ≥ q → p - q ≥ 0ℚ
+p≥q⇒p-q≥0 {p} {q} p≥q = begin
+  0ℚ   ≡˘⟨ +-inverseʳ p ⟩
+  p - p ≤⟨ +-monoʳ-≤ p (neg-antimono-≤ p≥q) ⟩
+  p - q ∎ where open ≤-Reasoning
+
+
+-- Should be in v2.0
 p≤q⇒p-q≤0 : p ≤ q → p - q ≤ 0ℚ
 p≤q⇒p-q≤0 {p} {q} p≤q = begin
   p - q ≤⟨ +-monoˡ-≤ (- q) p≤q ⟩
@@ -150,9 +160,23 @@ p-q≤0⇒p≤q {p} {q} p-q≤0 = begin
 p≤q⇔p-q≤0 : p ≤ q ⇔ p - q ≤ 0ℚ
 p≤q⇔p-q≤0 = mk⇔ p≤q⇒p-q≤0 p-q≤0⇒p≤q
 
+≰⇒≥ : p ≰ q → p ≥ q
+≰⇒≥ = <⇒≤ ∘ ≰⇒>
+
 ≤ᵇ⇔≤ : True (p ≤ᵇ q) ⇔ p ≤ q
 ≤ᵇ⇔≤ = mk⇔ ≤ᵇ⇒≤ ≤⇒≤ᵇ
 {-
 <⇔≱ : p < q ⇔ p ≱ q
 <⇔≱ = mk⇔ {!!} {!!}
 -}
+
+⊔-pres-nonNegative : ∀ {p q} → NonNegative p → NonNegative q → NonNegative (p ⊔ q)
+⊔-pres-nonNegative {p} {q} p⁺ q⁺ with p ≤ᵇ q
+... | true  = q⁺
+... | false = p⁺
+
+
+⊓-pres-nonNegative : ∀ {p q} → NonNegative p → NonNegative q → NonNegative (p ⊓ q)
+⊓-pres-nonNegative {p} {q} p⁺ q⁺ with p ≤ᵇ q
+... | true  = p⁺
+... | false = q⁺

@@ -17,31 +17,6 @@ open import MiniVehicle.Language.Syntax.Restriction
 open import MiniVehicle.Language.Interpretation
 open import Util
 
-------------------------------------------------------------------------------
--- Relationships between semantics
-
-record Relationship : Set₁ where
-  field
-    R : Set → Set → Set
-    _×-R_ : ∀ {A B C D} → R A B → R C D → R (A × C) (B × D)
-    _⊎-R_ : ∀ {A B C D} → R A B → R C D → R (A ⊎ C) (B ⊎ D)
-    Σ-R : ∀ {A B₁ B₂} → (∀ {x} → R (B₁ x) (B₂ x)) → R (Σ A B₁) (Σ A B₂)
-
-sound : Relationship
-sound = record
-  { R = λ A B → (A → B)
-  ; _×-R_  = λ x y → Prod.map x y
-  ; _⊎-R_ = λ x y → Sum.map x y
-  ; Σ-R   = Prod.map₂
-  }
-
-soundAndComplete : Relationship
-soundAndComplete = record
-  { R = _⇔_
-  ; _×-R_ = _×-⇔_
-  ; _⊎-R_ = _⊎-⇔_
-  ; Σ-R = Σ-⇔
-  }
 
 ------------------------------------------------------------------------------
 -- Quantifiers
@@ -64,17 +39,13 @@ data QuantRel {A B : Set} (R : REL A B 0ℓ) : REL (Quant A) (Quant B) 0ℓ wher
   _or_ : ∀ {a b c d} → QuantRel R a b → QuantRel R c d → QuantRel R (a or c) (b or d)
   ex : ∀ {f g} → (∀ q → QuantRel R (f q) (g q)) → QuantRel R (ex f) (ex g)
 
-module _ (Rel : Relationship) where
-
-  open Relationship Rel
-
-  eval-QuantRel : ∀ {A B} {x : Quant A} {y : Quant B} {f : A → Set} {g : B → Set} →
-                 QuantRel (λ a b → R (f a) (g b)) x y →
-                 R (eval-Quant x f) (eval-Quant y g)
-  eval-QuantRel {x = return _} {return _} (return Rxy) = Rxy
-  eval-QuantRel {x = _ and _} {_ and _} (Rxy₁ and Rxy₂) = eval-QuantRel Rxy₁ ×-R eval-QuantRel Rxy₂
-  eval-QuantRel {x = _ or _} {_ or _} (Rxy₁ or Rxy₂) = eval-QuantRel Rxy₁ ⊎-R eval-QuantRel Rxy₂
-  eval-QuantRel {x = ex _} {ex _} (ex Rxy) = Σ-R (λ {x} → eval-QuantRel (Rxy x))
+eval-QuantRel : ∀ {A B} {x : Quant A} {y : Quant B} {f : A → Set} {g : B → Set} →
+               QuantRel (λ a b → (f a) ⇔ (g b)) x y →
+               (eval-Quant x f) ⇔ (eval-Quant y g)
+eval-QuantRel {x = return _} {return _} (return Rxy) = Rxy
+eval-QuantRel {x = _ and _} {_ and _} (Rxy₁ and Rxy₂) = eval-QuantRel Rxy₁ ×-⇔ eval-QuantRel Rxy₂
+eval-QuantRel {x = _ or _} {_ or _} (Rxy₁ or Rxy₂) = eval-QuantRel Rxy₁ ⊎-⇔ eval-QuantRel Rxy₂
+eval-QuantRel {x = ex _} {ex _} (ex Rxy) = Σ-⇔ (λ {x} → eval-QuantRel (Rxy x))
 
 ------------------------------------------------------------------------------
 -- Standard model

@@ -1,20 +1,21 @@
 
 open import Data.Rational using (ℚ; _+_; _*_; _≤ᵇ_; _≟_; 1ℚ)
 open import MiniVehicle.LossFunctions.GenericDifferentiableLogic
-open import MiniVehicle.Language.StandardSemantics using (Relationship)
 
 module MiniVehicle.LossFunctions.GenericCorrectness
-  (extFunc : ℚ → ℚ) (dl : DifferentiableLogic) (relation : Relationship) (dl-valid : ValidDifferentiableLogic dl relation) where
+  (extFunc : ℚ → ℚ) (dl : DifferentiableLogic) (dl-valid : ValidDifferentiableLogic dl) where
 
 open import Level using (0ℓ; suc; lift)
 
 open import Data.Bool using (not; _∧_; _∨_; true; false)
                    renaming (Bool to 𝔹; T to True; if_then_else_ to ifᵇ_then_else_)
+open import Data.Bool.Properties using (not-involutive) renaming (T? to True?)
 open import Data.Empty using (⊥)
 open import Data.Fin using (Fin)
 open import Data.Nat using (ℕ)
 open import Data.Product using (_×_; _,_; proj₁; proj₂; Σ-syntax)
 open import Data.Rational as ℚ
+open import Function using (_$_)
 open import Relation.Nullary.Decidable using (⌊_⌋)
 open import Data.Rational.Properties using (*-identityˡ; *-comm; ≤ᵇ⇒≤; ≤⇒≤ᵇ; module ≤-Reasoning)
 open import Data.Sum using (_⊎_; inj₁; inj₂)
@@ -22,6 +23,7 @@ open import Data.Unit using (⊤; tt)
 open import Function using (_⇔_; mk⇔; id)
 open import Relation.Binary.PropositionalEquality
   using (_≡_; refl; trans; cong; sym; cong₂; subst; module ≡-Reasoning)
+open import Relation.Nullary using (¬_)
 
 open import Util
 open import MiniVehicle.Language.Syntax.Restriction
@@ -33,7 +35,6 @@ import MiniVehicle.Language.Syntax N.lossRestriction as MiniVehicle
 import MiniVehicle.Language.StandardSemantics as S
 
 open DifferentiableLogic dl
-open Relationship relation using (R)
 open ValidDifferentiableLogic dl-valid
 
 ------------------------------------------------------------------------------
@@ -201,12 +202,17 @@ _⟦⇒⟧_ : WRel → WRel → WRel
 ⟦≤⟧ : ∀ {l₁ l₂ l₃} → (Flat (ConstPolRel l₃) ⟦×⟧ (⟦Num⟧ l₁ ⟦×⟧ ⟦Num⟧ l₂)) ==> ⟦Bool⟧ l₃
 ⟦≤⟧ .left = 𝒮.⟦≤⟧
 ⟦≤⟧ .right = 𝒩.⟦≤⟧
-⟦≤⟧ .rel-mor (U , x , y) (_ , .x , .y) (refl , refl , refl) = ⟪≤⟫-⇿
+⟦≤⟧ .rel-mor (U , x , y) (_ , p , q) (refl , refl , refl) = ⟪≤⟫-⇿ p q
 
 ⟦and⟧ : ∀ {l₁ l₂ l₃} → (Flat (MaxPolRel l₁ l₂ l₃) ⟦×⟧ (⟦Bool⟧ l₁ ⟦×⟧ ⟦Bool⟧ l₂)) ==> ⟦Bool⟧ l₃
 ⟦and⟧ .left = 𝒮.⟦and⟧
 ⟦and⟧ .right = 𝒩.⟦and⟧
-⟦and⟧ .rel-mor (U-U , x₁ , y₁) (U-U , x₂ , y₂) (_ , x₁₂ , y₁₂) = ⟪and⟫-⇿ x₁₂ y₁₂
+⟦and⟧ .rel-mor (U-U , a , b) (U-U , p , q) (_ , a⇿p , b⇿q) = begin
+  True (a ∧ b)        ⇔˘⟨ True-∧-⇔ ⟩
+  True a × True b     ⇔⟨ a⇿p ×-⇔ b⇿q ⟩
+  Truish p × Truish q ⇔⟨ ⟪and⟫-⇿ p q ⟩
+  Truish (p ⟪and⟫ q)  ∎
+  where open ⇔-Reasoning
 ⟦and⟧ .rel-mor (U-Ex , _) (U-Ex , _) (_ , x₁₂ , y₁₂) = S.return x₁₂ S.and y₁₂
 ⟦and⟧ .rel-mor (Ex-U , _) (Ex-U , _) (_ , x₁₂ , y₁₂) = x₁₂ S.and S.return y₁₂
 ⟦and⟧ .rel-mor (Ex-Ex , _) (Ex-Ex , _) (_ ,  x₁₂ , y₁₂) = x₁₂ S.and y₁₂
@@ -216,16 +222,28 @@ _⟦⇒⟧_ : WRel → WRel → WRel
             (⟦Bool⟧ l₁ ⟦×⟧ ⟦Bool⟧ l₂)) ==> ⟦Bool⟧ l₃
 ⟦or⟧ .left = 𝒮.⟦or⟧
 ⟦or⟧ .right = 𝒩.⟦or⟧
-⟦or⟧ .rel-mor (U-U , _) (U-U , _) (_ , x₁₂ , y₁₂) = ⟪or⟫-⇿ x₁₂ y₁₂
+⟦or⟧ .rel-mor (U-U , a , b) (U-U , p , q) (_ , a⇿p , b⇿q) = begin
+  True (a ∨ b)          ⇔˘⟨ True-∨-⇔ ⟩
+  (True a ⊎ True b)     ⇔⟨ a⇿p ⊎-⇔ b⇿q ⟩
+  (Truish p ⊎ Truish q) ⇔⟨ ⟪or⟫-⇿ p q ⟩
+  Truish (p ⟪or⟫ q)     ∎
+  where open ⇔-Reasoning
 ⟦or⟧ .rel-mor (U-Ex , _) (U-Ex , _) (_ , x₁₂ , y₁₂) = S.return x₁₂ S.or y₁₂
 ⟦or⟧ .rel-mor (Ex-U , _) (Ex-U , _) (_ , x₁₂ , y₁₂) = x₁₂ S.or S.return y₁₂
 ⟦or⟧ .rel-mor (Ex-Ex , _) (Ex-Ex , _) (_ , x₁₂ , y₁₂) = x₁₂ S.or y₁₂
 
-
 ⟦not⟧ : ∀ {p₁ p₂} → (Flat (NegPolRel p₁ p₂) ⟦×⟧ ⟦Bool⟧ p₁) ==> ⟦Bool⟧ p₂
 ⟦not⟧ .left = 𝒮.⟦not⟧
 ⟦not⟧ .right = 𝒩.⟦not⟧
-⟦not⟧ .rel-mor (U , x₁) (_ , x₂) (refl , x₁₂) = ⟪not⟫-⇿ x₁₂
+⟦not⟧ .rel-mor (U , a) (_ , p) (refl , a⇿p) =
+  ¬?-⇔ (True? (not a)) (Truish? (⟪not⟫ p)) $
+  begin
+    ¬ (True (not a))       ⇔⟨ True-not-⇔ ⟩
+    True (not (not a))     ≡⟨ cong True (not-involutive a) ⟩
+    True a                 ⇔⟨ a⇿p ⟩
+    Truish p               ⇔⟨ ⟪not⟫-⇿ p ⟩
+    (¬ (Truish (⟪not⟫ p))) ∎
+    where open ⇔-Reasoning
 
 ------------------------------------------------------------------------------
 -- Monad (identity)
@@ -309,5 +327,5 @@ standard t = S.eval-Quant (ℐ.⟦_⟧tm t (lift tt) .left tt) True
 lossFunction : ε / ε ⊢ Bool (BoolRes Ex) → Set
 lossFunction t = S.eval-Quant (ℐ.⟦ t ⟧tm (lift tt) .right tt) Truish
 
-full-correctness : (t : ε / ε ⊢ Bool (BoolRes Ex)) → R (standard t) (lossFunction t)
-full-correctness t = S.eval-QuantRel relation (ℐ.⟦ t ⟧tm (lift tt) .rel-mor tt tt tt)
+full-correctness : (t : ε / ε ⊢ Bool (BoolRes Ex)) → standard t ⇔ lossFunction t
+full-correctness t = S.eval-QuantRel (ℐ.⟦ t ⟧tm (lift tt) .rel-mor tt tt tt)
