@@ -71,8 +71,8 @@ Truish? = _≤? 0ℚ
   p < q         ⇔⟨ {!!} ⟩ -- PROBLEM
   p - q ≤ 0ℚ    ∎
   
-valid : ValidDifferentiableLogic logic
-valid = record
+valid : DifferentiableLogicRelation logic
+valid = predicateToRelation logic $ record
   { Truish = Truish
   ; Truish? = Truish?
   ; ⟪and⟫-⇿ = ⟪and⟫-⇿

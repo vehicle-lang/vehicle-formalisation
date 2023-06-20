@@ -49,6 +49,13 @@ f Pres₃ P ⟶ Q = ∀ {x y z} → P x y z → Q (f x) (f y) (f z)
 ------------------------------------------------------------------------------
 -- Boolean
 
+True⇒true : ∀ {a} → True a → a ≡ true
+True⇒true {true} tt = refl
+
+False⇒false : ∀ {a} → ¬ (True a) → a ≡ false
+False⇒false {false} t = refl
+False⇒false {true} t = ⊥-elim (t tt)
+
 True-∧⁺ : ∀ {a b} → True a × True b → True (a ∧ b)
 True-∧⁺ {true} {true} _ = _
 

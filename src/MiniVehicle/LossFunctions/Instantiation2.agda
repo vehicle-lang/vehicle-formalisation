@@ -1,5 +1,5 @@
 
-module MiniVehicle.LossFunctions.Instantiation where
+module MiniVehicle.LossFunctions.Instantiation2 where
 
 open import Data.Sum as Sum
 open import Data.Product as Prod
@@ -13,7 +13,7 @@ open import Algebra
 open import Function
 open import Function.Reasoning
 open import Relation.Nullary
-open import Relation.Binary.PropositionalEquality using (_≡_; cong; refl)
+open import Relation.Binary.PropositionalEquality using (_≡_; sym; cong; cong₂; refl; subst)
 open import Relation.Unary using (Decidable)
 open import Relation.Nullary.Negation
 
@@ -23,18 +23,14 @@ open import MiniVehicle.LossFunctions.GenericDifferentiableLogic
 
 open DifferentiableLogic
 
-{-
-  Chu alternative
-   -- (ℚ⁺∞ × ℚ⁺∞)   -- (Encode ℚ⁺ as set of rationals greater than a given rational)
-   -- (x+ , x-) ⟦and⟧ (y+ , y-) = (x+ + y+, (y- - x+) /\ (x- - y+)) 
-   -- p ≤ q = (if p ≤ᵇ q then (x ℚ.- y , ∞) else (∞ , x ℚ.- y)
--}
-
 ------------------------------------------------------------------------------
 -- Define the set of non-negative rationals and operations over them.
 
 ℚ⁺ : Set
 ℚ⁺ = Σ ℚ NonNegative
+
+0ℚ⁺ : ℚ⁺
+0ℚ⁺ = 0ℚ , _
 
 max⁺ : Op₂ ℚ⁺
 max⁺ (p , p⁺) (q , q⁺) = p ⊔ q , ⊔-pres-nonNegative p⁺ q⁺
@@ -42,44 +38,42 @@ max⁺ (p , p⁺) (q , q⁺) = p ⊔ q , ⊔-pres-nonNegative p⁺ q⁺
 min⁺ : Op₂ ℚ⁺
 min⁺ (p , p⁺) (q , q⁺) = p ⊓ q , ⊓-pres-nonNegative p⁺ q⁺
 
+min⁺-zeroʳ : RightZero _≡_ 0ℚ⁺ min⁺
+min⁺-zeroʳ = {!!}
+
 _+⁺_ : Op₂ ℚ⁺
 (p , p⁺) +⁺ (q , q⁺) = p + q , +-pres-nonNegative {p} {q} p⁺ q⁺
+
+_-_[_] : ∀ p q → p ≥ q → ℚ⁺
+p - q [ p≥q ] = p - q , nonNegative (p≥q⇒p-q≥0 p≥q)
 
 ------------------------------------------------------------------------------
 -- Define the signed non-negative rationals.
 
-data ±ℚ : Set where
-  pos : (p : ℚ⁺) → ±ℚ
-  neg : (p : ℚ⁺) → ±ℚ
+⟦Bool⟧ : Set
+⟦Bool⟧  = ℚ⁺ × ℚ⁺
 
-_⟦and⟧_ : ±ℚ → ±ℚ → ±ℚ
-pos x ⟦and⟧ pos y = pos (max⁺ x y)
-pos x ⟦and⟧ neg y = neg y
-neg x ⟦and⟧ pos y = neg x
-neg x ⟦and⟧ neg y = neg (min⁺ x y)
+_⟦and⟧_ : Op₂ ⟦Bool⟧ 
+(x₊ , x₋) ⟦and⟧ (y₊ , y₋) = min⁺ x₊ y₊ , max⁺ x₋ y₋
 
-_⟦or⟧_ : ±ℚ → ±ℚ → ±ℚ
-pos x ⟦or⟧ pos y = pos (min⁺ x y)
-pos x ⟦or⟧ neg y = pos y
-neg x ⟦or⟧ pos y = pos x
-neg x ⟦or⟧ neg y = neg (max⁺ x y)
+_⟦or⟧_ : Op₂ ⟦Bool⟧ 
+(x₊ , x₋) ⟦or⟧ (y₊ , y₋) = min⁺ x₊ y₊ , max⁺ x₋ y₋
 
-⟦not⟧_ : ±ℚ → ±ℚ
-⟦not⟧ pos   x = neg x
-⟦not⟧ neg x = pos x
+⟦not⟧_ : Op₁ ⟦Bool⟧ 
+⟦not⟧ (x₊ , x₋) = x₋ , x₊
 
-_⟦≤⟧_ : ℚ → ℚ → ±ℚ
+_⟦≤⟧_ : ℚ → ℚ → ⟦Bool⟧
 x ⟦≤⟧ y with x ≤? y
-... | yes x≤y = pos (y - x , nonNegative (p≥q⇒p-q≥0 x≤y))
-... | no  x≰y = neg (x - y , nonNegative (p≥q⇒p-q≥0 (≰⇒≥ x≰y)))
+... | yes x≤y = (y - x [ x≤y ] , 0ℚ⁺)
+... | no  x≰y = (0ℚ⁺ , x - y [ ≰⇒≥ x≰y ])
 
-_⟦<⟧_ : ℚ → ℚ → ±ℚ
+_⟦<⟧_ : ℚ → ℚ → ⟦Bool⟧ 
 x ⟦<⟧ y with x <? y
-... | yes x<y = pos (y - x , nonNegative (p≥q⇒p-q≥0 (<⇒≤ x<y)))
-... | no  x≮y = neg (x - y , nonNegative (p≥q⇒p-q≥0 (≮⇒≥ x≮y)))
+... | yes x<y = (y - x [ <⇒≤ x<y ] , 0ℚ⁺)
+... | no  x≮y = (0ℚ⁺ , x - y [ ≮⇒≥ x≮y ])
 
 logic : DifferentiableLogic
-logic .⟪Bool⟫ = ±ℚ
+logic .⟪Bool⟫ = ⟦Bool⟧ 
 logic ._⟪and⟫_ = _⟦and⟧_
 logic ._⟪or⟫_ = _⟦or⟧_
 logic .⟪not⟫ = ⟦not⟧_
@@ -92,52 +86,50 @@ logic ._⟪<⟫_ = _⟦<⟧_
 private
   variable
     a b : 𝔹
-    p q r : ±ℚ
+    r s : ℚ
+    p q : ⟦Bool⟧
 
-data Truish : ±ℚ → Set where
-  truth : ∀ q → Truish (pos q)
+data R : 𝔹 → ⟦Bool⟧ → Set where
+  truthy : ∀ (p : ℚ⁺) → R true (p , 0ℚ⁺)
+  falsey : ∀ (p : ℚ⁺) → R false (0ℚ⁺ , p)
 
-Truish? : Decidable Truish
-Truish? (pos p) = yes (truth p)
-Truish? (neg p) = no λ()
-
-⟪and⟫-⇿ : ∀ p q → (Truish p × Truish q) ⇔ (Truish (p ⟦and⟧ q))
-⟪and⟫-⇿ (pos p) (pos q) = mk⇔ (λ _ → truth (max⁺ p q)) (λ _ → truth p , truth q)
-⟪and⟫-⇿ (pos p) (neg q) = mk⇔ (λ()) (λ())
-⟪and⟫-⇿ (neg p) (pos q) = mk⇔ (λ()) (λ())
-⟪and⟫-⇿ (neg p) (neg q) = mk⇔ (λ()) (λ())
-
-⟪or⟫-⇿ : ∀ p q → (Truish p ⊎ Truish q) ⇔ (Truish (p ⟦or⟧ q))
+R⟪and⟫ : R a p → R b q → R (a ∧ b) (p ⟦and⟧ q)
+R⟪and⟫ (truthy p) (truthy q) = truthy (min⁺ p q)
+R⟪and⟫ (truthy p) (falsey q) = subst (R false) (sym (cong₂ _,_ (min⁺-zeroʳ p) {!!})) (falsey q)
+R⟪and⟫ (falsey p) (truthy q) = subst (R false) (sym (cong₂ _,_ {!min⁺-identityʳ q!} {!!})) (falsey p)
+R⟪and⟫ (falsey p) (falsey q) = falsey (max⁺ p q)
+{-
+⟪or⟫-⇿ : R a p → R b q → R (a ∧ b) (p ⟦or⟧ q)
 ⟪or⟫-⇿ (pos p) (pos q) = mk⇔ (λ _ → truth (min⁺ p q)) (λ _ → inj₁ (truth p))
 ⟪or⟫-⇿ (pos p) (neg q) = mk⇔ (λ _ → truth q) (λ _ → inj₁ (truth p))
 ⟪or⟫-⇿ (neg p) (pos q) = mk⇔ (λ _ → truth p) (λ _ → inj₂ (truth q))
 ⟪or⟫-⇿ (neg p) (neg q) = mk⇔ (λ {(inj₁ ()); (inj₂ ())}) (λ())
+-}
 
-⟪not⟫-⇿ : ∀ p → Truish p ⇔ (¬ (Truish (⟦not⟧ p)))
-⟪not⟫-⇿ (pos p)   = mk⇔ (λ _ ()) (λ _ → truth p)
-⟪not⟫-⇿ (neg p) = mk⇔ (λ()) (λ f → ⊥-elim (f (truth p)))
+R⟪not⟫ : R a p → R (not a) (⟦not⟧ p)
+R⟪not⟫ (truthy p) = falsey p
+R⟪not⟫ (falsey p) = truthy p
 
-⟪<⟫-⇿ : ∀ p q → True (p <ᵇ q) ⇔ Truish (p ⟦<⟧ q)
-⟪<⟫-⇿ p q with p <? q
-... | yes p<q = mk⇔ (λ p<ᵇq → truth _) (λ _ → <⇒<ᵇ p<q)
-... | no  p≮q = mk⇔ (λ p<ᵇq → ⊥-elim (p≮q (<ᵇ⇒< p<ᵇq))) λ()
+R⟪≤⟫ : ∀ {p q} → R (p ≤ᵇ q) (p ⟦≤⟧ q)
+R⟪≤⟫ {p} {q} with p ≤? q
+... | yes p≤q rewrite True⇒true (≤⇒≤ᵇ p≤q) = truthy (q - p [ p≤q ])
+... | no  p≰q = {!falsey ?!}
 
-⟪≤⟫-⇿ : ∀ p q → True (p ≤ᵇ q) ⇔ Truish (p ⟦≤⟧ q)
-⟪≤⟫-⇿ p q with p ≤? q
-... | yes p≤q = mk⇔ (λ p≤ᵇq → truth _) (λ _ → ≤⇒≤ᵇ p≤q)
-... | no  p≰q = mk⇔ (λ p≤ᵇq → ⊥-elim (p≰q (≤ᵇ⇒≤ p≤ᵇq))) λ()
+R⟪<⟫ : R (r <ᵇ s) (r ⟦<⟧ s)
+R⟪<⟫ {r} {s} with r <? s
+... | yes r<s = {!!}
+... | no  r≮s = {!!}
 
-valid : ValidDifferentiableLogic logic
+valid : DifferentiableLogicRelation logic
 valid = record
-  { Truish = Truish
-  ; Truish? = Truish?
-  ; ⟪and⟫-⇿ = ⟪and⟫-⇿
-  ; ⟪or⟫-⇿ = ⟪or⟫-⇿
-  ; ⟪not⟫-⇿ = ⟪not⟫-⇿
-  ; ⟪<⟫-⇿ = ⟪<⟫-⇿
-  ; ⟪≤⟫-⇿ = ⟪≤⟫-⇿
+  { R = R
+  ; R⟪and⟫ = R⟪and⟫
+  ; R⟪or⟫ = {!!} --R⟪or⟫
+  ; R⟪not⟫ = R⟪not⟫
+  ; R⟪<⟫ = R⟪<⟫
+  ; R⟪≤⟫ = R⟪≤⟫
   }
-
+{-
 ------------------------------------------------------------------------------
 -- Compilation
 
@@ -170,3 +162,4 @@ module _ (extFunc : ℚ → ℚ) where
   false⇒loss>0 t ¬tr with L.lossFunctionProp t | g (prop-correctness t)
   ... | pos p | x = contradiction (x (truth p)) ¬tr
   ... | neg (l , l⁺) | x = positive⁻¹ (nonNegative+pos⇒pos {l} {prec} l⁺ _)
+-}
