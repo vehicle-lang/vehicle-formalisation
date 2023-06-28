@@ -18,6 +18,7 @@ open import Util
 open import MiniVehicle.Language.Syntax.Restriction
 open import MiniVehicle.Verifiers.Syntax.Restriction
 open import MiniVehicle.Verifiers.NormalisedExpr renaming (_∘_ to _∘r_)
+open import MiniVehicle.Language.Model
 open import MiniVehicle.Language.Interpretation
 open import EquiInhabited
 
@@ -646,8 +647,9 @@ module MiniVehicle.Verifiers.NormalisationCorrect (extFunc : ℚ → ℚ) where
   ℳ .Model.⟦∃⟧ = ⟦∃⟧
 
   open MiniVehicle verifierRestriction hiding (_⇒ᵣ_; under)
+  import MiniVehicle.Language.Interpretation verifierRestriction ℳ as ℐ
 
-  module ℐ = Interpret verifierRestriction ℳ
+--  module ℐ = Interpret verifierRestriction ℳ
 
   standard : ε / ε ⊢ Bool (BoolRes (linear , Ex)) → Set
   standard t = S.eval-Quant (ℐ.⟦_⟧tm t (lift tt) .left tt) True

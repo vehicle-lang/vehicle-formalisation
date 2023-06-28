@@ -20,14 +20,14 @@ lossRestriction = record
   ; IfRestriction = λ _ → ⊥
   }
 
-open import MiniVehicle.Language.Interpretation lossRestriction
+open import MiniVehicle.Language.Model
 
 module _ (extFunc : ℚ → ℚ) (dl : DifferentiableLogic) where
 
   open Model
   open DifferentiableLogic dl
 
-  ℳ : Model (Level.suc 0ℓ) 0ℓ
+  ℳ : Model lossRestriction (Level.suc 0ℓ) 0ℓ
   ℳ .⟦Type⟧ = Set
   ℳ ._==>_ X Y = X → Y
   ℳ .Flat X = X
@@ -75,8 +75,9 @@ module _ (extFunc : ℚ → ℚ) (dl : DifferentiableLogic) where
    -- (ℚ⁺∞ × ℚ⁺∞)   -- (Encode ℚ⁺ as set of rationals greater than a given rational)
    -- (x+ , x-) ⟦and⟧ (y+ , y-) = (x+ + y+, (y- - x+) /\ (x- - y+)) 
    -- (if true then (x ℚ.- y , ∞) else (∞ , x ℚ.- y)
-  module 𝒩 = Interpret ℳ
+
+  open import MiniVehicle.Language.Interpretation lossRestriction ℳ as ℒ
   open import MiniVehicle.Language.Syntax lossRestriction
 
-  compile : ∀ {t} → ε / ε ⊢ t → 𝒩.⟦ t ⟧ty _
-  compile t = 𝒩.⟦ t ⟧tm _ tt
+  compile : ∀ {t} → ε / ε ⊢ t → ℒ.⟦ t ⟧ty _
+  compile t = ℒ.⟦ t ⟧tm _ tt

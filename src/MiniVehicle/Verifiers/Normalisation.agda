@@ -9,7 +9,7 @@ open import Data.Rational using (ℚ; 1ℚ; _+_; _*_)
 open import Data.Unit using (⊤; tt)
 
 open import MiniVehicle.Language.Syntax.Restriction
-open import MiniVehicle.Language.Interpretation
+open import MiniVehicle.Language.Model
 open import MiniVehicle.Verifiers.NormalisedExpr
 open import MiniVehicle.Verifiers.Syntax.Restriction
 

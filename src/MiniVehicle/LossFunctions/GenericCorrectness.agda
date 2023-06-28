@@ -27,7 +27,7 @@ open import Relation.Nullary using (¬_)
 
 open import Util
 open import MiniVehicle.Language.Syntax.Restriction
-open import MiniVehicle.Language.Interpretation
+open import MiniVehicle.Language.Model
 open import EquiInhabited
 
 import MiniVehicle.LossFunctions.GenericCompilation as N
@@ -307,7 +307,7 @@ extendR {X} f .rel-mor p₁ p₂ p₁-p₂ = f .rel-mor p₁ p₂ p₁-p₂
 
 open MiniVehicle hiding (_⇒ᵣ_; under)
 
-module ℐ = Interpret N.lossRestriction ℳ
+import MiniVehicle.Language.Interpretation N.lossRestriction ℳ as ℐ
 
 ------------------------------------------------------------------------------
 -- Propositional compilation

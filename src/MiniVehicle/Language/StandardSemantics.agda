@@ -14,6 +14,7 @@ open import Relation.Binary using (REL)
 open import Relation.Binary.PropositionalEquality using (_≡_; refl; trans; cong; sym; cong₂)
 
 open import MiniVehicle.Language.Syntax.Restriction
+open import MiniVehicle.Language.Model
 open import MiniVehicle.Language.Interpretation
 open import Util
 
