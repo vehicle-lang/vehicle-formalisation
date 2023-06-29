@@ -18,32 +18,11 @@ open import Relation.Unary using (Decidable)
 open import Relation.Nullary.Negation
 
 open import Util
+open import Util.PositiveRational
 open import MiniVehicle.Language.StandardSemantics
 open import MiniVehicle.LossFunctions.GenericDifferentiableLogic
 
 open DifferentiableLogic
-
-{-
-  Chu alternative
-   -- (ℚ⁺∞ × ℚ⁺∞)   -- (Encode ℚ⁺ as set of rationals greater than a given rational)
-   -- (x+ , x-) ⟦and⟧ (y+ , y-) = (x+ + y+, (y- - x+) /\ (x- - y+)) 
-   -- p ≤ q = (if p ≤ᵇ q then (x ℚ.- y , ∞) else (∞ , x ℚ.- y)
--}
-
-------------------------------------------------------------------------------
--- Define the set of non-negative rationals and operations over them.
-
-ℚ⁺ : Set
-ℚ⁺ = Σ ℚ NonNegative
-
-max⁺ : Op₂ ℚ⁺
-max⁺ (p , p⁺) (q , q⁺) = p ⊔ q , ⊔-pres-nonNegative p⁺ q⁺
-
-min⁺ : Op₂ ℚ⁺
-min⁺ (p , p⁺) (q , q⁺) = p ⊓ q , ⊓-pres-nonNegative p⁺ q⁺
-
-_+⁺_ : Op₂ ℚ⁺
-(p , p⁺) +⁺ (q , q⁺) = p + q , +-pres-nonNegative {p} {q} p⁺ q⁺
 
 ------------------------------------------------------------------------------
 -- Define the signed non-negative rationals.

@@ -43,7 +43,6 @@ postulate
 ⟦_⟧ren {ε} ρ ks = lift tt
 ⟦_⟧ren {K ,- κ} ρ ks = ⟦_⟧ren {K} (λ x → ρ (succ x)) ks , ⟦ ρ zero ⟧tyvar ks
 
-
 ⟦_⟧ty : ∀ {K κ} → K ⊢T κ → ⟦ K ⟧kctxt → ⟦ κ ⟧kind
 ⟦ var x ⟧ty ks = ⟦ x ⟧tyvar ks
 ⟦ Bool r ⟧ty ks = ⟦Bool⟧ (⟦ r ⟧ty ks .lower)

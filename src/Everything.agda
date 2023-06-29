@@ -124,4 +124,4 @@ import MiniVehicle.Verifiers.NormalisationCorrect
 import MiniVehicle.LossFunctions.GenericCompilation
 import MiniVehicle.LossFunctions.GenericCorrectness
 import MiniVehicle.LossFunctions.Instantiation1
--- import MiniVehicle.LossFunctions.Instantiation2
+import MiniVehicle.LossFunctions.Instantiation2
