@@ -9,9 +9,16 @@ module Everything where
 
 {- MiniVehicle is a typed language designed for writing specifications of neural
    network components of AI-powered systems. The language has multiple
-   interpretation backends to:
+   backends:
 
-     -
+     - A "standard semantics" directly into Agda, which establishes the baseline
+       meaning of expressions in MiniVehicle.
+
+     - A backend that translates MiniVehicle specifications into a verification
+       language suitable for neural network verifier backends such as Marabou.
+
+     - A backend that converts the boolean logic in MiniVehicle into a
+       quantitative form suitable for using in loss functions during training.
 
    The core language is a typed λ-calculus with indexed types. To fulfil its
    purpose as a specification language, MiniVehicle also includes:
@@ -77,7 +84,36 @@ import MiniVehicle.Language.Interpretation
    further below. -}
 import MiniVehicle.Language.StandardSemantics
 
-{- Normalisation backend: TODO -}
+{- The target language for verification backends is considerably less expressive
+   than the full MiniVehicle language:
+
+    - There are no functions or vectors; everything must be "flattened".
+
+    - The language is stratified into (existentially) quantified expressions
+      containing propositional boolean expressions over atomic constraints.
+      Constraints are divided into equalities involving uninterpreted functions,
+      and (in)equalities between linear expressions.
+
+    - There is no polymorphic if-then-else.
+
+    - The syntax enforces negation normal form, though this is not strictly
+      required and could be added as a post processing phase.
+
+   The syntax, with accompanying renaming structure is defined in the
+   VerifierLang.Syntax module: -}
+import VerifierLang.Syntax
+
+{- The semantics of the verifier language is intended to be directly guessable
+   from the syntax, with quantifiers interpreted as quantification, boolean
+   propositions interpreted with the corresponding boolean operators, and
+   atomic propositions interpreted as compariosns between rational numbers.
+   The semantics is parameterised by the interpretation of the uninterpreted
+   functions in the specification. -}
+import VerifierLang.Semantics
+
+{- MiniVehicle is compiled into the verifier language by a Normalisation by
+   Evaluation (NbE) procedure. The correctness of this process is established
+   using a logical relations proof. -}
 import MiniVehicle.Verifiers.Normalisation
 import MiniVehicle.Verifiers.NormalisationCorrect
 

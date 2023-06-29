@@ -20,13 +20,13 @@ open import Relation.Binary using (_⇒_)
 open import Relation.Binary.PropositionalEquality as P using (_≡_; refl)
 
 open Equivalence
- 
+
 private
   variable
     a b c d : Level
     A B C D : Set a
     p q : ℚ
-    
+
 ------------------------------------------------------------------------------
 -- Basics
 

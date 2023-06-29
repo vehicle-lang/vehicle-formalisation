@@ -10,7 +10,7 @@ open import Data.Unit using (⊤; tt)
 
 open import MiniVehicle.Language.Syntax.Restriction
 open import MiniVehicle.Language.Model
-open import MiniVehicle.Verifiers.NormalisedExpr
+open import VerifierLang.Syntax
 open import MiniVehicle.Verifiers.Syntax.Restriction
 
 record Syn : Set₁ where

@@ -17,7 +17,7 @@ open import Relation.Binary.PropositionalEquality
 open import Util
 open import MiniVehicle.Language.Syntax.Restriction
 open import MiniVehicle.Verifiers.Syntax.Restriction
-open import MiniVehicle.Verifiers.NormalisedExpr renaming (_∘_ to _∘r_)
+open import VerifierLang.Syntax renaming (_∘_ to _∘r_)
 open import MiniVehicle.Language.Model
 open import MiniVehicle.Language.Interpretation
 open import EquiInhabited
@@ -29,7 +29,7 @@ import MiniVehicle.Verifiers.Normalisation as N
 
 module MiniVehicle.Verifiers.NormalisationCorrect (extFunc : ℚ → ℚ) where
 
-  open Evaluation extFunc
+  open import VerifierLang.Semantics extFunc
 
   record World : Set where
     field
