@@ -17,18 +17,17 @@ open import Relation.Binary.PropositionalEquality
 open import Util using (_<ᵇ_; is-true-or-false)
 open import MiniVehicle.Language.Syntax.Restriction
 open import MiniVehicle.Verifiers.Syntax.Restriction
-open import VerifierLang.Syntax renaming (_∘_ to _∘r_)
-open import MiniVehicle.Language.Model
-open import MiniVehicle.Language.Interpretation
 open import EquiInhabited
 
-import MiniVehicle.Language.Syntax as MiniVehicle
-import MiniVehicle.Language.StandardSemantics as S
-import MiniVehicle.Verifiers.Normalisation as N
 
 
 module MiniVehicle.Verifiers.NormalisationCorrect (extFunc : ℚ → ℚ) where
 
+open import MiniVehicle.Language.Model using (Model)
+import MiniVehicle.Language.StandardSemantics as S
+import MiniVehicle.Verifiers.Normalisation as N
+
+open import VerifierLang.Syntax renaming (_∘_ to _∘r_)
 open import VerifierLang.Semantics extFunc
 
 ------------------------------------------------------------------------------
@@ -515,7 +514,7 @@ ExFormulaR-ok w (q-or r₁ r₂) = ⊎-cong (ExFormulaR-ok w r₁) (ExFormulaR-o
 ℳ .Model.⟦∃⟧ = ⟦∃⟧
 
 ------------------------------------------------------------------------------
-open MiniVehicle verifierRestriction hiding (_⇒ᵣ_; under)
+open import MiniVehicle.Language.Syntax verifierRestriction hiding (_⇒ᵣ_; under)
 import MiniVehicle.Language.Interpretation verifierRestriction ℳ as ℐ
 
 standard : ε / ε ⊢ Bool (BoolRes (linear , Ex)) → Set

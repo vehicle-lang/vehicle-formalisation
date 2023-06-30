@@ -9,8 +9,8 @@ open import Data.Unit using (⊤; tt)
 
 open import MiniVehicle.Language.Syntax.Restriction
 open import MiniVehicle.Language.Model
-open import VerifierLang.Syntax
 open import MiniVehicle.Verifiers.Syntax.Restriction
+open import VerifierLang.Syntax
 
 record ⟦Type⟧ : Set₁ where
   field
@@ -228,11 +228,8 @@ _∘S_ : ∀ {X Y Z} → (Y ==> Z) → (X ==> Y) → (X ==> Z)
 ℳ .Model.⟦idx⟧ n i .mor _ = i
 ℳ .Model.⟦∃⟧ = ⟦∃⟧
 
-{-
-module 𝒩 = Interpret ? ℳ
-
-open import MiniVehicle
+open import MiniVehicle.Language.Interpretation verifierRestriction ℳ
+open import MiniVehicle.Language.Syntax verifierRestriction
 
 normalise : ε / ε ⊢ Bool (BoolRes (linear , Ex)) → PrenexFormula ε
-normalise t = toPrenexForm (compile (𝒩.⟦ t ⟧tm (lift tt) .mor tt))
--}
+normalise t = toPrenexForm (compile (⟦ t ⟧tm (lift tt) .mor tt))
