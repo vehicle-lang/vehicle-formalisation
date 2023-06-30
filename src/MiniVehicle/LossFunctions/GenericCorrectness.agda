@@ -43,15 +43,15 @@ open DifferentiableLogicRelation dl-relation
 module 𝒩 = Model (N.ℳ extFunc dl)
 module 𝒮 = Model (S.ℳ extFunc)
 
-record WRel : Set (suc 0ℓ) where
+record ⟦Type⟧ : Set (suc 0ℓ) where
   field
     Left  : 𝒮.⟦Type⟧
     Right : 𝒩.⟦Type⟧
     rel   : Left → Right → Set
-open WRel
+open ⟦Type⟧
 
 infixr 20 _==>_
-record _==>_ (X Y : WRel) : Set where
+record _==>_ (X Y : ⟦Type⟧) : Set where
   field
     left    : X .Left 𝒮.==> Y .Left
     right   : X .Right 𝒩.==> Y .Right
@@ -74,7 +74,7 @@ _∘_ : ∀ {X Y Z} → (Y ==> Z) → (X ==> Y) → (X ==> Z)
 ------------------------------------------------------------------------------
 -- Sets
 
-Flat : Set → WRel
+Flat : Set → ⟦Type⟧
 Flat X .Left = X
 Flat X .Right = X
 Flat X .rel = _≡_
@@ -87,7 +87,7 @@ elem a .rel-mor _ _ _ = refl
 ------------------------------------------------------------------------------
 -- Products and terminal object
 
-⟦⊤⟧ : WRel
+⟦⊤⟧ : ⟦Type⟧
 ⟦⊤⟧ .Left = ⊤
 ⟦⊤⟧ .Right = 𝒩.⟦⊤⟧
 ⟦⊤⟧ .rel tt tt = ⊤
@@ -98,7 +98,7 @@ elem a .rel-mor _ _ _ = refl
 ⟦terminal⟧ .rel-mor _ _ _ = tt
 
 infixr 2 _⟦×⟧_
-_⟦×⟧_ : WRel → WRel → WRel
+_⟦×⟧_ : ⟦Type⟧ → ⟦Type⟧ → ⟦Type⟧
 (X ⟦×⟧ Y) .Left = X .Left 𝒮.⟦×⟧ Y .Left
 (X ⟦×⟧ Y) .Right = X .Right 𝒩.⟦×⟧ Y .Right
 (X ⟦×⟧ Y) .rel (x , y) (x' , y') = X .rel x x' × Y .rel y y'
@@ -123,7 +123,7 @@ _⟦×⟧_ : WRel → WRel → WRel
 ------------------------------------------------------------------------------
 -- Functions and Universal Quantification
 
-_⟦⇒⟧_ : WRel → WRel → WRel
+_⟦⇒⟧_ : ⟦Type⟧ → ⟦Type⟧ → ⟦Type⟧
 (X ⟦⇒⟧ Y) .Left = X .Left 𝒮.⟦⇒⟧ Y .Left
 (X ⟦⇒⟧ Y) .Right = X .Right 𝒩.⟦⇒⟧ Y .Right
 (X ⟦⇒⟧ Y) .rel f g = ∀ x y →  X .rel x y → Y .rel (f x) (g y)
@@ -138,7 +138,7 @@ _⟦⇒⟧_ : WRel → WRel → WRel
 ⟦eval⟧ .right = 𝒩.⟦eval⟧
 ⟦eval⟧ .rel-mor (f₁ , x₁) (f₂ , x₂) (r-f₁f₂ , r-x₁x₂) = r-f₁f₂ x₁ x₂ r-x₁x₂
 
-⟦∀⟧ : ∀ {I : Set} → (I → WRel) → WRel
+⟦∀⟧ : ∀ {I : Set} → (I → ⟦Type⟧) → ⟦Type⟧
 ⟦∀⟧ A .Left = 𝒮.⟦∀⟧ (λ n → A n .Left)
 ⟦∀⟧ A .Right = 𝒩.⟦∀⟧ (λ n → A n .Right)
 ⟦∀⟧ A .rel x y = ∀ n → A n .rel (x n) (y n)
@@ -156,7 +156,7 @@ _⟦⇒⟧_ : WRel → WRel → WRel
 ------------------------------------------------------------------------------
 -- Index
 
-⟦Index⟧ : ℕ → WRel
+⟦Index⟧ : ℕ → ⟦Type⟧
 ⟦Index⟧ n .Left = 𝒮.⟦Index⟧ n
 ⟦Index⟧ n .Right = 𝒩.⟦Index⟧ n
 ⟦Index⟧ X .rel x y = x ≡ y
@@ -169,7 +169,7 @@ _⟦⇒⟧_ : WRel → WRel → WRel
 ------------------------------------------------------------------------------
 -- Numbers, and linear expressions
 
-⟦Num⟧ : ⊤ → WRel
+⟦Num⟧ : ⊤ → ⟦Type⟧
 ⟦Num⟧ p .Left = 𝒮.⟦Num⟧ p
 ⟦Num⟧ p .Right = 𝒩.⟦Num⟧ p
 ⟦Num⟧ p .rel = _≡_
@@ -193,7 +193,7 @@ _⟦⇒⟧_ : WRel → WRel → WRel
 ------------------------------------------------------------------------------
 -- Booleans and constraints
 
-⟦Bool⟧ : PolarityVal → WRel
+⟦Bool⟧ : PolarityVal → ⟦Type⟧
 ⟦Bool⟧ p .Left = 𝒮.⟦Bool⟧ p
 ⟦Bool⟧ p .Right = 𝒩.⟦Bool⟧ p
 ⟦Bool⟧ U .rel = R
@@ -235,7 +235,7 @@ _⟦⇒⟧_ : WRel → WRel → WRel
 ------------------------------------------------------------------------------
 -- Monad (identity)
 
-Mon : WRel → WRel
+Mon : ⟦Type⟧ → ⟦Type⟧
 Mon X .Left = 𝒮.Mon (X .Left)
 Mon X .Right = 𝒩.Mon (X .Right)
 Mon X .rel = X .rel
@@ -268,7 +268,7 @@ extendR {X} f .rel-mor p₁ p₂ p₁-p₂ = f .rel-mor p₁ p₂ p₁-p₂
 ⟦∃⟧ {l = l} .rel-mor (Ex , f₁) (Ex , f₂) (refl , r) = S.ex λ q → r q q refl
 
 ℳ : Model N.lossRestriction (suc 0ℓ) 0ℓ
-ℳ .Model.⟦Type⟧ = WRel
+ℳ .Model.⟦Type⟧ = ⟦Type⟧
 ℳ .Model._==>_ = _==>_
 ℳ .Model.Flat = Flat
 ℳ .Model.elem = elem

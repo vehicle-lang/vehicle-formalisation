@@ -57,7 +57,7 @@ module _ (extFunc : ℚ → ℚ) (dl : DifferentiableLogic) where
   ℳ .⟦Bool⟧ U = ⟪Bool⟫
   ℳ .⟦Bool⟧ Ex = S.Quant ⟪Bool⟫
   ℳ .⟦not⟧ (U , x) = ⟪not⟫ x   -- swap
-  ℳ .⟦and⟧ (U-U , x , y) = x ⟪and⟫ y 
+  ℳ .⟦and⟧ (U-U , x , y) = x ⟪and⟫ y
   ℳ .⟦and⟧ (U-Ex , x , y) = (return x) and y
   ℳ .⟦and⟧ (Ex-U , x , y) = x and (return y)
   ℳ .⟦and⟧ (Ex-Ex , x , y) = x and y
@@ -73,7 +73,7 @@ module _ (extFunc : ℚ → ℚ) (dl : DifferentiableLogic) where
   ℳ .⟦∃⟧ (U , f) = ex (λ q → return (f q))
   ℳ .⟦∃⟧ (Ex , f) = ex f
    -- (ℚ⁺∞ × ℚ⁺∞)   -- (Encode ℚ⁺ as set of rationals greater than a given rational)
-   -- (x+ , x-) ⟦and⟧ (y+ , y-) = (x+ + y+, (y- - x+) /\ (x- - y+)) 
+   -- (x+ , x-) ⟦and⟧ (y+ , y-) = (x+ + y+, (y- - x+) /\ (x- - y+))
    -- (if true then (x ℚ.- y , ∞) else (∞ , x ℚ.- y)
 
   open import MiniVehicle.Language.Interpretation lossRestriction ℳ as ℒ

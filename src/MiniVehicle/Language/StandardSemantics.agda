@@ -31,8 +31,10 @@ data Quant (A : Set) : Set where
 eval-Quant : ∀ {A} → Quant A → (A → Set) → Set
 eval-Quant (return x) k = k x
 eval-Quant (ex x)     k = Σ[ q ∈ ℚ ] eval-Quant (x q) k
-eval-Quant (x and y) k = (eval-Quant x k) × (eval-Quant y k)
-eval-Quant (x or y) k = (eval-Quant x k) ⊎ (eval-Quant y k)
+eval-Quant (x and y)  k = (eval-Quant x k) × (eval-Quant y k)
+eval-Quant (x or y)   k = (eval-Quant x k) ⊎ (eval-Quant y k)
+
+
 
 data QuantRel {A B : Set} (R : REL A B 0ℓ) : REL (Quant A) (Quant B) 0ℓ where
   return : ∀ {a b} → R a b → QuantRel R (return a) (return b)
