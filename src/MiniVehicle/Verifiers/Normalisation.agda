@@ -1,4 +1,3 @@
-
 module MiniVehicle.Verifiers.Normalisation where
 
 open import Level using (Lift; lift; lower; suc; 0ℓ)
@@ -13,35 +12,43 @@ open import MiniVehicle.Language.Model
 open import VerifierLang.Syntax
 open import MiniVehicle.Verifiers.Syntax.Restriction
 
-record Syn : Set₁ where
+record ⟦Type⟧ : Set₁ where
   field
     Carrier : LinVarCtxt → Set
     rename  : Renameable Carrier
-open Syn public
+open ⟦Type⟧ public
 
-K : Set → Syn
-K A .Carrier Δ = A
-K A .rename ρ a = a
-
-record _==>_ (X Y : Syn) : Set where
+record _==>_ (X Y : ⟦Type⟧) : Set where
   field
     mor : ∀ {Δ} → X .Carrier Δ → Y .Carrier Δ
 open _==>_ public
 
-Flat : Set → Syn
-Flat = K
+Flat : Set → ⟦Type⟧
+Flat A .Carrier Δ = A
+Flat A .rename ρ a = a
 
-⟦Bool⟧ : LinearityVal × PolarityVal → Syn
+⟦Bool⟧ : LinearityVal × PolarityVal → ⟦Type⟧
 ⟦Bool⟧ (_ , Ex) .Carrier = ExFormula
 ⟦Bool⟧ (_ , Ex) .rename = rename-ExFormula
 ⟦Bool⟧ (_ , U) .Carrier = Constraint
 ⟦Bool⟧ (_ , U) .rename = rename-Constraint
 
-⟦Num⟧ : LinearityVal → Syn
-⟦Num⟧ const = K ℚ
+⟦Num⟧ : LinearityVal → ⟦Type⟧
+⟦Num⟧ const = Flat ℚ
 ⟦Num⟧ linear .Carrier = LinExp
 ⟦Num⟧ linear .rename = rename-LinExp
-⟦Num⟧ nonlinear = K ⊤
+⟦Num⟧ nonlinear = Flat ⊤
+
+_⟦⇒⟧_ : ⟦Type⟧ → ⟦Type⟧ → ⟦Type⟧
+(X ⟦⇒⟧ Y) .Carrier = X .Carrier ⇒ₖ Y .Carrier
+(X ⟦⇒⟧ Y) .rename = rename-⇒ₖ
+
+_⟦×⟧_ : ⟦Type⟧ → ⟦Type⟧ → ⟦Type⟧
+(A ⟦×⟧ B) .Carrier Δ = A .Carrier Δ × B .Carrier Δ
+(A ⟦×⟧ B) .rename ρ (a , b) = A .rename ρ a , B .rename ρ b
+
+⟦⊤⟧ : ⟦Type⟧
+⟦⊤⟧ = Flat ⊤
 
 data LetLift (A : LinVarCtxt → Set) : LinVarCtxt → Set where
   return     : ∀ {Δ} → A Δ → LetLift A Δ
@@ -72,20 +79,9 @@ bind-let (if e kt kf)     f = if e (bind-let kt f) (bind-let kf f)
 bind-let (let-linexp e k) f = let-linexp e (bind-let k (rename-⇒ₖ succ f))
 bind-let (let-funexp x k) f = let-funexp x (bind-let k (rename-⇒ₖ succ f))
 
-LiftM : Syn → Syn
+LiftM : ⟦Type⟧ → ⟦Type⟧
 LiftM A .Carrier = LetLift (A .Carrier)
 LiftM A .rename = rename-lift (A .rename)
-
-_⟦⇒⟧_ : Syn → Syn → Syn
-(X ⟦⇒⟧ Y) .Carrier = X .Carrier ⇒ₖ Y .Carrier
-(X ⟦⇒⟧ Y) .rename = rename-⇒ₖ
-
-_⟦×⟧_ : Syn → Syn → Syn
-(A ⟦×⟧ B) .Carrier Δ = A .Carrier Δ × B .Carrier Δ
-(A ⟦×⟧ B) .rename ρ (a , b) = A .rename ρ a , B .rename ρ b
-
-⟦⊤⟧ : Syn
-⟦⊤⟧ = K ⊤
 
 ------------------------------------------------------------------------------
 ⟨_,_⟩ : ∀ {X Y Z} → (X ==> Y) → (X ==> Z) → (X ==> (Y ⟦×⟧ Z))
@@ -112,7 +108,7 @@ _∘S_ : ∀ {X Y Z} → (Y ==> Z) → (X ==> Y) → (X ==> Z)
 ⟦Λ⟧ {X} f .mor x = λ Δ' ρ y → f .mor (X .rename ρ x , y)
 
 ------------------------------------------------------------------------------
-⟦∀⟧ : ∀ {I : Set} → (I → Syn) → Syn
+⟦∀⟧ : ∀ {I : Set} → (I → ⟦Type⟧) → ⟦Type⟧
 ⟦∀⟧ A .Carrier Δ = ∀ n → A n .Carrier Δ
 ⟦∀⟧ A .rename ρ f n = A n .rename ρ (f n)
 
@@ -183,8 +179,8 @@ _∘S_ : ∀ {X Y Z} → (Y ==> Z) → (X ==> Y) → (X ==> Z)
 ⟦if⟧ : ∀ {X b} → ((LiftM X ⟦×⟧ LiftM X) ⟦×⟧ (Flat (IfRes b) ⟦×⟧ (⟦Bool⟧ b))) ==> LiftM X
 ⟦if⟧ .mor ((tr , fa) , (ifRes _ , ϕ)) = if ϕ tr fa
 
-⟦Index⟧ : ℕ → Syn
-⟦Index⟧ n = K (Fin n)
+⟦Index⟧ : ℕ → ⟦Type⟧
+⟦Index⟧ n = Flat (Fin n)
 
 ⟦∃⟧ : ∀ {l p₁ p₂} →
      (Flat (QuantRes l p₁ p₂) ⟦×⟧ (⟦Num⟧ l ⟦⇒⟧ LiftM (⟦Bool⟧ p₁))) ==> ⟦Bool⟧ p₂
@@ -195,7 +191,7 @@ _∘S_ : ∀ {X Y Z} → (Y ==> Z) → (X ==> Y) → (X ==> Z)
   ex (compile (f (Δ ,∙) succ (var 1ℚ zero)))
 
 ℳ : Model verifierRestriction (suc 0ℓ) 0ℓ
-ℳ .Model.⟦Type⟧ = Syn
+ℳ .Model.⟦Type⟧ = ⟦Type⟧
 ℳ .Model._==>_ = _==>_
 ℳ .Model.Flat = Flat
 ℳ .Model.elem a .mor _ = a

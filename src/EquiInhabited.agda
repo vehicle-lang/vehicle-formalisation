@@ -1,4 +1,4 @@
-{-# OPTIONS --postfix-projections #-}
+{-# OPTIONS --safe #-}
 
 module EquiInhabited where
 

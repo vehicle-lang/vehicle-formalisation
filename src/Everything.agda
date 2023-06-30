@@ -113,7 +113,10 @@ import VerifierLang.Semantics
 
 {- MiniVehicle is compiled into the verifier language by a Normalisation by
    Evaluation (NbE) procedure. The correctness of this process is established
-   using a logical relations proof. -}
+   using a logical relations proof.
+
+   FIXME: further documentation.
+-}
 import MiniVehicle.Verifiers.Normalisation
 import MiniVehicle.Verifiers.NormalisationCorrect
 
