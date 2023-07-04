@@ -32,6 +32,7 @@ wk-r = succ
 Renameable : (LinVarCtxt → Set) → Set
 Renameable A = ∀ {Δ Δ'} → (Δ ⇒ᵣ Δ') → A Δ' → A Δ
 
+-- FIXME: this is a generic definition for any presheaves
 _⇒ₖ_ : (LinVarCtxt → Set) → (LinVarCtxt → Set) → LinVarCtxt → Set
 (X ⇒ₖ Y) Δ = ∀ Δ' → Δ' ⇒ᵣ Δ → X Δ' → Y Δ'
 
@@ -102,7 +103,8 @@ rename-negate ρ (ϕ and ϕ₁) = cong₂ _or_ (rename-negate ρ ϕ) (rename-neg
 rename-negate ρ (ϕ or ϕ₁) = cong₂ _and_ (rename-negate ρ ϕ) (rename-negate ρ ϕ₁)
 
 ------------------------------------------------------------------------------
--- Quantification
+-- Quantification, first via "free form" formulas with existential
+-- quantifiers in them.
 
 data ExFormula : LinVarCtxt → Set where
   constraint : ∀ {Δ} → Constraint Δ → ExFormula Δ
@@ -115,6 +117,10 @@ rename-ExFormula ρ (constraint ϕ) = constraint (rename-Constraint ρ ϕ)
 rename-ExFormula ρ (ex ϕ)         = ex (rename-ExFormula (under ρ) ϕ)
 rename-ExFormula ρ (ϕ and ψ)      = rename-ExFormula ρ ϕ and rename-ExFormula ρ ψ
 rename-ExFormula ρ (ϕ or ψ)       = rename-ExFormula ρ ϕ or rename-ExFormula ρ ψ
+
+------------------------------------------------------------------------------
+-- Formulas where all existential quantifiers are floated out to the
+-- front.
 
 data PrenexFormula : LinVarCtxt → Set where
   constraint : ∀ {Δ} → Constraint Δ → PrenexFormula Δ
