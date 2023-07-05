@@ -78,6 +78,11 @@ elem a .left = 𝒮.elem a
 elem a .right = 𝒩.elem a
 elem a .rel-mor w _ _ _ = refl
 
+Flat-map : ∀ {A B} → (A → B) → Flat A ==> Flat B
+Flat-map f .left = f
+Flat-map f .right = N.Flat-map f
+Flat-map f .rel-mor w lx rx = cong f
+
 ------------------------------------------------------------------------------
 -- Products and terminal object
 ⟦⊤⟧ : ⟦Type⟧
@@ -158,17 +163,6 @@ _⟦⇒⟧_ : ⟦Type⟧ → ⟦Type⟧ → ⟦Type⟧
 ⟦∀-elim⟧ n .left = 𝒮.⟦∀-elim⟧ n
 ⟦∀-elim⟧ n .right = 𝒩.⟦∀-elim⟧ n
 ⟦∀-elim⟧ n .rel-mor w f₁ f₂ r = r n
-
-------------------------------------------------------------------------------
--- Vector indexing
-
-⟦Index⟧ : ℕ → ⟦Type⟧
-⟦Index⟧ n = Flat (Fin n)
-
-⟦idx⟧ : (n : ℕ)(i : Fin n) → ∀ {X} → X ==> ⟦Index⟧ n
-⟦idx⟧ n i .left = 𝒮.⟦idx⟧ n i
-⟦idx⟧ n i .right = 𝒩.⟦idx⟧ n i
-⟦idx⟧ n i .rel-mor w _ _ _ = refl
 
 ------------------------------------------------------------------------------
 -- Numbers, and linear expressions
@@ -480,6 +474,7 @@ ExFormulaR-ok w (q-or r₁ r₂) = ⊎-cong (ExFormulaR-ok w r₁) (ExFormulaR-o
 ℳ .Model._==>_ = _==>_
 ℳ .Model.Flat = Flat
 ℳ .Model.elem = elem
+ℳ .Model.Flat-map = Flat-map
 ℳ .Model.⟦id⟧ = ⟦id⟧
 ℳ .Model._∘_ = _∘_
 ℳ .Model._⟦×⟧_ = _⟦×⟧_
@@ -509,8 +504,6 @@ ExFormulaR-ok w (q-or r₁ r₂) = ⊎-cong (ExFormulaR-ok w r₁) (ExFormulaR-o
 ℳ .Model.⟦≤⟧ = ⟦≤⟧
 ℳ .Model.⟦<⟧ = ⟦<⟧
 ℳ .Model.⟦if⟧ = ⟦if⟧
-ℳ .Model.⟦Index⟧ = ⟦Index⟧
-ℳ .Model.⟦idx⟧ = ⟦idx⟧
 ℳ .Model.⟦∃⟧ = ⟦∃⟧
 
 ------------------------------------------------------------------------------

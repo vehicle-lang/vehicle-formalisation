@@ -24,7 +24,6 @@ postulate
   fext : ∀ {ℓ₁ ℓ₂}{A : Set ℓ₁}{B : A → Set ℓ₂}{f g : (a : A) → B a} →
          ((a : A) → f a ≡ g a) → f ≡ g
 
-
 ⟦_⟧kind : Kind → Set ℓ
 ⟦ Nat ⟧kind = Lift _ ℕ
 ⟦ NumRes ⟧kind = Lift _ NumRestriction
@@ -49,7 +48,7 @@ postulate
 ⟦ Num r ⟧ty ks = ⟦Num⟧ (⟦ r ⟧ty ks .lower)
 ⟦ A ⇒ B ⟧ty ks = (⟦ A ⟧ty ks) ⟦⇒⟧ Mon (⟦ B ⟧ty ks)
 ⟦ Index N ⟧ty ks = ⟦Index⟧ (⟦ N ⟧ty ks .lower)
-⟦ Vec N A ⟧ty ks = (⟦Index⟧ (⟦ N ⟧ty ks .lower)) ⟦⇒⟧ Mon (⟦ A ⟧ty ks)
+⟦ Vec N A ⟧ty ks = ⟦Vec⟧ (⟦ N ⟧ty ks .lower) (⟦ A ⟧ty ks)
 ⟦ Forall Nat A ⟧ty ks = ⟦∀⟧ (λ n → Mon (⟦ A ⟧ty (ks , lift n)))
 ⟦ Forall NumRes A ⟧ty ks = ⟦∀⟧ (λ l → Mon (⟦ A ⟧ty (ks , lift l)))
 ⟦ Forall BoolRes A ⟧ty ks = ⟦∀⟧ (λ p → Mon (⟦ A ⟧ty (ks , lift p)))
@@ -228,6 +227,12 @@ subst-⟦Type⟧ σ (IfRes b) =
 _×m_ : ∀ {W X Y Z} → (W ==> X) → (Y ==> Z) → (W ⟦×⟧ Y) ==> (X ⟦×⟧ Z)
 f ×m g = ⟨ f ∘ ⟦proj₁⟧ , g ∘ ⟦proj₂⟧ ⟩
 
+⟦assoc⟧ : ∀ {X Y Z} → ((X ⟦×⟧ Y) ⟦×⟧ Z) ==> (X ⟦×⟧ (Y ⟦×⟧ Z))
+⟦assoc⟧ = ⟨ (⟦proj₁⟧ ∘ ⟦proj₁⟧) , ⟨ (⟦proj₂⟧ ∘ ⟦proj₁⟧) , ⟦proj₂⟧ ⟩ ⟩
+
+⟦assoc⁻¹⟧ : ∀ {X Y Z} → (X ⟦×⟧ (Y ⟦×⟧ Z)) ==> ((X ⟦×⟧ Y) ⟦×⟧ Z)
+⟦assoc⁻¹⟧ = ⟨ ⟨ ⟦proj₁⟧ , (⟦proj₁⟧ ∘ ⟦proj₂⟧) ⟩ , (⟦proj₂⟧ ∘ ⟦proj₂⟧) ⟩
+
 seq : ∀ {X Y} → (Mon X ⟦×⟧ Mon Y) ==> Mon (X ⟦×⟧ Y)
 seq = ⟦extend⟧ ((⟦extend⟧ (⟦return⟧ ∘ ⟨ ⟦proj₂⟧ , ⟦proj₁⟧ ⟩)) ∘ ⟨ ⟦proj₂⟧ , ⟦proj₁⟧ ⟩)
 
@@ -257,6 +262,12 @@ unary f = unaryM (⟦return⟧ ∘ f)
 
 ⟦coerce⟧ : ∀ {X Y} → X ≡ Y → X ==> Y
 ⟦coerce⟧ refl = ⟦id⟧
+
+⟦head⟧ : ∀ {X n} → ⟦Vec⟧ (ℕ.suc n) X ==> Mon X
+⟦head⟧ = ⟦eval⟧ ∘ ⟨ ⟦id⟧ , elem Fin.zero ⟩
+
+⟦tail⟧ : ∀ {X n} → ⟦Vec⟧ (ℕ.suc n) X ==> ⟦Vec⟧ n X
+⟦tail⟧ = ⟦Λ⟧ (⟦eval⟧ ∘ ⟨ ⟦proj₁⟧ , Flat-map Fin.suc ∘ ⟦proj₂⟧ ⟩)
 
 ------------------------------------------------------------------------------
 ⟦_⟧ctxt : ∀ {K} → Context K → ⟦ K ⟧kctxt → ⟦Type⟧
@@ -317,7 +328,25 @@ ren-⟦Context⟧ ρ (Γ ,- A) {ks} =
   -- implementation types for Array, specifically whether or not it
   -- includes a use of the LetLift monad.
 ⟦ index n A s t ⟧tm δ = binaryM ⟦eval⟧ ∘ ⟨ ⟦ s ⟧tm δ , ⟦ t ⟧tm δ ⟩
-⟦ idx i ⟧tm δ = ⟦return⟧ ∘ ⟦idx⟧ _ i
+⟦ idx i ⟧tm δ = ⟦return⟧ ∘ elem i
+⟦ fold {Δ} {Γ} n A B nil cons ⟧tm δ = loop (⟦ n ⟧ty δ .lower)
+  where loop : ∀ n → (⟦ Γ ⟧ctxt δ ⟦×⟧ ⟦Vec⟧ n (⟦ A ⟧ty δ)) ==> Mon (⟦ B ⟧ty δ)
+        loop ℕ.zero    = ⟦ nil ⟧tm δ ∘ ⟦proj₁⟧
+        loop (ℕ.suc n) =
+              (((⟦extend⟧ (⟦ cons ⟧tm δ ∘ ⟦assoc⁻¹⟧))
+              ∘ (⟦id⟧ ×m seq))
+              ∘ ⟦assoc⟧)
+              ∘ ⟨ (⟦id⟧ ×m ⟦head⟧) , loop n ∘ (⟦id⟧ ×m ⟦tail⟧) ⟩
+              -- Γ × Vec (suc n) A
+              --   ==>
+              -- (Γ × Mon A) × Mon B
+              --   ==>
+              -- Γ × (Mon A × Mon B)
+              --   ==>
+              -- Γ × Mon (A × B)
+              --   ==>
+              -- Γ × Mon B
+
 
 ⟦ func r t ⟧tm δ = binaryM ⟦extFunc⟧ ∘ ⟨ ⟦ r ⟧tm δ , ⟦ t ⟧tm δ ⟩
 ⟦ const r x ⟧tm δ = unary (⟦const⟧ x) ∘ ⟦ r ⟧tm δ

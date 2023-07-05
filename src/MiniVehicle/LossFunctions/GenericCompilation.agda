@@ -32,6 +32,7 @@ module _ (extFunc : ℚ → ℚ) (dl : DifferentiableLogic) where
   ℳ ._==>_ X Y = X → Y
   ℳ .Flat X = X
   ℳ .elem a x = a
+  ℳ .Flat-map f = f
   ℳ .⟦id⟧ = λ x → x
   ℳ ._∘_ f g x = f (g x)
   ℳ ._⟦×⟧_ = _×_
@@ -68,8 +69,6 @@ module _ (extFunc : ℚ → ℚ) (dl : DifferentiableLogic) where
   ℳ .⟦≤⟧ (U , x , y) = x ⟪≤⟫ y
   ℳ .⟦<⟧ (U , x , y) = x ⟪<⟫ y
   ℳ .⟦if⟧ ((tr , fa) , (() , _))
-  ℳ .⟦Index⟧ i = Fin i
-  ℳ .⟦idx⟧ _ i _  = i
   ℳ .⟦∃⟧ (U , f) = ex (λ q → return (f q))
   ℳ .⟦∃⟧ (Ex , f) = ex f
    -- (ℚ⁺∞ × ℚ⁺∞)   -- (Encode ℚ⁺ as set of rationals greater than a given rational)

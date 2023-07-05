@@ -61,6 +61,7 @@ module _ (extFunc : ℚ → ℚ) where
   ℳ ._==>_ X Y = X → Y
   ℳ .Flat X = X
   ℳ .elem a x = a
+  ℳ .Flat-map f = f
   ℳ .⟦id⟧ = λ x → x
   ℳ ._∘_ f g x = f (g x)
   ℳ ._⟦×⟧_ = _×_
@@ -98,7 +99,5 @@ module _ (extFunc : ℚ → ℚ) where
   ℳ .⟦<⟧ (U , q₁ , q₂) = q₁ <ᵇ q₂
   ℳ .⟦if⟧ ((tr , fa) , (U , true)) = tr
   ℳ .⟦if⟧ ((tr , fa) , (U , false)) = fa
-  ℳ .⟦Index⟧ i = Fin i
-  ℳ .⟦idx⟧ _ i _  = i
   ℳ .⟦∃⟧ (U , f) = ex (λ q → return (f q))
   ℳ .⟦∃⟧ (Ex , f) = ex f

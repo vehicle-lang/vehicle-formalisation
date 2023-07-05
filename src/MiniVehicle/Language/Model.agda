@@ -15,9 +15,10 @@ record Model (R : Restriction) ℓ m : Set (suc ℓ ⊔ suc m) where
     ⟦id⟧  : ∀ {X} → X ==> X
     _∘_   : ∀ {X Y Z} → Y ==> Z → X ==> Y → X ==> Z
 
-    -- Sets as types
+    -- Sets as interpretations of types
     Flat : Set → ⟦Type⟧
     elem : ∀ {A X} → A → X ==> Flat A
+    Flat-map : ∀ {A B} → (A → B) → Flat A ==> Flat B
 
     -- finite products
     _⟦×⟧_      : ⟦Type⟧ → ⟦Type⟧ → ⟦Type⟧
@@ -55,13 +56,16 @@ record Model (R : Restriction) ℓ m : Set (suc ℓ ⊔ suc m) where
 
     ⟦∃⟧    : ∀ {l b₁ b₂} → (Flat (QuantRestriction l b₁ b₂) ⟦×⟧ (⟦Num⟧ l ⟦⇒⟧ Mon (⟦Bool⟧ b₁))) ==> ⟦Bool⟧ b₂
 
+  ⟦Index⟧ : ℕ → ⟦Type⟧
+  ⟦Index⟧ n = Flat (Fin n)
+
+  ⟦Vec⟧ : ℕ → ⟦Type⟧ → ⟦Type⟧
+  ⟦Vec⟧ n X = ⟦Index⟧ n ⟦⇒⟧ (Mon X)
+
+  field
     ⟦add⟧     : ∀ {l₁ l₂ l₃} → (Flat (AddRestriction l₁ l₂ l₃) ⟦×⟧ (⟦Num⟧ l₁ ⟦×⟧ ⟦Num⟧ l₂)) ==> ⟦Num⟧ l₃
     ⟦mul⟧     : ∀ {l₁ l₂ l₃} → (Flat (MulRestriction l₁ l₂ l₃) ⟦×⟧ (⟦Num⟧ l₁ ⟦×⟧ ⟦Num⟧ l₂)) ==> ⟦Num⟧ l₃
     ⟦const⟧   : ∀ {l₁} → ℚ → (Flat (NumConstRestriction l₁)) ==> ⟦Num⟧ l₁
     ⟦extFunc⟧ : ∀ {l₁ l₂} → (Flat (FuncRestriction l₁ l₂) ⟦×⟧ ⟦Num⟧ l₁) ==> Mon (⟦Num⟧ l₂)
     ⟦≤⟧       : ∀ {l₁ l₂ b₃} → (Flat (CompRestriction l₁ l₂ b₃) ⟦×⟧ (⟦Num⟧ l₁ ⟦×⟧ ⟦Num⟧ l₂)) ==> ⟦Bool⟧ b₃
     ⟦<⟧       : ∀ {l₁ l₂ b₃} → (Flat (CompRestriction l₁ l₂ b₃) ⟦×⟧ (⟦Num⟧ l₁ ⟦×⟧ ⟦Num⟧ l₂)) ==> ⟦Bool⟧ b₃
-
-    -- Indexes and Arrays
-    ⟦Index⟧ : ℕ → ⟦Type⟧
-    ⟦idx⟧   : (n : ℕ)(i : Fin n) → ∀ {X} → X ==> ⟦Index⟧ n

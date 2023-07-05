@@ -50,7 +50,10 @@ data _/_⊢_ : (Δ : KindContext) → Context Δ → Δ ⊢T Type → Set where
   foreach : (n : Δ ⊢T Nat) (A : Δ ⊢T Type) → Δ / (Γ ,- Index n) ⊢ A → Δ / Γ ⊢ Vec n A
   index   : (n : Δ ⊢T Nat) (A : Δ ⊢T Type) → Δ / Γ ⊢ Vec n A → Δ / Γ ⊢ Index n → Δ / Γ ⊢ A
   idx     : ∀ {n} → (i : Fin n) → Δ / Γ ⊢ Index [ n ]
-  -- FIXME: crush/fold/reduce
+  fold    : (n : Δ ⊢T Nat) (A B : Δ ⊢T Type) →
+            Δ / Γ ⊢ B →
+            Δ / (Γ ,- A ,- B) ⊢ B →
+            Δ / (Γ ,- Vec n A) ⊢ B
 
   -- Comparisons
   _`≤_   : ∀ {l₁ l₂ l₃} → Δ / Γ ⊢ CompRes l₁ l₂ l₃ → Δ / Γ ⊢ Num l₁ → Δ / Γ ⊢ Num l₂ → Δ / Γ ⊢ Bool l₃

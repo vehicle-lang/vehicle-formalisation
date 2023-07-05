@@ -27,6 +27,9 @@ Flat : Set → ⟦Type⟧
 Flat A .Carrier Δ = A
 Flat A .rename ρ a = a
 
+Flat-map : ∀ {A B} → (A → B) → Flat A ==> Flat B
+Flat-map f .mor = f
+
 ⟦Bool⟧ : LinearityVal × PolarityVal → ⟦Type⟧
 ⟦Bool⟧ (_ , Ex) .Carrier = ExFormula
 ⟦Bool⟧ (_ , Ex) .rename = rename-ExFormula
@@ -195,6 +198,7 @@ _∘S_ : ∀ {X Y Z} → (Y ==> Z) → (X ==> Y) → (X ==> Z)
 ℳ .Model._==>_ = _==>_
 ℳ .Model.Flat = Flat
 ℳ .Model.elem a .mor _ = a
+ℳ .Model.Flat-map = Flat-map
 ℳ .Model.⟦id⟧ = ⟦id⟧
 ℳ .Model._∘_ = _∘S_
 ℳ .Model._⟦×⟧_ = _⟦×⟧_
@@ -224,8 +228,6 @@ _∘S_ : ∀ {X Y Z} → (Y ==> Z) → (X ==> Y) → (X ==> Z)
 ℳ .Model.⟦≤⟧ = ⟦≤⟧
 ℳ .Model.⟦<⟧ = ⟦<⟧
 ℳ .Model.⟦if⟧ = ⟦if⟧
-ℳ .Model.⟦Index⟧ = ⟦Index⟧
-ℳ .Model.⟦idx⟧ n i .mor _ = i
 ℳ .Model.⟦∃⟧ = ⟦∃⟧
 
 open import MiniVehicle.Language.Interpretation verifierRestriction ℳ

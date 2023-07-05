@@ -84,6 +84,11 @@ elem a .left = 𝒮.elem a
 elem a .right = 𝒩.elem a
 elem a .rel-mor _ _ _ = refl
 
+Flat-map : ∀ {A B} → (A → B) → Flat A ==> Flat B
+Flat-map f .left = f
+Flat-map f .right = f
+Flat-map f .rel-mor _ _ = cong f
+
 ------------------------------------------------------------------------------
 -- Products and terminal object
 
@@ -152,19 +157,6 @@ _⟦⇒⟧_ : ⟦Type⟧ → ⟦Type⟧ → ⟦Type⟧
 ⟦∀-elim⟧ n .left = 𝒮.⟦∀-elim⟧ n
 ⟦∀-elim⟧ n .right = 𝒩.⟦∀-elim⟧ n
 ⟦∀-elim⟧ n .rel-mor f₁ f₂ r = r n
-
-------------------------------------------------------------------------------
--- Index
-
-⟦Index⟧ : ℕ → ⟦Type⟧
-⟦Index⟧ n .Left = 𝒮.⟦Index⟧ n
-⟦Index⟧ n .Right = 𝒩.⟦Index⟧ n
-⟦Index⟧ X .rel x y = x ≡ y
-
-⟦idx⟧ : (n : ℕ)(i : Fin n) → ∀ {X} → X ==> ⟦Index⟧ n
-⟦idx⟧ n i .left = 𝒮.⟦idx⟧ n i
-⟦idx⟧ n i .right = 𝒩.⟦idx⟧ n i
-⟦idx⟧ n i .rel-mor _ _ _ = refl
 
 ------------------------------------------------------------------------------
 -- Numbers, and linear expressions
@@ -272,6 +264,7 @@ extendR {X} f .rel-mor p₁ p₂ p₁-p₂ = f .rel-mor p₁ p₂ p₁-p₂
 ℳ .Model._==>_ = _==>_
 ℳ .Model.Flat = Flat
 ℳ .Model.elem = elem
+ℳ .Model.Flat-map = Flat-map
 ℳ .Model.⟦id⟧ = ⟦id⟧
 ℳ .Model._∘_ = _∘_
 ℳ .Model._⟦×⟧_ = _⟦×⟧_
@@ -301,8 +294,6 @@ extendR {X} f .rel-mor p₁ p₂ p₁-p₂ = f .rel-mor p₁ p₂ p₁-p₂
 ℳ .Model.⟦≤⟧ = ⟦≤⟧
 ℳ .Model.⟦<⟧ = ⟦<⟧
 ℳ .Model.⟦if⟧ {X} {b} = ⟦if⟧ {X} {b}
-ℳ .Model.⟦Index⟧ = ⟦Index⟧
-ℳ .Model.⟦idx⟧ = ⟦idx⟧
 ℳ .Model.⟦∃⟧ = ⟦∃⟧
 
 open MiniVehicle hiding (_⇒ᵣ_; under)
