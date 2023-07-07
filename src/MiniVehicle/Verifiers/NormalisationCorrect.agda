@@ -84,19 +84,10 @@ Flat-map f .right = N.Flat-map f
 Flat-map f .rel-mor w lx rx = cong f
 
 ------------------------------------------------------------------------------
--- Products and terminal object
-⟦⊤⟧ : ⟦Type⟧
-⟦⊤⟧ .Left = ⊤
-⟦⊤⟧ .Right = 𝒩.⟦⊤⟧
-⟦⊤⟧ .rel w tt tt = ⊤
-⟦⊤⟧ .ext ρ tt tt x = x
-
-⟦terminal⟧ : ∀ {X} → X ==> ⟦⊤⟧
-⟦terminal⟧ .left = 𝒮.⟦terminal⟧
-⟦terminal⟧ .right = 𝒩.⟦terminal⟧
-⟦terminal⟧ .rel-mor _ _ _ _ = tt
+-- Products
 
 infixr 2 _⟦×⟧_
+
 _⟦×⟧_ : ⟦Type⟧ → ⟦Type⟧ → ⟦Type⟧
 (X ⟦×⟧ Y) .Left = X .Left 𝒮.⟦×⟧ Y .Left
 (X ⟦×⟧ Y) .Right = X .Right 𝒩.⟦×⟧ Y .Right
@@ -478,8 +469,6 @@ ExFormulaR-ok w (q-or r₁ r₂) = ⊎-cong (ExFormulaR-ok w r₁) (ExFormulaR-o
 ℳ .Model.⟦id⟧ = ⟦id⟧
 ℳ .Model._∘_ = _∘_
 ℳ .Model._⟦×⟧_ = _⟦×⟧_
-ℳ .Model.⟦⊤⟧ = ⟦⊤⟧
-ℳ .Model.⟦terminal⟧ = ⟦terminal⟧
 ℳ .Model.⟦proj₁⟧ = ⟦proj₁⟧
 ℳ .Model.⟦proj₂⟧ = ⟦proj₂⟧
 ℳ .Model.⟨_,_⟩ = ⟨_,_⟩R
@@ -520,7 +509,7 @@ full-correctness : (t : ε / ε ⊢ Bool (BoolRes (linear , Ex))) →
                    standard t ⇔ eval-PrenexFormula (normalise t) (empty .env)
 full-correctness t =
   ⇔-trans
-    (ExFormulaR-ok empty (compile-lemma linear empty _ q (ℐ.⟦ t ⟧tm (lift tt) .rel-mor empty tt tt tt)))
+    (ExFormulaR-ok empty (compile-lemma linear empty _ q (ℐ.⟦ t ⟧tm (lift tt) .rel-mor empty tt tt refl)))
     (toPrenexForm-ok (N.compile q) empty-env)
   where q : N.LetLift ExFormula ε
         q = ℐ.⟦ t ⟧tm (lift tt) .right .N.mor tt

@@ -3,7 +3,6 @@
 module MiniVehicle.Language.Syntax.Restriction where
 
 open import Data.Unit
-open import Relation.Binary.Definitions
 
 open import Util
 

@@ -238,14 +238,14 @@ seq = ⟦extend⟧ ((⟦extend⟧ (⟦return⟧ ∘ ⟨ ⟦proj₂⟧ , ⟦proj�
 
 ternaryM : ∀ {W X Y Z} →
            ((W ⟦×⟧ (X ⟦×⟧ Y)) ==> Mon Z) → (Mon W ⟦×⟧ (Mon X ⟦×⟧ Mon Y)) ==> Mon Z
-ternaryM f = (⟦extend⟧ (⟦extend⟧ (⟦extend⟧ (f ∘ ⟨ ⟦proj₂⟧ ∘ ⟦proj₁⟧ , ⟨ ⟦proj₁⟧ ∘ ⟦proj₁⟧ , ⟦proj₂⟧ ⟩ ⟩) ∘ ⟨ ⟨ ⟦proj₂⟧ , ⟦proj₁⟧ ∘ ⟦proj₁⟧ ⟩ , ⟦proj₂⟧ ∘ ⟦proj₁⟧ ⟩) ∘ ⟨ ⟨ ⟦proj₂⟧ , ⟦proj₂⟧ ∘ ⟦proj₁⟧ ⟩ , ⟦proj₁⟧ ∘ ⟦proj₁⟧ ⟩)) ∘ ⟨ ⟦proj₂⟧ , ⟦proj₁⟧ ⟩
+ternaryM f = ⟦extend⟧ (⟦extend⟧ (⟦extend⟧ (f ∘ ⟨ ⟦proj₂⟧ ∘ ⟦proj₁⟧ , ⟨ ⟦proj₁⟧ ∘ ⟦proj₁⟧ , ⟦proj₂⟧ ⟩ ⟩) ∘ ⟨ ⟨ ⟦proj₂⟧ , ⟦proj₁⟧ ∘ ⟦proj₁⟧ ⟩ , ⟦proj₂⟧ ∘ ⟦proj₁⟧ ⟩) ∘ ⟨ ⟨ ⟦proj₂⟧ , ⟦proj₂⟧ ∘ ⟦proj₁⟧ ⟩ , ⟦proj₁⟧ ∘ ⟦proj₁⟧ ⟩) ∘ ⟨ ⟦proj₂⟧ , ⟦proj₁⟧ ⟩
 
 binaryM : ∀ {X Y Z} → ((X ⟦×⟧ Y) ==> Mon Z) → (Mon X ⟦×⟧ Mon Y) ==> Mon Z
 binaryM f =
     ⟦extend⟧ (⟦extend⟧ (f ∘ ⟨ ⟦proj₂⟧ , ⟦proj₁⟧ ⟩) ∘ ⟨ ⟦proj₂⟧ , ⟦proj₁⟧ ⟩)
 
 unaryM : ∀ {X Y} → (X ==> Mon Y) → Mon X ==> Mon Y
-unaryM f = ⟦extend⟧ (f ∘ ⟦proj₂⟧) ∘ ⟨ ⟦terminal⟧ , ⟦id⟧ ⟩
+unaryM f = ⟦extend⟧ (f ∘ ⟦proj₂⟧) ∘ ⟨ elem tt , ⟦id⟧ ⟩
 
 ternary : ∀ {W X Y Z} →
            ((W ⟦×⟧ (X ⟦×⟧ Y)) ==> Z) → (Mon W ⟦×⟧ (Mon X ⟦×⟧ Mon Y)) ==> Mon Z
@@ -271,7 +271,7 @@ unary f = unaryM (⟦return⟧ ∘ f)
 
 ------------------------------------------------------------------------------
 ⟦_⟧ctxt : ∀ {K} → Context K → ⟦ K ⟧kctxt → ⟦Type⟧
-⟦ ε ⟧ctxt      δ = ⟦⊤⟧
+⟦ ε ⟧ctxt      δ = Flat ⊤
 ⟦ Γ ,- A ⟧ctxt δ = ⟦ Γ ⟧ctxt δ ⟦×⟧ ⟦ A ⟧ty δ
 
 ren-⟦Context⟧ : ∀ {K K'} (ρ : K' ⇒ᵣ K) (Γ : Context K) →
@@ -333,10 +333,10 @@ ren-⟦Context⟧ ρ (Γ ,- A) {ks} =
   where loop : ∀ n → (⟦ Γ ⟧ctxt δ ⟦×⟧ ⟦Vec⟧ n (⟦ A ⟧ty δ)) ==> Mon (⟦ B ⟧ty δ)
         loop ℕ.zero    = ⟦ nil ⟧tm δ ∘ ⟦proj₁⟧
         loop (ℕ.suc n) =
-              (((⟦extend⟧ (⟦ cons ⟧tm δ ∘ ⟦assoc⁻¹⟧))
-              ∘ (⟦id⟧ ×m seq))
-              ∘ ⟦assoc⟧)
-              ∘ ⟨ (⟦id⟧ ×m ⟦head⟧) , loop n ∘ (⟦id⟧ ×m ⟦tail⟧) ⟩
+              ⟦extend⟧ (⟦ cons ⟧tm δ ∘ ⟦assoc⁻¹⟧)
+              ∘ ⟦id⟧ ×m seq
+              ∘ ⟦assoc⟧
+              ∘ ⟨ ⟦id⟧ ×m ⟦head⟧ , loop n ∘ (⟦id⟧ ×m ⟦tail⟧) ⟩
               -- Γ × Vec (suc n) A
               --   ==>
               -- (Γ × Mon A) × Mon B
@@ -351,7 +351,6 @@ ren-⟦Context⟧ ρ (Γ ,- A) {ks} =
 ⟦ func r t ⟧tm δ = binaryM ⟦extFunc⟧ ∘ ⟨ ⟦ r ⟧tm δ , ⟦ t ⟧tm δ ⟩
 ⟦ const r x ⟧tm δ = unary (⟦const⟧ x) ∘ ⟦ r ⟧tm δ
 ⟦ _`+_ r t₁ t₂ ⟧tm δ = ternary ⟦add⟧ ∘  ⟨ ⟦ r ⟧tm δ , ⟨ (⟦ t₁ ⟧tm δ) , (⟦ t₂ ⟧tm δ) ⟩ ⟩
-
 ⟦ _`*_ r t₁ t₂ ⟧tm δ = ternary ⟦mul⟧ ∘  ⟨ ⟦ r ⟧tm δ , ⟨ (⟦ t₁ ⟧tm δ) , (⟦ t₂ ⟧tm δ) ⟩ ⟩
 ⟦ _`≤_ r t₁ t₂ ⟧tm δ = ternary ⟦≤⟧ ∘  ⟨ ⟦ r ⟧tm δ , ⟨ (⟦ t₁ ⟧tm δ) , (⟦ t₂ ⟧tm δ) ⟩ ⟩
 ⟦ _`<_ r t₁ t₂ ⟧tm δ = ternary ⟦<⟧ ∘  ⟨ ⟦ r ⟧tm δ , ⟨ (⟦ t₁ ⟧tm δ) , (⟦ t₂ ⟧tm δ) ⟩ ⟩

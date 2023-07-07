@@ -36,8 +36,6 @@ module _ (extFunc : ℚ → ℚ) (dl : DifferentiableLogic) where
   ℳ .⟦id⟧ = λ x → x
   ℳ ._∘_ f g x = f (g x)
   ℳ ._⟦×⟧_ = _×_
-  ℳ .⟦⊤⟧ = ⊤
-  ℳ .⟦terminal⟧ x = tt
   ℳ .⟦proj₁⟧ = proj₁
   ℳ .⟦proj₂⟧ = proj₂
   ℳ .⟨_,_⟩ f g x = f x , g x

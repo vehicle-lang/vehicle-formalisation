@@ -90,19 +90,10 @@ Flat-map f .right = f
 Flat-map f .rel-mor _ _ = cong f
 
 ------------------------------------------------------------------------------
--- Products and terminal object
-
-⟦⊤⟧ : ⟦Type⟧
-⟦⊤⟧ .Left = ⊤
-⟦⊤⟧ .Right = 𝒩.⟦⊤⟧
-⟦⊤⟧ .rel tt tt = ⊤
-
-⟦terminal⟧ : ∀ {X} → X ==> ⟦⊤⟧
-⟦terminal⟧ .left = 𝒮.⟦terminal⟧
-⟦terminal⟧ .right = 𝒩.⟦terminal⟧
-⟦terminal⟧ .rel-mor _ _ _ = tt
+-- Products
 
 infixr 2 _⟦×⟧_
+
 _⟦×⟧_ : ⟦Type⟧ → ⟦Type⟧ → ⟦Type⟧
 (X ⟦×⟧ Y) .Left = X .Left 𝒮.⟦×⟧ Y .Left
 (X ⟦×⟧ Y) .Right = X .Right 𝒩.⟦×⟧ Y .Right
@@ -268,8 +259,6 @@ extendR {X} f .rel-mor p₁ p₂ p₁-p₂ = f .rel-mor p₁ p₂ p₁-p₂
 ℳ .Model.⟦id⟧ = ⟦id⟧
 ℳ .Model._∘_ = _∘_
 ℳ .Model._⟦×⟧_ = _⟦×⟧_
-ℳ .Model.⟦⊤⟧ = ⟦⊤⟧
-ℳ .Model.⟦terminal⟧ = ⟦terminal⟧
 ℳ .Model.⟦proj₁⟧ = ⟦proj₁⟧
 ℳ .Model.⟦proj₂⟧ = ⟦proj₂⟧
 ℳ .Model.⟨_,_⟩ = ⟨_,_⟩R
@@ -310,7 +299,7 @@ lossFunctionProp : ε / ε ⊢ Bool (BoolRes U) → ⟪Bool⟫
 lossFunctionProp t = ℐ.⟦ t ⟧tm (lift tt) .right tt
 
 prop-correctness : (t : ε / ε ⊢ Bool (BoolRes U)) → R (standardProp t) (lossFunctionProp t)
-prop-correctness t = ℐ.⟦ t ⟧tm (lift tt) .rel-mor tt tt tt
+prop-correctness t = ℐ.⟦ t ⟧tm (lift tt) .rel-mor tt tt refl
 
 ------------------------------------------------------------------------------
 -- Quantified compilation

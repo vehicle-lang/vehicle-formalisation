@@ -6,8 +6,14 @@ open import Data.Nat using (ℕ)
 open import Data.Rational using (ℚ)
 open import MiniVehicle.Language.Syntax.Restriction
 
+-- A model of MiniVehicle is structured as follows:
+--  - A set of interpretations of types
+
 record Model (R : Restriction) ℓ m : Set (suc ℓ ⊔ suc m) where
   open Restriction R
+
+  infixl 5 _∘_
+
   field
     ⟦Type⟧ : Set ℓ
     _==>_ : ⟦Type⟧ → ⟦Type⟧ → Set m
@@ -22,8 +28,8 @@ record Model (R : Restriction) ℓ m : Set (suc ℓ ⊔ suc m) where
 
     -- finite products
     _⟦×⟧_      : ⟦Type⟧ → ⟦Type⟧ → ⟦Type⟧
-    ⟦⊤⟧        : ⟦Type⟧
-    ⟦terminal⟧ : ∀ {X} → X ==> ⟦⊤⟧
+    -- ⟦⊤⟧        : ⟦Type⟧
+    -- ⟦terminal⟧ : ∀ {X} → X ==> ⟦⊤⟧
     ⟦proj₁⟧    : ∀ {X Y} → (X ⟦×⟧ Y) ==> X
     ⟦proj₂⟧    : ∀ {X Y} → (X ⟦×⟧ Y) ==> Y
     ⟨_,_⟩      : ∀ {X Y Z} → (X ==> Y) → (X ==> Z) → (X ==> (Y ⟦×⟧ Z))

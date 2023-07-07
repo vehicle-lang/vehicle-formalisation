@@ -50,9 +50,6 @@ _⟦×⟧_ : ⟦Type⟧ → ⟦Type⟧ → ⟦Type⟧
 (A ⟦×⟧ B) .Carrier Δ = A .Carrier Δ × B .Carrier Δ
 (A ⟦×⟧ B) .rename ρ (a , b) = A .rename ρ a , B .rename ρ b
 
-⟦⊤⟧ : ⟦Type⟧
-⟦⊤⟧ = Flat ⊤
-
 data LetLift (A : LinVarCtxt → Set) : LinVarCtxt → Set where
   return     : ∀ {Δ} → A Δ → LetLift A Δ
   if         : ∀ {Δ} → Constraint Δ → LetLift A Δ → LetLift A Δ → LetLift A Δ
@@ -95,9 +92,6 @@ LiftM A .rename = rename-lift (A .rename)
 
 ⟦proj₂⟧ : ∀ {X Y} → (X ⟦×⟧ Y) ==> Y
 ⟦proj₂⟧ .mor (x , y) = y
-
-⟦terminal⟧ : ∀ {X} → X ==> ⟦⊤⟧
-⟦terminal⟧ .mor x = tt
 
 ⟦id⟧ : ∀ {X} → X ==> X
 ⟦id⟧ .mor x = x
@@ -202,8 +196,6 @@ _∘S_ : ∀ {X Y Z} → (Y ==> Z) → (X ==> Y) → (X ==> Z)
 ℳ .Model.⟦id⟧ = ⟦id⟧
 ℳ .Model._∘_ = _∘S_
 ℳ .Model._⟦×⟧_ = _⟦×⟧_
-ℳ .Model.⟦⊤⟧ = ⟦⊤⟧
-ℳ .Model.⟦terminal⟧ = ⟦terminal⟧
 ℳ .Model.⟦proj₁⟧ = ⟦proj₁⟧
 ℳ .Model.⟦proj₂⟧ = ⟦proj₂⟧
 ℳ .Model.⟨_,_⟩ = ⟨_,_⟩
