@@ -40,8 +40,8 @@ open DifferentiableLogicRelation dl-relation
 ------------------------------------------------------------------------------
 -- Our category of related interpretations
 
-module 𝒩 = Model (N.ℳ extFunc dl)
-module 𝒮 = Model (S.ℳ extFunc)
+module 𝒩 = Model (N.ℳ dl)
+module 𝒮 = Model S.ℳ
 
 record ⟦Type⟧ : Set (suc 0ℓ) where
   field
@@ -228,11 +228,6 @@ Mon X .rel = X .rel
 ⟦return⟧ .right = 𝒩.⟦return⟧
 ⟦return⟧ .rel-mor x₁ x₂ r-x₁x₂ = r-x₁x₂
 
-⟦extFunc⟧ : ∀ {l₁ l₂} → (Flat ⊤ ⟦×⟧ ⟦Num⟧ l₁) ==> Mon (⟦Num⟧ l₂)
-⟦extFunc⟧ .left = 𝒮.⟦extFunc⟧
-⟦extFunc⟧ .right = 𝒩.⟦extFunc⟧
-⟦extFunc⟧ .rel-mor (_ , x₁) (_ , x₂) (_ , r-x₁x₂) = cong extFunc r-x₁x₂
-
 extendR : ∀ {X Y Z} → ((X ⟦×⟧ Y) ==> Mon Z) → (X ⟦×⟧ Mon Y) ==> Mon Z
 extendR f .left = 𝒮.⟦extend⟧ (f .left)
 extendR f .right = 𝒩.⟦extend⟧ (f .right)
@@ -275,7 +270,6 @@ extendR {X} f .rel-mor p₁ p₂ p₁-p₂ = f .rel-mor p₁ p₂ p₁-p₂
 ℳ .Model.⟦add⟧ = ⟦add⟧
 ℳ .Model.⟦mul⟧ = ⟦mul⟧
 ℳ .Model.⟦const⟧ = ⟦const⟧
-ℳ .Model.⟦extFunc⟧ = ⟦extFunc⟧
 ℳ .Model.⟦Bool⟧ = ⟦Bool⟧
 ℳ .Model.⟦not⟧ = ⟦not⟧
 ℳ .Model.⟦and⟧ = ⟦and⟧

@@ -22,7 +22,7 @@ lossRestriction = record
 
 open import MiniVehicle.Language.Model
 
-module _ (extFunc : ℚ → ℚ) (dl : DifferentiableLogic) where
+module _ (dl : DifferentiableLogic) where
 
   open Model
   open DifferentiableLogic dl
@@ -52,7 +52,6 @@ module _ (extFunc : ℚ → ℚ) (dl : DifferentiableLogic) where
   ℳ .⟦add⟧ (_ , x , y)  = x ℚ.+ y
   ℳ .⟦mul⟧ (_ , x , y)  = x ℚ.* y
   ℳ .⟦const⟧ q _ = q
-  ℳ .⟦extFunc⟧ (_ , v)  = extFunc v
   ℳ .⟦Bool⟧ U = ⟪Bool⟫
   ℳ .⟦Bool⟧ Ex = S.Quant ⟪Bool⟫
   ℳ .⟦not⟧ (U , x) = ⟪not⟫ x   -- swap

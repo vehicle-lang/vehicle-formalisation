@@ -14,9 +14,6 @@ data LinearityVal : Set where
 data NumConstRel : LinearityVal → Set where
   const : NumConstRel const
 
-data FuncRel : LinearityVal → LinearityVal → Set where
-  linear-linear : FuncRel linear linear
-
 data MaxLinRel : LinearityVal → LinearityVal → LinearityVal → Set where
   const-const   : MaxLinRel const const const
   const-linear  : MaxLinRel const linear linear
@@ -64,7 +61,6 @@ verifierRestriction = record
   ; IfRestriction = IfRes
 
   ; NumConstRestriction = NumConstRel
-  ; FuncRestriction = FuncRel
   ; AddRestriction = MaxLinRel
   ; MulRestriction = MulLinRel
   }

@@ -53,49 +53,47 @@ eval-QuantRel {x = ex _} {ex _} (ex Rxy) = Σ-⇔ (λ {x} → eval-QuantRel (Rxy
 ------------------------------------------------------------------------------
 -- Standard model
 
-module _ (extFunc : ℚ → ℚ) where
-  open Model
+open Model
 
-  ℳ : Model defaultRestriction (suc 0ℓ) 0ℓ
-  ℳ .⟦Type⟧ = Set
-  ℳ ._==>_ X Y = X → Y
-  ℳ .Flat X = X
-  ℳ .elem a x = a
-  ℳ .Flat-map f = f
-  ℳ .⟦id⟧ = λ x → x
-  ℳ ._∘_ f g x = f (g x)
-  ℳ ._⟦×⟧_ = _×_
-  ℳ .⟦proj₁⟧ = proj₁
-  ℳ .⟦proj₂⟧ = proj₂
-  ℳ .⟨_,_⟩ f g x = f x , g x
-  ℳ ._⟦⇒⟧_ X Y = X → Y
-  ℳ .⟦Λ⟧ f x y = f (x , y)
-  ℳ .⟦eval⟧ (f , x) = f x
-  ℳ .⟦∀⟧ A = ∀ n → A n
-  ℳ .⟦∀-intro⟧ f x n = f n x
-  ℳ .⟦∀-elim⟧ n f = f n
-  ℳ .Mon X = X
-  ℳ .⟦return⟧ x = x
-  ℳ .⟦extend⟧ f = f
-  ℳ .⟦Num⟧ _ = ℚ
-  ℳ .⟦add⟧ (_ , x , y)  = x +ℚ y
-  ℳ .⟦mul⟧ (_ , x , y)  = x *ℚ y
-  ℳ .⟦const⟧ q _ = q
-  ℳ .⟦extFunc⟧ (_ , v)  = extFunc v
-  ℳ .⟦Bool⟧ U = 𝔹
-  ℳ .⟦Bool⟧ Ex = Quant 𝔹
-  ℳ .⟦not⟧ (U , x) = not x
-  ℳ .⟦and⟧ (U-U , x , y) = x ∧ y
-  ℳ .⟦and⟧ (U-Ex , x , y) = (return x) and y
-  ℳ .⟦and⟧ (Ex-U , x , y) = x and (return y)
-  ℳ .⟦and⟧ (Ex-Ex , x , y) = x and y
-  ℳ .⟦or⟧ (U-U , x , y) = x ∨ y
-  ℳ .⟦or⟧ (U-Ex , x , y) = (return x) or y
-  ℳ .⟦or⟧ (Ex-U , x , y) = x or (return y)
-  ℳ .⟦or⟧ (Ex-Ex , x , y) = x or y
-  ℳ .⟦≤⟧ (U , q₁ , q₂) = q₁ ≤ᵇ q₂
-  ℳ .⟦<⟧ (U , q₁ , q₂) = q₁ <ᵇ q₂
-  ℳ .⟦if⟧ ((tr , fa) , (U , true)) = tr
-  ℳ .⟦if⟧ ((tr , fa) , (U , false)) = fa
-  ℳ .⟦∃⟧ (U , f) = ex (λ q → return (f q))
-  ℳ .⟦∃⟧ (Ex , f) = ex f
+ℳ : Model defaultRestriction (suc 0ℓ) 0ℓ
+ℳ .⟦Type⟧ = Set
+ℳ ._==>_ X Y = X → Y
+ℳ .Flat X = X
+ℳ .elem a x = a
+ℳ .Flat-map f = f
+ℳ .⟦id⟧ = λ x → x
+ℳ ._∘_ f g x = f (g x)
+ℳ ._⟦×⟧_ = _×_
+ℳ .⟦proj₁⟧ = proj₁
+ℳ .⟦proj₂⟧ = proj₂
+ℳ .⟨_,_⟩ f g x = f x , g x
+ℳ ._⟦⇒⟧_ X Y = X → Y
+ℳ .⟦Λ⟧ f x y = f (x , y)
+ℳ .⟦eval⟧ (f , x) = f x
+ℳ .⟦∀⟧ A = ∀ n → A n
+ℳ .⟦∀-intro⟧ f x n = f n x
+ℳ .⟦∀-elim⟧ n f = f n
+ℳ .Mon X = X
+ℳ .⟦return⟧ x = x
+ℳ .⟦extend⟧ f = f
+ℳ .⟦Num⟧ _ = ℚ
+ℳ .⟦add⟧ (_ , x , y)  = x +ℚ y
+ℳ .⟦mul⟧ (_ , x , y)  = x *ℚ y
+ℳ .⟦const⟧ q _ = q
+ℳ .⟦Bool⟧ U = 𝔹
+ℳ .⟦Bool⟧ Ex = Quant 𝔹
+ℳ .⟦not⟧ (U , x) = not x
+ℳ .⟦and⟧ (U-U , x , y) = x ∧ y
+ℳ .⟦and⟧ (U-Ex , x , y) = (return x) and y
+ℳ .⟦and⟧ (Ex-U , x , y) = x and (return y)
+ℳ .⟦and⟧ (Ex-Ex , x , y) = x and y
+ℳ .⟦or⟧ (U-U , x , y) = x ∨ y
+ℳ .⟦or⟧ (U-Ex , x , y) = (return x) or y
+ℳ .⟦or⟧ (Ex-U , x , y) = x or (return y)
+ℳ .⟦or⟧ (Ex-Ex , x , y) = x or y
+ℳ .⟦≤⟧ (U , q₁ , q₂) = q₁ ≤ᵇ q₂
+ℳ .⟦<⟧ (U , q₁ , q₂) = q₁ <ᵇ q₂
+ℳ .⟦if⟧ ((tr , fa) , (U , true)) = tr
+ℳ .⟦if⟧ ((tr , fa) , (U , false)) = fa
+ℳ .⟦∃⟧ (U , f) = ex (λ q → return (f q))
+ℳ .⟦∃⟧ (Ex , f) = ex f

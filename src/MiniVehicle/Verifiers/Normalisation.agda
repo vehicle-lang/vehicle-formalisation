@@ -169,10 +169,6 @@ _∘S_ : ∀ {X Y Z} → (Y ==> Z) → (X ==> Y) → (X ==> Z)
 ⟦const⟧ : ∀ {l} → ℚ → Flat (NumConstRel l) ==> ⟦Num⟧ l
 ⟦const⟧ q .mor const = q
 
-⟦extFunc⟧ : ∀ {l₁ l₂} → (Flat (FuncRel l₁ l₂) ⟦×⟧ (⟦Num⟧ l₁)) ==> LiftM (⟦Num⟧ l₂)
-⟦extFunc⟧ .mor (linear-linear , exp) =
-  let-linexp exp (let-funexp {- f -} zero (return (var 1ℚ zero)))
-
 ⟦if⟧ : ∀ {X b} → ((LiftM X ⟦×⟧ LiftM X) ⟦×⟧ (Flat (IfRes b) ⟦×⟧ (⟦Bool⟧ b))) ==> LiftM X
 ⟦if⟧ .mor ((tr , fa) , (ifRes _ , ϕ)) = if ϕ tr fa
 
@@ -212,7 +208,6 @@ _∘S_ : ∀ {X Y Z} → (Y ==> Z) → (X ==> Y) → (X ==> Z)
 ℳ .Model.⟦add⟧ = ⟦add⟧
 ℳ .Model.⟦mul⟧ = ⟦mul⟧
 ℳ .Model.⟦const⟧ = ⟦const⟧
-ℳ .Model.⟦extFunc⟧ = ⟦extFunc⟧
 ℳ .Model.⟦Bool⟧ = ⟦Bool⟧
 ℳ .Model.⟦not⟧ = ⟦not⟧
 ℳ .Model.⟦and⟧ = ⟦and⟧
@@ -225,5 +220,10 @@ _∘S_ : ∀ {X Y Z} → (Y ==> Z) → (X ==> Y) → (X ==> Z)
 open import MiniVehicle.Language.Interpretation verifierRestriction ℳ
 open import MiniVehicle.Language.Syntax verifierRestriction
 
-normalise : ε / ε ⊢ Bool (BoolRes (linear , Ex)) → PrenexFormula ε
-normalise t = toPrenexForm (compile (⟦ t ⟧tm (lift tt) .mor tt))
+-- representation of the external function
+⟦extFunc⟧ : (⟦Num⟧ linear ⟦⇒⟧ LiftM (⟦Num⟧ linear)) .Carrier ε
+⟦extFunc⟧ Δ' ρ exp = let-linexp exp (let-funexp {- f -} zero (return (var 1ℚ zero)))
+
+normalise : networkSpecification linear (linear , Ex) →
+            PrenexFormula ε
+normalise t = toPrenexForm (compile (⟦ t ⟧tm (lift tt) .mor (tt , ⟦extFunc⟧)))

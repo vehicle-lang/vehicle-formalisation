@@ -39,9 +39,6 @@ data _/_⊢_ : (Δ : KindContext) → Context Δ → Δ ⊢T Type → Set where
            (B : Δ ⊢T κ) →
            Δ / Γ ⊢ subst-Type (single-sub B) A
 
-  -- External functions
-  func   : ∀ {r₁ r₂} → Δ / Γ ⊢ FuncRes r₁ r₂ → Δ / Γ ⊢ Num r₁ → Δ / Γ ⊢ Num r₂
-
   const  : ∀ {r₁} → Δ / Γ ⊢ NumConstRes r₁ → ℚ → Δ / Γ ⊢ Num r₁
   _`+_   : ∀ {l₁ l₂ l₃} → Δ / Γ ⊢ AddRes l₁ l₂ l₃ → Δ / Γ ⊢ Num l₁ → Δ / Γ ⊢ Num l₂ → Δ / Γ ⊢ Num l₃
   _`*_   : ∀ {l₁ l₂ l₃} → Δ / Γ ⊢ MulRes l₁ l₂ l₃ → Δ / Γ ⊢ Num l₁ → Δ / Γ ⊢ Num l₂ → Δ / Γ ⊢ Num l₃
@@ -78,7 +75,6 @@ data _/_⊢_ : (Δ : KindContext) → Context Δ → Δ ⊢T Type → Set where
 
   -- Evidence for usage of the operations
   numConstRes : ∀ {l} → NumConstRestriction l → Δ / Γ ⊢ NumConstRes (NumRes l)
-  funcRes : ∀ {l₁ l₂} → FuncRestriction l₁ l₂ → Δ / Γ ⊢ FuncRes (NumRes l₁) (NumRes l₂)
   addRes : ∀ {l₁ l₂ l₃} →
            AddRestriction l₁ l₂ l₃ →
            Δ / Γ ⊢ AddRes (NumRes l₁) (NumRes l₂) (NumRes l₃)
@@ -99,3 +95,7 @@ data _/_⊢_ : (Δ : KindContext) → Context Δ → Δ ⊢T Type → Set where
              Δ / Γ ⊢ QuantRes (NumRes n) (BoolRes p₁) (BoolRes p₂)
   ifRes : ∀ {b} → IfRestriction b →
           Δ / Γ ⊢ IfRes (BoolRes b)
+
+
+networkSpecification : NumRestriction → BoolRestriction → Set
+networkSpecification q₁ q₂ = ε / (ε ,- (Num (NumRes q₁) ⇒ Num (NumRes q₁))) ⊢ Bool (BoolRes q₂)

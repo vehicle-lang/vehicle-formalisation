@@ -39,7 +39,6 @@ data _⊢T_ : KindContext → Kind → Set where
 
   NumRes       : NumRestriction → Δ ⊢T NumRes
   NumConstRes  : Δ ⊢T NumRes → Δ ⊢T Type
-  FuncRes      : Δ ⊢T NumRes → Δ ⊢T NumRes → Δ ⊢T Type
   AddRes       : Δ ⊢T NumRes → Δ ⊢T NumRes → Δ ⊢T NumRes → Δ ⊢T Type
   MulRes       : Δ ⊢T NumRes → Δ ⊢T NumRes → Δ ⊢T NumRes → Δ ⊢T Type
 
@@ -92,7 +91,6 @@ ren-Type ρ [ n ] = [ n ]
 -- Number restrictions
 ren-Type ρ (NumRes l) = NumRes l
 ren-Type ρ (NumConstRes l) = NumConstRes (ren-Type ρ l)
-ren-Type ρ (FuncRes l₁ l₂) = FuncRes (ren-Type ρ l₁) (ren-Type ρ l₂)
 ren-Type ρ (AddRes l₁ l₂ l₃) = AddRes (ren-Type ρ l₁) (ren-Type ρ l₂) (ren-Type ρ l₃)
 ren-Type ρ (MulRes l₁ l₂ l₃) = MulRes (ren-Type ρ l₁) (ren-Type ρ l₂) (ren-Type ρ l₃)
 -- Bool restrictions
@@ -133,7 +131,6 @@ subst-Type σ [ n ] = [ n ]
 -- Number restrictions
 subst-Type σ (NumRes l) = NumRes l
 subst-Type σ (NumConstRes l) = NumConstRes (subst-Type σ l)
-subst-Type σ (FuncRes l₁ l₂) = FuncRes (subst-Type σ l₁) (subst-Type σ l₂)
 subst-Type σ (AddRes l₁ l₂ l₃) = AddRes (subst-Type σ l₁) (subst-Type σ l₂) (subst-Type σ l₃)
 subst-Type σ (MulRes l₁ l₂ l₃) = MulRes (subst-Type σ l₁) (subst-Type σ l₂) (subst-Type σ l₃)
 -- Bool restrictions

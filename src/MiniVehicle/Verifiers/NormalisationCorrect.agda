@@ -34,7 +34,7 @@ open import VerifierLang.Semantics extFunc
 -- Our category of related interpretations
 
 module 𝒩 = Model N.ℳ
-module 𝒮 = Model (S.ℳ extFunc)
+module 𝒮 = Model S.ℳ
 
 record ⟦Type⟧ : Set (suc 0ℓ) where
   field
@@ -365,12 +365,6 @@ let-bindR w x₁ (N.let-funexp v x₂) f g r-x₁x₂ r-fg =
 ⟦return⟧ .right = 𝒩.⟦return⟧
 ⟦return⟧ .rel-mor w x₁ x₂ r-x₁x₂ = r-x₁x₂
 
-⟦extFunc⟧ : ∀ {l₁ l₂} → (Flat (FuncRel l₁ l₂) ⟦×⟧ ⟦Num⟧ l₁) ==> LiftMR (⟦Num⟧ l₂)
-⟦extFunc⟧ .left = λ {(_ , u) → 𝒮.⟦extFunc⟧ (_ , u) }
-⟦extFunc⟧ .right = 𝒩.⟦extFunc⟧
-⟦extFunc⟧ .rel-mor w (linear-linear , x₁) (linear-linear , x₂) (_ , r-x₁x₂) =
-  trans (cong extFunc r-x₁x₂) (sym (*-identityˡ _))
-
 ⟦if⟧ : ∀ {X b} → ((LiftMR X ⟦×⟧ LiftMR X) ⟦×⟧ (Flat (IfRes b) ⟦×⟧ (⟦Bool⟧ b))) ==> LiftMR X
 ⟦if⟧ .left = λ { (a , ifRes u , s) → 𝒮.⟦if⟧ (a , U , s) }
 ⟦if⟧ .right = 𝒩.⟦if⟧
@@ -485,7 +479,6 @@ ExFormulaR-ok w (q-or r₁ r₂) = ⊎-cong (ExFormulaR-ok w r₁) (ExFormulaR-o
 ℳ .Model.⟦add⟧ = ⟦add⟧
 ℳ .Model.⟦mul⟧ = ⟦mul⟧
 ℳ .Model.⟦const⟧ = ⟦const⟧
-ℳ .Model.⟦extFunc⟧ = ⟦extFunc⟧
 ℳ .Model.⟦Bool⟧ = ⟦Bool⟧
 ℳ .Model.⟦not⟧ = ⟦not⟧
 ℳ .Model.⟦and⟧ = ⟦and⟧
@@ -499,17 +492,24 @@ ExFormulaR-ok w (q-or r₁ r₂) = ⊎-cong (ExFormulaR-ok w r₁) (ExFormulaR-o
 open import MiniVehicle.Language.Syntax verifierRestriction hiding (_⇒ᵣ_; under)
 import MiniVehicle.Language.Interpretation verifierRestriction ℳ as ℐ
 
-standard : ε / ε ⊢ Bool (BoolRes (linear , Ex)) → Set
-standard t = S.eval-Quant (ℐ.⟦_⟧tm t (lift tt) .left tt) True
+standard : networkSpecification linear (linear , Ex) → Set
+standard t = S.eval-Quant (ℐ.⟦ t ⟧tm (lift tt) .left (tt , extFunc)) True
 
-normalise : ε / ε ⊢ Bool (BoolRes (linear , Ex)) → PrenexFormula ε
-normalise t = toPrenexForm (N.compile (ℐ.⟦ t ⟧tm (lift tt) .right .N.mor tt))
+normalise : networkSpecification linear (linear , Ex) → PrenexFormula ε
+normalise t = toPrenexForm (N.compile (ℐ.⟦ t ⟧tm (lift tt) .right .N.mor (tt , N.⟦extFunc⟧)))
 
-full-correctness : (t : ε / ε ⊢ Bool (BoolRes (linear , Ex))) →
-                   standard t ⇔ eval-PrenexFormula (normalise t) (empty .env)
-full-correctness t =
+correctness : (t : networkSpecification linear (linear , Ex)) →
+              standard t ⇔ eval-PrenexFormula (normalise t) (empty .env)
+correctness t =
   ⇔-trans
-    (ExFormulaR-ok empty (compile-lemma linear empty _ q (ℐ.⟦ t ⟧tm (lift tt) .rel-mor empty tt tt refl)))
+    (ExFormulaR-ok empty
+      (compile-lemma linear empty _ q (ℐ.⟦ t ⟧tm (lift tt)
+         .rel-mor empty (tt , extFunc) (tt , N.⟦extFunc⟧) (refl , h))))
     (toPrenexForm-ok (N.compile q) empty-env)
   where q : N.LetLift ExFormula ε
-        q = ℐ.⟦ t ⟧tm (lift tt) .right .N.mor tt
+        q = ℐ.⟦ t ⟧tm (lift tt) .right .N.mor (tt , N.⟦extFunc⟧)
+
+        -- The real external function is related to the symbolic
+        -- internal function under the VerifierLang semantics
+        h : (⟦Num⟧ linear ⟦⇒⟧ LiftMR (⟦Num⟧ linear)) .rel _ extFunc N.⟦extFunc⟧
+        h w' ρ x y refl = sym (*-identityˡ _)

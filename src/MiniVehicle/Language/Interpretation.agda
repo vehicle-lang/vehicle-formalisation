@@ -56,7 +56,6 @@ postulate
 -- Number restrictions
 ⟦ NumRes n ⟧ty ks = lift n
 ⟦ NumConstRes n ⟧ty ks = Flat (NumConstRestriction (⟦ n ⟧ty ks .lower))
-⟦ FuncRes n₁ n₂ ⟧ty ks = Flat (FuncRestriction (⟦ n₁ ⟧ty ks .lower) (⟦ n₂ ⟧ty ks .lower))
 ⟦ AddRes l₁ l₂ l₃ ⟧ty ks =
   Flat (AddRestriction (⟦ l₁ ⟧ty ks .lower) (⟦ l₂ ⟧ty ks .lower) (⟦ l₃ ⟧ty ks .lower))
 ⟦ MulRes l₁ l₂ l₃ ⟧ty ks =
@@ -132,8 +131,6 @@ ren-⟦Type⟧ ρ [ n ] = refl
 ren-⟦Type⟧ ρ (NumRes l) = refl
 ren-⟦Type⟧ ρ (NumConstRes l) =
   cong Flat (cong NumConstRestriction (cong lower (ren-⟦Type⟧ ρ l)))
-ren-⟦Type⟧ ρ (FuncRes l₁ l₂) =
-  cong Flat (cong₂ FuncRestriction (cong lower (ren-⟦Type⟧ ρ l₁)) (cong lower (ren-⟦Type⟧ ρ l₂)))
 ren-⟦Type⟧ ρ (AddRes l₁ l₂ l₃) =
   cong Flat (cong₃ AddRestriction (cong lower (ren-⟦Type⟧ ρ l₁)) (cong lower (ren-⟦Type⟧ ρ l₂)) (cong lower (ren-⟦Type⟧ ρ l₃)))
 ren-⟦Type⟧ ρ (MulRes l₁ l₂ l₃) =
@@ -199,8 +196,6 @@ subst-⟦Type⟧ σ [ n ] = refl
 subst-⟦Type⟧ σ (NumRes l) = refl
 subst-⟦Type⟧ σ (NumConstRes l) =
   cong Flat (cong NumConstRestriction (cong lower (subst-⟦Type⟧ σ l)))
-subst-⟦Type⟧ σ (FuncRes p₁ p₂) =
-  cong Flat (cong₂ FuncRestriction (cong lower (subst-⟦Type⟧ σ p₁)) (cong lower (subst-⟦Type⟧ σ p₂)))
 subst-⟦Type⟧ σ (AddRes l₁ l₂ l₃) =
   cong Flat (cong₃ AddRestriction (cong lower (subst-⟦Type⟧ σ l₁)) (cong lower (subst-⟦Type⟧ σ l₂)) (cong lower (subst-⟦Type⟧ σ l₃)))
 subst-⟦Type⟧ σ (MulRes l₁ l₂ l₃) =
@@ -348,7 +343,6 @@ ren-⟦Context⟧ ρ (Γ ,- A) {ks} =
               -- Γ × Mon B
 
 
-⟦ func r t ⟧tm δ = binaryM ⟦extFunc⟧ ∘ ⟨ ⟦ r ⟧tm δ , ⟦ t ⟧tm δ ⟩
 ⟦ const r x ⟧tm δ = unary (⟦const⟧ x) ∘ ⟦ r ⟧tm δ
 ⟦ _`+_ r t₁ t₂ ⟧tm δ = ternary ⟦add⟧ ∘  ⟨ ⟦ r ⟧tm δ , ⟨ (⟦ t₁ ⟧tm δ) , (⟦ t₂ ⟧tm δ) ⟩ ⟩
 ⟦ _`*_ r t₁ t₂ ⟧tm δ = ternary ⟦mul⟧ ∘  ⟨ ⟦ r ⟧tm δ , ⟨ (⟦ t₁ ⟧tm δ) , (⟦ t₂ ⟧tm δ) ⟩ ⟩
@@ -361,7 +355,6 @@ ren-⟦Context⟧ ρ (Γ ,- A) {ks} =
 ⟦ ∃ t t₁ ⟧tm δ = binary ⟦∃⟧ ∘ ⟨ ⟦ t ⟧tm δ , ⟦ t₁ ⟧tm δ ⟩
 
 ⟦ numConstRes n ⟧tm δ = ⟦return⟧ ∘ elem n
-⟦ funcRes n ⟧tm δ = ⟦return⟧ ∘ elem n
 ⟦ addRes n ⟧tm δ = ⟦return⟧ ∘ elem n
 ⟦ mulRes n ⟧tm δ = ⟦return⟧ ∘ elem n
 

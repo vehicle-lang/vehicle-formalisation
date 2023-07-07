@@ -72,6 +72,5 @@ record Model (R : Restriction) ℓ m : Set (suc ℓ ⊔ suc m) where
     ⟦add⟧     : ∀ {l₁ l₂ l₃} → (Flat (AddRestriction l₁ l₂ l₃) ⟦×⟧ (⟦Num⟧ l₁ ⟦×⟧ ⟦Num⟧ l₂)) ==> ⟦Num⟧ l₃
     ⟦mul⟧     : ∀ {l₁ l₂ l₃} → (Flat (MulRestriction l₁ l₂ l₃) ⟦×⟧ (⟦Num⟧ l₁ ⟦×⟧ ⟦Num⟧ l₂)) ==> ⟦Num⟧ l₃
     ⟦const⟧   : ∀ {l₁} → ℚ → (Flat (NumConstRestriction l₁)) ==> ⟦Num⟧ l₁
-    ⟦extFunc⟧ : ∀ {l₁ l₂} → (Flat (FuncRestriction l₁ l₂) ⟦×⟧ ⟦Num⟧ l₁) ==> Mon (⟦Num⟧ l₂)
     ⟦≤⟧       : ∀ {l₁ l₂ b₃} → (Flat (CompRestriction l₁ l₂ b₃) ⟦×⟧ (⟦Num⟧ l₁ ⟦×⟧ ⟦Num⟧ l₂)) ==> ⟦Bool⟧ b₃
     ⟦<⟧       : ∀ {l₁ l₂ b₃} → (Flat (CompRestriction l₁ l₂ b₃) ⟦×⟧ (⟦Num⟧ l₁ ⟦×⟧ ⟦Num⟧ l₂)) ==> ⟦Bool⟧ b₃

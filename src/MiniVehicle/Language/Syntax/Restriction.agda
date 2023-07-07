@@ -17,7 +17,6 @@ record Restriction : Set₁ where
   field
     NumRestriction       : Set
     NumConstRestriction  : NumRestriction → Set
-    FuncRestriction      : NumRestriction → NumRestriction → Set
     AddRestriction       : NumRestriction → NumRestriction → NumRestriction → Set
     MulRestriction       : NumRestriction → NumRestriction → NumRestriction → Set
 
@@ -67,7 +66,6 @@ defaultRestriction       : Restriction
 defaultRestriction = record
   { NumRestriction       = ⊤
   ; NumConstRestriction  = λ _ → ⊤
-  ; FuncRestriction      = λ _ _ → ⊤
   ; AddRestriction       = λ _ _ _ → ⊤
   ; MulRestriction       = λ _ _ _ → ⊤
   ; BoolRestriction      = PolarityVal
