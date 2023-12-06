@@ -29,13 +29,13 @@ extend-env η q zero     = q
 extend-env η q (succ x) = η x
 
 ℰ⟦_⟧ : ∀ {Δ} → LinExp Δ → Env Δ → ℚ
-ℰ⟦ const q ⟧   η = q
-ℰ⟦ var q x ⟧   η = q * η x
-ℰ⟦ e₁ `+` e₂ ⟧ η = ℰ⟦ e₁ ⟧ η + ℰ⟦ e₂ ⟧ η
+ℰ⟦ const q ⟧    η = q
+ℰ⟦ q `*`var x ⟧ η = q * η x
+ℰ⟦ e₁ `+` e₂ ⟧  η = ℰ⟦ e₁ ⟧ η + ℰ⟦ e₂ ⟧ η
 
 eval-⊛ : ∀ {Δ} q (e : LinExp Δ) η → q * ℰ⟦ e ⟧ η ≡ ℰ⟦ q ⊛ e ⟧ η
 eval-⊛ q (const x) η = refl
-eval-⊛ q (var r x) η = sym (*-assoc q r (η x))
+eval-⊛ q (r `*`var x) η = sym (*-assoc q r (η x))
 eval-⊛ q (e₁ `+` e₂) η rewrite sym (eval-⊛ q e₁ η) rewrite sym (eval-⊛ q e₂ η) =
   *-distribˡ-+ q (ℰ⟦ e₁ ⟧ η) (ℰ⟦ e₂ ⟧ η)
 
@@ -126,9 +126,9 @@ wk-w .presv x = refl
 ext-evalLinExp :
   ∀ {w₁ w₂} e (ρ : w₂ ⇒w w₁) →
     ℰ⟦ e ⟧ (w₁ .env) ≡ ℰ⟦ rename-LinExp (ρ .ren) e ⟧ (w₂ .env)
-ext-evalLinExp (const q)   ρ = refl
-ext-evalLinExp (var q x)   ρ = cong (λ □ → q * □) (sym (ρ .presv x))
-ext-evalLinExp (e₁ `+` e₂) ρ = cong₂ _+_ (ext-evalLinExp e₁ ρ) (ext-evalLinExp e₂ ρ)
+ext-evalLinExp (const q)    ρ = refl
+ext-evalLinExp (q `*`var x) ρ = cong (λ □ → q * □) (sym (ρ .presv x))
+ext-evalLinExp (e₁ `+` e₂)  ρ = cong₂ _+_ (ext-evalLinExp e₁ ρ) (ext-evalLinExp e₂ ρ)
 
 ext-evalConstraint :
   ∀ {w₁ w₂} p (ρ : w₂ ⇒w w₁) →

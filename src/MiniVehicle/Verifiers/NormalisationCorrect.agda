@@ -414,18 +414,18 @@ compile-lemma l w x₁ (N.let-funexp x k) r =
 ⟦∃⟧ {l = l} .rel-mor w (quantRes U  , f₁) (quantRes U , f₂) (refl , r) =
   q-ex (λ q → compile-lemma l (extend-w w q)
                    (S.return (f₁ q))
-                   (N.bind-let (f₂ (w .ctxt ,∙) succ (var 1ℚ zero))
+                   (N.bind-let (f₂ (w .ctxt ,∙) succ (1ℚ `*`var zero))
                      (λ Δ' ρ ϕ → N.return (constraint ϕ)))
                    (let-bindR (extend-w w q)
                      (f₁ q)
-                     (f₂ (w .ctxt ,∙) succ (var 1ℚ zero))
+                     (f₂ (w .ctxt ,∙) succ (1ℚ `*`var zero))
                      S.return
                      _
-                     (r (extend-w w q) wk-w q (var 1ℚ zero) (sym (*-identityˡ q)))
+                     (r (extend-w w q) wk-w q (1ℚ `*`var zero) (sym (*-identityˡ q)))
                      λ w' ρ a b x → q-constraint (sym x)))
 ⟦∃⟧ {l = l} .rel-mor w (quantRes Ex , f₁) (quantRes Ex , f₂) (refl , r) =
-  q-ex λ q → compile-lemma l (extend-w w q) (f₁ q) (f₂ (w .ctxt ,∙) succ (var 1ℚ zero))
-               (r (extend-w w q) wk-w q (var 1ℚ zero) (sym (*-identityˡ q)))
+  q-ex λ q → compile-lemma l (extend-w w q) (f₁ q) (f₂ (w .ctxt ,∙) succ (1ℚ `*`var zero))
+               (r (extend-w w q) wk-w q (1ℚ `*`var zero) (sym (*-identityˡ q)))
 
 ExFormulaR-ok : ∀ w {x₁ x₂} →
               ExFormulaR w x₁ x₂ →

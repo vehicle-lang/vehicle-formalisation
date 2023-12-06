@@ -40,12 +40,20 @@ rename-⇒ₖ : ∀ {X Y} → Renameable (X ⇒ₖ Y)
 rename-⇒ₖ ρ f _ ρ' = f _ (λ v → ρ' (ρ v))
 
 ------------------------------------------------------------------------------
--- Linear and Constraint Expressions in negation normal form
+-- Linear Expressions
 
 data LinExp (Δ : LinVarCtxt) : Set where
-  const : ℚ → LinExp Δ
-  var   : ℚ → Var Δ → LinExp Δ --- FIXME: rename to _`*`var_
-  _`+`_ : LinExp Δ → LinExp Δ → LinExp Δ
+  const    : ℚ → LinExp Δ
+  _`*`var_ : ℚ → Var Δ → LinExp Δ
+  _`+`_    : LinExp Δ → LinExp Δ → LinExp Δ
+
+rename-LinExp : Renameable LinExp
+rename-LinExp ρ (const q)   = const q
+rename-LinExp ρ (r `*`var x)   = r `*`var (ρ x)
+rename-LinExp ρ (e₁ `+` e₂) = (rename-LinExp ρ e₁) `+` (rename-LinExp ρ e₂)
+
+------------------------------------------------------------------------------
+-- Linear Constraints in negation normal form
 
 data Constraint (Δ : LinVarCtxt) : Set where
   _`≤`_ : LinExp Δ → LinExp Δ → Constraint Δ
@@ -56,11 +64,6 @@ data Constraint (Δ : LinVarCtxt) : Set where
   _`≠`f_ : Var Δ → Var Δ → Constraint Δ
   _and_ : Constraint Δ → Constraint Δ → Constraint Δ
   _or_  : Constraint Δ → Constraint Δ → Constraint Δ
-
-rename-LinExp : Renameable LinExp
-rename-LinExp ρ (const q)   = const q
-rename-LinExp ρ (var r x)   = var r (ρ x)
-rename-LinExp ρ (e₁ `+` e₂) = (rename-LinExp ρ e₁) `+` (rename-LinExp ρ e₂)
 
 rename-Constraint : Renameable Constraint
 rename-Constraint ρ (e₁ `≤` e₂) = rename-LinExp ρ e₁ `≤` rename-LinExp ρ e₂
@@ -76,9 +79,9 @@ rename-Constraint ρ (x₁ `≠`f x₂) = ρ x₁ `≠`f ρ x₂
 -- Operations
 
 _⊛_ : ∀ {Δ} → ℚ → LinExp Δ → LinExp Δ
-q ⊛ const x     = const (q ℚ.* x)
-q ⊛ var r v     = var (q ℚ.* r) v
-q ⊛ (e₁ `+` e₂) = (q ⊛ e₁) `+` (q ⊛ e₂)
+q ⊛ const x      = const (q ℚ.* x)
+q ⊛ (r `*`var v) = (q ℚ.* r) `*`var v
+q ⊛ (e₁ `+` e₂)  = (q ⊛ e₁) `+` (q ⊛ e₂)
 
 negate : ∀ {Δ} → Constraint Δ → Constraint Δ
 negate (e₁ `≤` e₂) = e₂ `<` e₁

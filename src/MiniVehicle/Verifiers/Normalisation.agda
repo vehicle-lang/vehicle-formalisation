@@ -60,7 +60,7 @@ data LetLift (A : LinVarCtxt → Set) : LinVarCtxt → Set where
 compile : ∀ {Δ} → LetLift ExFormula Δ → ExFormula Δ
 compile (return x)       = x
 compile (if ϕ tr fa)     = ((constraint ϕ) and (compile tr)) or (constraint (negate ϕ) and (compile fa))
-compile (let-linexp e k) = ex ((constraint ((var 1ℚ zero) `=` rename-LinExp succ e)) and compile k)
+compile (let-linexp e k) = ex ((constraint ((1ℚ `*`var zero) `=` rename-LinExp succ e)) and compile k)
 compile (let-funexp x k) = ex ((constraint (zero `=`f (succ x))) and (compile k))
 
 rename-lift : ∀ {A} → Renameable A → Renameable (LetLift A)
@@ -178,10 +178,10 @@ _∘S_ : ∀ {X Y Z} → (Y ==> Z) → (X ==> Y) → (X ==> Z)
 ⟦∃⟧ : ∀ {l p₁ p₂} →
      (Flat (QuantRes l p₁ p₂) ⟦×⟧ (⟦Num⟧ l ⟦⇒⟧ LiftM (⟦Bool⟧ p₁))) ==> ⟦Bool⟧ p₂
 ⟦∃⟧ .mor {Δ} (quantRes U , f) =
-  ex (compile (bind-let (f (Δ ,∙) succ (var 1ℚ zero))
+  ex (compile (bind-let (f (Δ ,∙) succ (1ℚ `*`var zero))
                                      λ Δ' ρ ϕ → return (constraint ϕ)))
 ⟦∃⟧ .mor {Δ} (quantRes Ex , f) =
-  ex (compile (f (Δ ,∙) succ (var 1ℚ zero)))
+  ex (compile (f (Δ ,∙) succ (1ℚ `*`var zero)))
 
 ℳ : Model verifierRestriction (suc 0ℓ) 0ℓ
 ℳ .Model.⟦Type⟧ = ⟦Type⟧
@@ -222,7 +222,7 @@ open import MiniVehicle.Language.Syntax verifierRestriction
 
 -- representation of the external function
 ⟦extFunc⟧ : (⟦Num⟧ linear ⟦⇒⟧ LiftM (⟦Num⟧ linear)) .Carrier ε
-⟦extFunc⟧ Δ' ρ exp = let-linexp exp (let-funexp {- f -} zero (return (var 1ℚ zero)))
+⟦extFunc⟧ Δ' ρ exp = let-linexp exp (let-funexp {- f -} zero (return (1ℚ `*`var zero)))
 
 normalise : networkSpecification linear (linear , Ex) →
             PrenexFormula ε
