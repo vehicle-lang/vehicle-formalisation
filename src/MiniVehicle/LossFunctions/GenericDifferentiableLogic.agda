@@ -75,12 +75,12 @@ module _ (dl : DifferentiableLogic) where
   predicateToRelation pred = record
     { R      = _⇿_
     ; R⟪and⟫ = λ {a} {p} {b} {q} a⇿p b⇿q → begin
-      True (a ∧ b)        ⇔˘⟨ True-∧-⇔ ⟩
-      True a × True b     ⇔⟨ a⇿p ×-⇔ b⇿q ⟩
-      Truish p × Truish q ⇔⟨ ⟪and⟫-⇿ p q ⟩
-      Truish (p ⟪and⟫ q)  ∎
+      True (a ∧ b)          ⇔⟨ True-∧-⇔ ⟨
+      (True a × True b)     ⇔⟨ a⇿p ×-⇔ b⇿q ⟩
+      (Truish p × Truish q) ⇔⟨ ⟪and⟫-⇿ p q ⟩
+      Truish (p ⟪and⟫ q)    ∎
     ; R⟪or⟫  = λ {a} {p} {b} {q} a⇿p b⇿q → begin
-      True (a ∨ b)          ⇔˘⟨ True-∨-⇔ ⟩
+      True (a ∨ b)          ⇔⟨ True-∨-⇔ ⟨
       (True a ⊎ True b)     ⇔⟨ a⇿p ⊎-⇔ b⇿q ⟩
       (Truish p ⊎ Truish q) ⇔⟨ ⟪or⟫-⇿ p q ⟩
       Truish (p ⟪or⟫ q)     ∎

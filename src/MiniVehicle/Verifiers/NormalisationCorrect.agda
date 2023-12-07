@@ -3,6 +3,7 @@ open import Level using (0ℓ; suc; lift)
 
 open import Data.Bool using (not; _∧_; _∨_; true; false)
                    renaming (Bool to 𝔹; T to True; if_then_else_ to ifᵇ_then_else_)
+open import Data.Bool.Properties using (not-involutive; ∨-∧-booleanAlgebra)
 open import Data.Fin using (Fin)
 open import Data.Nat using (ℕ)
 open import Data.Product as Prod using (_×_; _,_; proj₁; proj₂; Σ-syntax)
@@ -10,25 +11,62 @@ open import Data.Rational using (ℚ; _+_; _*_; _≤ᵇ_; _≟_; 1ℚ)
 open import Data.Rational.Properties using (*-identityˡ; *-comm)
 open import Data.Sum using (_⊎_; inj₁; inj₂)
 open import Data.Unit using (⊤; tt)
+open import Data.Empty using (⊥)
+open import Function.Properties.Inverse using (↔⇒⇔)
+open import Function.Related.TypeIsomorphisms using (×-distribˡ-⊎; ×-distribʳ-⊎)
 
 open import Relation.Binary.PropositionalEquality
   using (_≡_; refl; trans; cong; sym; cong₂; subst; module ≡-Reasoning)
 
-open import Util using (_<ᵇ_; is-true-or-false)
+open import Util using (_<ᵇ_; is-true-or-false; module ⇔-Reasoning)
 open import MiniVehicle.Language.Syntax.Restriction
 open import MiniVehicle.Verifiers.Syntax.Restriction
-open import EquiInhabited
-
-
+open import Util.EquiInhabited
 
 module MiniVehicle.Verifiers.NormalisationCorrect (extFunc : ℚ → ℚ) where
 
 open import MiniVehicle.Language.Model using (Model)
 import MiniVehicle.Language.StandardSemantics as S
-import MiniVehicle.Verifiers.Normalisation as N
+open import MiniVehicle.Verifiers.Normalisation as N
+  using (constraint; ex; _and_; _or_)
+
+open import Algebra.Lattice.Properties.BooleanAlgebra ∨-∧-booleanAlgebra using (deMorgan₁; deMorgan₂)
 
 open import VerifierLang.Syntax renaming (_∘_ to _∘r_)
 open import VerifierLang.Semantics extFunc
+open ⇔-Reasoning
+
+------------------------------------------------------------------------------
+-- Correctness of translation from ExFormula
+
+eval-ExFormula : ∀ {Δ} → N.ExFormula Δ → Env Δ → Set
+eval-ExFormula (constraint ϕ) η = True (𝒞⟦ ϕ ⟧ η)
+eval-ExFormula (ex ϕ) η = Σ[ q ∈ ℚ ] eval-ExFormula ϕ (extend-env η q)
+eval-ExFormula (ϕ and ψ) η = eval-ExFormula ϕ η × eval-ExFormula ψ η
+eval-ExFormula (ϕ or ψ) η = eval-ExFormula ϕ η ⊎ eval-ExFormula ψ η
+
+eval-BoolExpr : ∀ {Δ} → N.BoolExpr Δ → Env Δ → 𝔹
+eval-BoolExpr (constraint ϕ) η = 𝒞⟦ ϕ ⟧ η
+eval-BoolExpr (ϕ and ψ) η = eval-BoolExpr ϕ η ∧ eval-BoolExpr ψ η
+eval-BoolExpr (ϕ or ψ) η = eval-BoolExpr ϕ η ∨ eval-BoolExpr ψ η
+
+eval-negate : ∀ {Δ} (p : Constraint Δ) η → not (𝒞⟦ p ⟧ η) ≡ 𝒞⟦ negate p ⟧ η
+eval-negate (x `≤` x₁) η = refl
+eval-negate (x `<` x₁) η = not-involutive _
+eval-negate (x `=` x₁) η = refl
+eval-negate (x `≠` x₁) η = not-involutive _
+eval-negate (x₁ `=`f x₂) η = refl
+eval-negate (x₁ `≠`f x₂) η = not-involutive _
+
+eval-negate-BoolExpr : ∀ {Δ} (p : N.BoolExpr Δ) η →
+                       not (eval-BoolExpr p η) ≡ eval-BoolExpr (N.negate-BoolExpr p) η
+eval-negate-BoolExpr (constraint p) η rewrite sym (eval-negate p η) = refl
+eval-negate-BoolExpr (p and q)      η rewrite sym (eval-negate-BoolExpr p η)
+                         rewrite sym (eval-negate-BoolExpr q η) =
+                            deMorgan₁ (eval-BoolExpr p η) (eval-BoolExpr q η)
+eval-negate-BoolExpr (p or q)       η rewrite sym (eval-negate-BoolExpr p η)
+                         rewrite sym (eval-negate-BoolExpr q η) =
+                            deMorgan₂ (eval-BoolExpr p η) (eval-BoolExpr q η)
 
 ------------------------------------------------------------------------------
 -- Our category of related interpretations
@@ -198,18 +236,20 @@ _⟦⇒⟧_ : ⟦Type⟧ → ⟦Type⟧ → ⟦Type⟧
 ------------------------------------------------------------------------------
 -- Booleans and constraints
 
-data ExFormulaR : ∀ w → S.Quant 𝔹 → ExFormula (w .ctxt) → Set where
-  q-constraint : ∀ {w b ϕ} →
-                 𝒞⟦ ϕ ⟧ (w .env) ≡ b →
-                 ExFormulaR w (S.return b) (constraint ϕ)
+data ExFormulaR : ∀ w → S.Quant 𝔹 → N.ExFormula (w .ctxt) → Set where
+  q-cast       : ∀ {w b ϕ} →
+                 eval-BoolExpr ϕ (w .env) ≡ b →
+                 ExFormulaR w (S.return b) (N.cast ϕ)
+  -- Used when interpreting true branches of if-statements
   q-true       : ∀ {w x ϕ ψ₁ ψ₂} →
-                 𝒞⟦ ϕ ⟧ (w .env) ≡ true →
+                 eval-BoolExpr ϕ (w .env) ≡ true →
                  ExFormulaR w x ψ₁ →
-                 ExFormulaR w x ((constraint ϕ and ψ₁) or (constraint (negate ϕ) and ψ₂))
+                 ExFormulaR w x ((N.cast ϕ and ψ₁) or (N.cast (N.negate-BoolExpr ϕ) and ψ₂))
+  -- Used when interpreting false branches of if-statements
   q-false      : ∀ {w x ϕ ψ₁ ψ₂} →
-                 𝒞⟦ ϕ ⟧ (w .env) ≡ false →
+                 eval-BoolExpr ϕ (w .env) ≡ false →
                  ExFormulaR w x ψ₂ →
-                 ExFormulaR w x ((constraint ϕ and ψ₁) or (constraint (negate ϕ) and ψ₂))
+                 ExFormulaR w x ((N.cast ϕ and ψ₁) or (N.cast (N.negate-BoolExpr ϕ) and ψ₂))
   q-ex         : ∀ {w k ϕ} →
                  (∀ q → ExFormulaR (extend-w w q) (k q) ϕ) →
                  ExFormulaR w (S.ex k) (ex ϕ)
@@ -226,14 +266,30 @@ data ExFormulaR : ∀ w → S.Quant 𝔹 → ExFormula (w .ctxt) → Set where
                  ExFormulaR w ϕ₂ ψ₂ →
                  ExFormulaR w (ϕ₁ S.or ϕ₂) (ψ₁ or ψ₂)
 
+ext-evalBoolExpr : 
+  ∀ {w₁ w₂} ϕ (ρ : w₂ ⇒w w₁) →
+    eval-BoolExpr ϕ (w₁ .env) ≡ eval-BoolExpr (N.rename-BoolExpr (ρ .ren) ϕ) (w₂ .env)
+ext-evalBoolExpr (constraint ϕ) ρ
+  rewrite ext-evalConstraint ϕ ρ = refl
+ext-evalBoolExpr (ϕ₁ and ϕ₂)    ρ
+  rewrite ext-evalBoolExpr ϕ₁ ρ | ext-evalBoolExpr ϕ₂ ρ = refl
+ext-evalBoolExpr (ϕ₁ or  ϕ₂)    ρ
+  rewrite ext-evalBoolExpr ϕ₁ ρ | ext-evalBoolExpr ϕ₂ ρ = refl
+
 ext-ExFormula : ∀ {w₁ w₂} (ρ : w₂ ⇒w w₁) x₁ x₂ →
-            ExFormulaR w₁ x₁ x₂ → ExFormulaR w₂ x₁ (rename-ExFormula (ρ .ren) x₂)
-ext-ExFormula ρ _ _ (q-constraint {ϕ = ϕ} x) =
-  q-constraint (trans (sym (ext-evalConstraint ϕ ρ)) x)
-ext-ExFormula ρ _ _ (q-true {ϕ = ϕ} is-true r) rewrite rename-negate (ρ .ren) ϕ =
-  q-true (trans (sym (ext-evalConstraint ϕ ρ)) is-true) (ext-ExFormula ρ _ _ r)
-ext-ExFormula ρ _ _ (q-false {ϕ = ϕ} is-false r) rewrite rename-negate (ρ .ren) ϕ =
-  q-false (trans (sym (ext-evalConstraint ϕ ρ)) is-false) (ext-ExFormula ρ _ _ r)
+            ExFormulaR w₁ x₁ x₂ → ExFormulaR w₂ x₁ (N.rename-ExFormula (ρ .ren) x₂)
+ext-ExFormula ρ _ _ (q-cast {ϕ = ϕ} x) rewrite N.rename-cast (ρ .ren) ϕ =
+  q-cast (trans (sym (ext-evalBoolExpr ϕ ρ)) x)
+ext-ExFormula ρ _ _ (q-true {ϕ = ϕ} is-true r)
+  rewrite N.rename-cast (ρ .ren) ϕ
+        | N.rename-cast (ρ .ren) (N.negate-BoolExpr ϕ)
+        | N.rename-negate-BoolExpr (ρ .ren) ϕ = 
+  q-true (trans (sym (ext-evalBoolExpr ϕ ρ)) is-true) (ext-ExFormula ρ _ _ r)
+ext-ExFormula ρ _ _ (q-false {ϕ = ϕ} is-false r)
+  rewrite N.rename-cast (ρ .ren) ϕ
+        | N.rename-cast (ρ .ren) (N.negate-BoolExpr ϕ)
+        | N.rename-negate-BoolExpr (ρ .ren) ϕ =
+  q-false (trans (sym (ext-evalBoolExpr ϕ ρ)) is-false) (ext-ExFormula ρ _ _ r)
 ext-ExFormula ρ _ _ (q-ex r) = q-ex λ q → ext-ExFormula (under-w ρ) _ _ (r q)
 ext-ExFormula ρ _ _ (q-ex' {ϕ = ϕ} q uniq r) =
   q-ex' q (λ q' → ⇔-trans (uniq q') (cong-True (ext-evalConstraint ϕ (under-w ρ))))
@@ -244,8 +300,8 @@ ext-ExFormula ρ _ _ (q-or r₁ r₂) = q-or (ext-ExFormula ρ _ _ r₁) (ext-Ex
 ⟦Bool⟧ : LinearityVal × PolarityVal → ⟦Type⟧
 ⟦Bool⟧ (l , p) .Left = 𝒮.⟦Bool⟧ p
 ⟦Bool⟧ (l , p) .Right = 𝒩.⟦Bool⟧ (l , p)
-⟦Bool⟧ (l , U) .rel w b ϕ = b ≡ 𝒞⟦ ϕ ⟧ (w .env)
-⟦Bool⟧ (l , U) .ext ρ b ϕ eq = trans eq (ext-evalConstraint ϕ ρ)
+⟦Bool⟧ (l , U) .rel w b ϕ = b ≡ eval-BoolExpr ϕ (w .env)
+⟦Bool⟧ (l , U) .ext ρ b ϕ eq = trans eq (ext-evalBoolExpr ϕ ρ)
 ⟦Bool⟧ (l , Ex) .rel = ExFormulaR
 ⟦Bool⟧ (l , Ex) .ext = ext-ExFormula
 
@@ -281,9 +337,9 @@ ext-ExFormula ρ _ _ (q-or r₁ r₂) = q-or (ext-ExFormula ρ _ _ r₁) (ext-Ex
 ⟦and⟧ .rel-mor w (maxBoolRes _ U-U , _) (maxBoolRes _ U-U , _) (eq , x₁₂ , y₁₂) =
   cong₂ _∧_ x₁₂ y₁₂
 ⟦and⟧ .rel-mor w (maxBoolRes _ U-Ex , _) (maxBoolRes _ U-Ex , _) (_ , x₁₂ , y₁₂) =
-  q-and (q-constraint (sym x₁₂)) y₁₂
+  q-and (q-cast (sym x₁₂)) y₁₂
 ⟦and⟧ .rel-mor w (maxBoolRes _ Ex-U , _) (maxBoolRes _ Ex-U , _) (_ , x₁₂ , y₁₂) =
-  q-and x₁₂ (q-constraint (sym y₁₂))
+  q-and x₁₂ (q-cast (sym y₁₂))
 ⟦and⟧ .rel-mor w (maxBoolRes _ Ex-Ex , _) (maxBoolRes _ Ex-Ex , _) (_ ,  x₁₂ , y₁₂) =
   q-and x₁₂ y₁₂
 
@@ -295,9 +351,9 @@ ext-ExFormula ρ _ _ (q-or r₁ r₂) = q-or (ext-ExFormula ρ _ _ r₁) (ext-Ex
 ⟦or⟧ .rel-mor w (maxBoolRes _ U-U , _) (maxBoolRes _ U-U , _) (_ , x₁₂ , y₁₂) =
   cong₂ _∨_ x₁₂ y₁₂
 ⟦or⟧ .rel-mor w (maxBoolRes _  U-Ex , _) (maxBoolRes _ U-Ex , _) (_ , x₁₂ , y₁₂) =
-  q-or (q-constraint (sym x₁₂)) y₁₂
+  q-or (q-cast (sym x₁₂)) y₁₂
 ⟦or⟧ .rel-mor w (maxBoolRes _  Ex-U , _) (maxBoolRes _ Ex-U , _) (_ , x₁₂ , y₁₂) =
-  q-or x₁₂ (q-constraint (sym y₁₂))
+  q-or x₁₂ (q-cast (sym y₁₂))
 ⟦or⟧ .rel-mor w (maxBoolRes _  Ex-Ex , _) (maxBoolRes _ Ex-Ex , _) (_ , x₁₂ , y₁₂) =
   q-or x₁₂ y₁₂
 
@@ -305,7 +361,7 @@ ext-ExFormula ρ _ _ (q-or r₁ r₂) = q-or (ext-ExFormula ρ _ _ r₁) (ext-Ex
 ⟦not⟧ .left = λ { (notRes v , x) → 𝒮.⟦not⟧ (v , x)}
 ⟦not⟧ .right = 𝒩.⟦not⟧
 ⟦not⟧ .rel-mor w (notRes U , x₁) (_ , x₂) (refl , x₁₂) =
-  trans (cong not x₁₂) (eval-negate x₂ (w .env))
+  trans (cong not x₁₂) (eval-negate-BoolExpr x₂ (w .env))
 
 ------------------------------------------------------------------------------
 module _ (X : ⟦Type⟧) where
@@ -313,7 +369,7 @@ module _ (X : ⟦Type⟧) where
   LetLiftR : (w : World) → X .Left → N.LetLift (X .Right .N.Carrier) (w .ctxt) → Set
   LetLiftR w a (N.return b) = X .rel w a b
   LetLiftR w a (N.if c k₁ k₂) =
-    ifᵇ (𝒞⟦ c ⟧ (w .env))
+    ifᵇ eval-BoolExpr c (w .env)
      then LetLiftR w a k₁
      else LetLiftR w a k₂
   LetLiftR w a (N.let-linexp e k) =
@@ -325,7 +381,7 @@ module _ (X : ⟦Type⟧) where
              LetLiftR w₁ la lb →
              LetLiftR w₂ la (N.rename-lift (X .Right .N.rename) (ρ .ren) lb)
   ext-lift ρ a (N.return b) = X .ext ρ a b
-  ext-lift {w₁} ρ a (N.if c tru fal) rewrite sym (ext-evalConstraint c ρ) with 𝒞⟦ c ⟧ (w₁ .env)
+  ext-lift {w₁} ρ a (N.if c tru fal) rewrite sym (ext-evalBoolExpr c ρ) with eval-BoolExpr c (w₁ .env)
   ... | false = ext-lift ρ a fal
   ... | true  = ext-lift ρ a tru
   ext-lift ρ a (N.let-linexp x lb) =
@@ -346,7 +402,7 @@ let-bindR : ∀ {X Y} w x y →
   (∀ w' (ρ : w' ⇒w w) a b → X .rel w' a b → LetLiftR Y w' (f a) (g (w' .ctxt) (ρ .ren) b)) →
   LetLiftR Y w (f x) (N.bind-let y g)
 let-bindR w x₁ (N.return x₂) f g r-x₁x₂ r-fg = r-fg w id-w x₁ x₂ r-x₁x₂
-let-bindR w x₁ (N.if c x₂₁ x₂₂) f g r-x₁x₂ r-fg with 𝒞⟦ c ⟧ (w .env)
+let-bindR w x₁ (N.if c x₂₁ x₂₂) f g r-x₁x₂ r-fg with eval-BoolExpr c (w .env)
 ... | true = let-bindR w x₁ x₂₁ f g r-x₁x₂ r-fg
 ... | false = let-bindR w x₁ x₂₂ f g r-x₁x₂ r-fg
 let-bindR w x₁ (N.let-linexp e x₂) f g r-x₁x₂ r-fg =
@@ -384,7 +440,7 @@ extendR {X} f .rel-mor w (x₁ , ly₁) (x₂ , ly₂) (x₁x₂ , ly₁-ly₂) 
 
 compile-lemma : ∀ l w x₁ x₂ → LetLiftR (⟦Bool⟧ (l , Ex)) w x₁ x₂ → ExFormulaR w x₁ (N.compile x₂)
 compile-lemma l w x₁ (N.return x) r = r
-compile-lemma l w x₁ (N.if ϕ tr fa) r with is-true-or-false (𝒞⟦ ϕ ⟧ (w .env))
+compile-lemma l w x₁ (N.if ϕ tr fa) r with is-true-or-false (eval-BoolExpr ϕ (w .env))
 ... | inj₁ is-true =
        q-true is-true (compile-lemma l w _ tr (subst (λ □ → ifᵇ □ then _ else _) is-true r))
 ... | inj₂ is-false =
@@ -415,38 +471,67 @@ compile-lemma l w x₁ (N.let-funexp x k) r =
   q-ex (λ q → compile-lemma l (extend-w w q)
                    (S.return (f₁ q))
                    (N.bind-let (f₂ (w .ctxt ,∙) succ (1ℚ `*`var zero))
-                     (λ Δ' ρ ϕ → N.return (constraint ϕ)))
+                     (λ Δ' ρ ϕ → N.return (N.cast ϕ)))
                    (let-bindR (extend-w w q)
                      (f₁ q)
                      (f₂ (w .ctxt ,∙) succ (1ℚ `*`var zero))
                      S.return
                      _
                      (r (extend-w w q) wk-w q (1ℚ `*`var zero) (sym (*-identityˡ q)))
-                     λ w' ρ a b x → q-constraint (sym x)))
+                     λ w' ρ a b x → q-cast (sym x)))
 ⟦∃⟧ {l = l} .rel-mor w (quantRes Ex , f₁) (quantRes Ex , f₂) (refl , r) =
   q-ex λ q → compile-lemma l (extend-w w q) (f₁ q) (f₂ (w .ctxt ,∙) succ (1ℚ `*`var zero))
                (r (extend-w w q) wk-w q (1ℚ `*`var zero) (sym (*-identityˡ q)))
 
+-- TODO flip direction of equality
+cast-ok : ∀ w ϕ {b} → eval-BoolExpr ϕ (w .env) ≡ b → True b ⇔ eval-ExFormula (N.cast ϕ) (w. env)
+cast-ok w (constraint x) eq = cong-True (sym eq)
+cast-ok w (ϕ and ϕ₁) {b} eq = begin
+  True b                                                                    ≡⟨ cong True (sym eq) ⟩
+  True (eval-BoolExpr ϕ (w .env) ∧ eval-BoolExpr ϕ₁ (w .env))               ⇔⟨ ⇔-sym True-∧ ⟩
+  (True (eval-BoolExpr ϕ (w .env)) × True (eval-BoolExpr ϕ₁ (w .env)))      ⇔⟨ ×-cong (cast-ok w ϕ refl) (cast-ok w ϕ₁ refl) ⟩
+  (eval-ExFormula (N.cast ϕ) (w .env) × eval-ExFormula (N.cast ϕ₁) (w .env)) ∎
+cast-ok w (ϕ or ϕ₁) {b} eq = begin
+  True b                                                                    ≡⟨ cong True (sym eq) ⟩
+  True (eval-BoolExpr ϕ (w .env) ∨ eval-BoolExpr ϕ₁ (w .env))               ⇔⟨ ⇔-sym True-∨ ⟩
+  (True (eval-BoolExpr ϕ (w .env)) ⊎ True (eval-BoolExpr ϕ₁ (w .env)))      ⇔⟨ ⊎-cong (cast-ok w ϕ refl) (cast-ok w ϕ₁ refl) ⟩
+  (eval-ExFormula (N.cast ϕ) (w .env) ⊎ eval-ExFormula (N.cast ϕ₁) (w .env)) ∎
+
 ExFormulaR-ok : ∀ w {x₁ x₂} →
               ExFormulaR w x₁ x₂ →
               S.eval-Quant x₁ True ⇔ eval-ExFormula x₂ (w .env)
-ExFormulaR-ok w (q-constraint x) = cong-True (sym x)
-ExFormulaR-ok w (q-true {ϕ = ϕ} is-true r) =
-  ⇔-trans (ExFormulaR-ok w r)
-  (⇔-trans or-left
-          (⊎-cong (⇔-trans ⊤-fst (×-cong (⊤-bool is-true) ⇔-refl))
-                  (⇔-trans ⊥-fst (×-cong (⊥-bool (trans (sym (eval-negate ϕ (w .env))) (cong not is-true)))
-                                         ⇔-refl))))
-ExFormulaR-ok w (q-false {ϕ = ϕ} is-false r) =
-  ⇔-trans (ExFormulaR-ok w r)
-  (⇔-trans or-right
-  (⊎-cong
-    (⇔-trans ⊥-fst (×-cong
-                     (⊥-bool is-false)
-                     ⇔-refl))
-    (⇔-trans ⊤-fst (×-cong
-                     (⊤-bool (trans (sym (eval-negate ϕ (w .env))) (cong not is-false)))
-                     ⇔-refl))))
+ExFormulaR-ok w (q-cast {b = b} {ϕ = ϕ} x) = cast-ok w ϕ x
+ExFormulaR-ok w (q-true {x = x} {ϕ = ϕ} {ψ₁ = ψ₁} {ψ₂ = ψ₂} is-true r) = begin
+  S.eval-Quant x True                   ⇔⟨ ExFormulaR-ok w r ⟩
+  eval-ExFormula ψ₁ (w .env)            ⇔⟨ or-left ⟩
+  (eval-ExFormula ψ₁ (w .env) ⊎ ⊥)      ⇔⟨ ⊎-cong (⇔-trans ⊤-fst (×-congˡ eq₁)) (⇔-trans ⊥-fst (×-congˡ eq₂)) ⟩
+  (true-cond × eval-ExFormula ψ₁ _ ⊎
+    false-cond × eval-ExFormula ψ₂ _)   ∎
+  where
+    true-cond  = eval-ExFormula (N.cast ϕ) (w .env)
+    false-cond = eval-ExFormula (N.cast (N.negate-BoolExpr ϕ)) (w .env) 
+    
+    eq₁ : ⊤ ⇔ true-cond
+    eq₁ = cast-ok w ϕ is-true
+    
+    eq₂ : ⊥ ⇔ false-cond
+    eq₂ = cast-ok w (N.negate-BoolExpr ϕ) (trans (sym (eval-negate-BoolExpr ϕ (w .env))) (cong not is-true))
+
+ExFormulaR-ok w (q-false {x = x} {ϕ = ϕ} {ψ₁ = ψ₁} {ψ₂ = ψ₂} is-false r) = begin
+  S.eval-Quant x True                   ⇔⟨ ExFormulaR-ok w r ⟩
+  eval-ExFormula ψ₂ (w .env)            ⇔⟨ or-right ⟩
+  (⊥ ⊎ eval-ExFormula ψ₂ (w .env))      ⇔⟨ ⊎-cong (⇔-trans ⊥-fst (×-congˡ eq₁)) (⇔-trans ⊤-fst (×-congˡ eq₂)) ⟩
+  (true-cond × eval-ExFormula ψ₁ _ ⊎
+    false-cond × eval-ExFormula ψ₂ _)   ∎
+  where
+    true-cond  = eval-ExFormula (N.cast ϕ) (w .env)
+    false-cond = eval-ExFormula (N.cast (N.negate-BoolExpr ϕ)) (w .env) 
+    
+    eq₁ : ⊥ ⇔ true-cond
+    eq₁ = cast-ok w ϕ is-false
+    
+    eq₂ : ⊤ ⇔ false-cond
+    eq₂ = cast-ok w (N.negate-BoolExpr ϕ) (trans (sym (eval-negate-BoolExpr ϕ (w .env))) (cong not is-false))
 ExFormulaR-ok w (q-ex x) = cong-∃ (λ q → ExFormulaR-ok (extend-w w q) (x q))
 ExFormulaR-ok w (q-ex' q x r) =
   ⇔-trans (ExFormulaR-ok (extend-w w q) r)
@@ -489,24 +574,96 @@ ExFormulaR-ok w (q-or r₁ r₂) = ⊎-cong (ExFormulaR-ok w r₁) (ExFormulaR-o
 ℳ .Model.⟦∃⟧ = ⟦∃⟧
 
 ------------------------------------------------------------------------------
+-- Conversion to query tree
+
+quantifyQuerySet-ok : ∀ {Δ} (ϕ : QuerySet (Δ ,∙)) η →
+                      Prod.Σ ℚ (λ z → eval-QuerySet ϕ (extend-env η z))
+                      ⇔ eval-QuerySet (N.quantifyQuerySet ϕ) η
+quantifyQuerySet-ok (query ϕ) η = ⇔-refl
+quantifyQuerySet-ok (ϕ or ϕ₁) η = begin
+  Prod.Σ ℚ (λ z → eval-QuerySet (ϕ or ϕ₁) (extend-env η z))
+    ⇔⟨ Σ-distribˡ-⊎ ⟩
+  (Prod.Σ ℚ (λ z → eval-QuerySet ϕ (extend-env η z)) ⊎ Prod.Σ ℚ (λ z → eval-QuerySet ϕ₁ (extend-env η z)))
+    ⇔⟨ ⊎-cong (quantifyQuerySet-ok ϕ η) (quantifyQuerySet-ok ϕ₁ η) ⟩
+  (eval-QuerySet (N.quantifyQuerySet ϕ) η ⊎ eval-QuerySet (N.quantifyQuerySet ϕ₁) η)
+    ∎
+
+andQueryBody-ok : ∀ {Δ} (ϕ : QueryBody Δ) (ψ : Query Δ) η →
+                (True (eval-QueryBody ϕ η) × eval-Query ψ η) ⇔ eval-Query (N.and-QueryBody ϕ ψ) η
+andQueryBody-ok ϕ (body ψ) η = True-∧
+andQueryBody-ok ϕ (ex ψ)   η = ⇔-trans
+   and-comm-left
+   (cong-∃ λ q → ⇔-trans
+     (×-cong (cong-True (ext-evalQueryBody ϕ wk-w)) ⇔-refl)
+     (andQueryBody-ok (rename-QueryBody succ ϕ) ψ (extend-env η q)))
+
+andQuery-ok : ∀ {Δ} (ϕ ψ : Query Δ) η →
+              (eval-Query ϕ η × eval-Query ψ η) ⇔ eval-Query (N.and-Query ϕ ψ) η
+andQuery-ok (body ϕ) ψ η = andQueryBody-ok ϕ ψ η
+andQuery-ok (ex ϕ)   ψ η = ⇔-trans
+   and-comm-right
+   (cong-∃ λ q → ⇔-trans
+     (×-cong ⇔-refl (ext-evalQuery wk-w ψ))
+     (andQuery-ok ϕ (rename-Query succ ψ) (extend-env η q)))
+
+andQuerySet-ok : ∀ {Δ} (ϕ ψ : QuerySet Δ) η →
+                 (eval-QuerySet ϕ η × eval-QuerySet ψ η) ⇔ eval-QuerySet (N.and-QuerySet ϕ ψ) η
+andQuerySet-ok (query ϕ) (query ψ) η = andQuery-ok ϕ ψ η
+andQuerySet-ok ϕ@(query _) (ψ₁ or ψ₂) η = begin
+  (eval-QuerySet ϕ η × (eval-QuerySet ψ₁ η ⊎ eval-QuerySet ψ₂ η))
+    ⇔⟨ ↔⇒⇔ (×-distribˡ-⊎ 0ℓ (eval-QuerySet ϕ η) (eval-QuerySet ψ₁ η) (eval-QuerySet ψ₂ η)) ⟩
+  ((eval-QuerySet ϕ η × eval-QuerySet ψ₁ η) ⊎ (eval-QuerySet ϕ η × eval-QuerySet ψ₂ η))
+    ⇔⟨ ⊎-cong (andQuerySet-ok ϕ ψ₁ η) (andQuerySet-ok ϕ ψ₂ η) ⟩
+  (eval-QuerySet (N.and-QuerySet ϕ ψ₁) η ⊎ eval-QuerySet (N.and-QuerySet ϕ ψ₂) η)
+    ∎
+andQuerySet-ok (ϕ₁ or ϕ₂) ψ η = begin
+  ((eval-QuerySet ϕ₁ η ⊎ eval-QuerySet ϕ₂ η) × eval-QuerySet ψ η)
+    ⇔⟨ ↔⇒⇔ (×-distribʳ-⊎ 0ℓ (eval-QuerySet ψ η) (eval-QuerySet ϕ₁ η) (eval-QuerySet ϕ₂ η)) ⟩
+  ((eval-QuerySet ϕ₁ η × eval-QuerySet ψ η) ⊎ (eval-QuerySet ϕ₂ η × eval-QuerySet ψ η))
+    ⇔⟨ ⊎-cong (andQuerySet-ok ϕ₁ ψ η) (andQuerySet-ok ϕ₂ ψ η) ⟩
+  (eval-QuerySet (N.and-QuerySet ϕ₁ ψ) η ⊎ eval-QuerySet (N.and-QuerySet ϕ₂ ψ) η) ∎
+
+toQuerySet-ok : ∀ {Δ} (ϕ : N.ExFormula Δ) η →
+                eval-ExFormula ϕ η ⇔ eval-QuerySet (N.toQuerySet ϕ) η
+toQuerySet-ok (constraint x) η = ⇔-refl
+toQuerySet-ok (ϕ or ψ)       η =
+  ⊎-cong (toQuerySet-ok ϕ η) (toQuerySet-ok ψ η)
+toQuerySet-ok (ϕ and ψ)      η = begin
+  (eval-ExFormula ϕ η × eval-ExFormula ψ η)                             ⇔⟨ ×-cong (toQuerySet-ok ϕ η) (toQuerySet-ok ψ η) ⟩
+  (eval-QuerySet (N.toQuerySet ϕ) η × eval-QuerySet (N.toQuerySet ψ) η) ⇔⟨ andQuerySet-ok (N.toQuerySet ϕ) (N.toQuerySet ψ) η ⟩
+  eval-QuerySet (N.and-QuerySet (N.toQuerySet ϕ) (N.toQuerySet ψ)) η    ∎
+toQuerySet-ok (ex ϕ)         η = ⇔-trans
+  (cong-∃ λ q → toQuerySet-ok ϕ (extend-env η q))
+  (quantifyQuerySet-ok (N.toQuerySet ϕ) η)
+
+toQueryTree-ok : ∀ (ϕ : N.ExFormula ε) →
+                 eval-ExFormula ϕ empty-env ⇔ eval-QueryTree (N.toQueryTree ϕ)
+toQueryTree-ok (constraint x) = ⇔-refl
+toQueryTree-ok (ex ϕ)         = toQuerySet-ok (ex ϕ) empty-env
+toQueryTree-ok (ϕ and ψ)      = ×-cong (toQueryTree-ok ϕ) (toQueryTree-ok ψ)
+toQueryTree-ok (ϕ or ψ)       = ⊎-cong (toQueryTree-ok ϕ) (toQueryTree-ok ψ)
+
+------------------------------------------------------------------------------
+-- Conclusion
+
 open import MiniVehicle.Language.Syntax verifierRestriction hiding (_⇒ᵣ_; under)
 import MiniVehicle.Language.Interpretation verifierRestriction ℳ as ℐ
 
-standard : networkSpecification linear (linear , Ex) → Set
+standard : NetworkSpecification linear (linear , Ex) → Set
 standard t = S.eval-Quant (ℐ.⟦ t ⟧tm (lift tt) .left (tt , extFunc)) True
 
-normalise : networkSpecification linear (linear , Ex) → PrenexFormula ε
-normalise t = toPrenexForm (N.compile (ℐ.⟦ t ⟧tm (lift tt) .right .N.mor (tt , N.⟦extFunc⟧)))
+normalise : NetworkSpecification linear (linear , Ex) → QueryTree
+normalise t = N.toQueryTree (N.compile (ℐ.⟦ t ⟧tm (lift tt) .right .N.mor (tt , N.⟦extFunc⟧)))
 
-correctness : (t : networkSpecification linear (linear , Ex)) →
-              standard t ⇔ eval-PrenexFormula (normalise t) (empty .env)
+correctness : (t : NetworkSpecification linear (linear , Ex)) →
+              standard t ⇔ eval-QueryTree (normalise t)
 correctness t =
   ⇔-trans
     (ExFormulaR-ok empty
       (compile-lemma linear empty _ q (ℐ.⟦ t ⟧tm (lift tt)
          .rel-mor empty (tt , extFunc) (tt , N.⟦extFunc⟧) (refl , h))))
-    (toPrenexForm-ok (N.compile q) empty-env)
-  where q : N.LetLift ExFormula ε
+    (toQueryTree-ok (N.compile q))
+  where q : N.LetLift N.ExFormula ε
         q = ℐ.⟦ t ⟧tm (lift tt) .right .N.mor (tt , N.⟦extFunc⟧)
 
         -- The real external function is related to the symbolic

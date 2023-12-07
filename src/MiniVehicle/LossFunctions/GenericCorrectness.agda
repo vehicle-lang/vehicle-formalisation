@@ -28,7 +28,7 @@ open import Relation.Nullary using (¬_)
 open import Util
 open import MiniVehicle.Language.Syntax.Restriction
 open import MiniVehicle.Language.Model
-open import EquiInhabited
+open import Util.EquiInhabited
 
 import MiniVehicle.LossFunctions.GenericCompilation as N
 import MiniVehicle.Language.Syntax N.lossRestriction as MiniVehicle

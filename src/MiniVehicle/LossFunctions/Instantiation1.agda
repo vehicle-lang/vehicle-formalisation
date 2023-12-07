@@ -3,7 +3,7 @@ module MiniVehicle.LossFunctions.Instantiation1 where
 
 open import Data.Sum as Sum
 open import Data.Product as Prod
-open import Data.Rational
+open import Data.Rational hiding (pos; neg)
 open import Data.Rational.Properties
 open import Data.Bool hiding (_≤_; _<_; _<?_; _≤?_) renaming (Bool to 𝔹; T to True)
 open import Data.Bool.Properties hiding (_<?_; _≤?_)
@@ -12,7 +12,7 @@ open import Data.Empty using (⊥-elim)
 open import Algebra
 open import Function
 open import Function.Reasoning
-open import Relation.Nullary
+open import Relation.Nullary hiding (True)
 open import Relation.Binary.PropositionalEquality using (_≡_; cong; refl)
 open import Relation.Unary using (Decidable)
 open import Relation.Nullary.Negation
@@ -142,10 +142,10 @@ module _ (extFunc : ℚ → ℚ) where
 
   -- Correspondance with standard semantics
   true⇒loss≡0 : ∀ t → True (standardProp t) → loss t ≡ 0ℚ
-  true⇒loss≡0 t tr with L.lossFunctionProp t | f (prop-correctness t) tr
+  true⇒loss≡0 t tr with L.lossFunctionProp t | to (prop-correctness t) tr
   ... | pos p | x = refl
 
   false⇒loss>0 : ∀ t → ¬ (True (standardProp t)) → loss t > 0ℚ
-  false⇒loss>0 t ¬tr with L.lossFunctionProp t | g (prop-correctness t)
+  false⇒loss>0 t ¬tr with L.lossFunctionProp t | from (prop-correctness t)
   ... | pos p | x = contradiction (x (truth p)) ¬tr
-  ... | neg (l , l⁺) | x = positive⁻¹ (nonNegative+pos⇒pos {l} {prec} l⁺ _)
+  ... | neg (l , l⁺) | x = positive⁻¹ (l + prec) {{nonNegative+pos⇒pos l prec {{l⁺}}}}

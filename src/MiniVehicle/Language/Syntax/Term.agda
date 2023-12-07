@@ -97,5 +97,5 @@ data _/_⊢_ : (Δ : KindContext) → Context Δ → Δ ⊢T Type → Set where
           Δ / Γ ⊢ IfRes (BoolRes b)
 
 
-networkSpecification : NumRestriction → BoolRestriction → Set
-networkSpecification q₁ q₂ = ε / (ε ,- (Num (NumRes q₁) ⇒ Num (NumRes q₁))) ⊢ Bool (BoolRes q₂)
+NetworkSpecification : NumRestriction → BoolRestriction → Set
+NetworkSpecification q₁ q₂ = ε / (ε ,- (Num (NumRes q₁) ⇒ Num (NumRes q₁))) ⊢ Bool (BoolRes q₂)
