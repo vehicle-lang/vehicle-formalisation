@@ -2,8 +2,10 @@
 
 module VerifierLang.Syntax where
 
+open import Data.Bool using (Bool)
 open import Data.Rational as ℚ using (ℚ)
-open import Relation.Binary.PropositionalEquality using (_≡_; refl; sym; trans; cong₂)
+open import Relation.Binary.PropositionalEquality
+  using (_≡_; refl; sym; trans; cong₂)
 
 ------------------------------------------------------------------------------
 -- Linear variable contexts and renaming
@@ -12,6 +14,10 @@ data LinVarCtxt : Set where
   ε   : LinVarCtxt
   _,∙ : LinVarCtxt → LinVarCtxt
 
+private
+  variable
+    Δ Δ₁ Δ₂ Δ₃ : LinVarCtxt
+
 data Var : LinVarCtxt → Set where
   zero : ∀ {Δ} → Var (Δ ,∙)
   succ : ∀ {Δ} → Var Δ → Var (Δ ,∙)
@@ -19,14 +25,14 @@ data Var : LinVarCtxt → Set where
 _⇒ᵣ_ : LinVarCtxt → LinVarCtxt → Set
 Δ₁ ⇒ᵣ Δ₂ = Var Δ₂ → Var Δ₁
 
-_∘_ : ∀ {Δ₁ Δ₂ Δ₃} → Δ₂ ⇒ᵣ Δ₃ → Δ₁ ⇒ᵣ Δ₂ → Δ₁ ⇒ᵣ Δ₃
+_∘_ : Δ₂ ⇒ᵣ Δ₃ → Δ₁ ⇒ᵣ Δ₂ → Δ₁ ⇒ᵣ Δ₃
 ρ ∘ ρ' = λ z → ρ' (ρ z)
 
-under : ∀ {Δ Δ'} → Δ ⇒ᵣ Δ' → (Δ ,∙) ⇒ᵣ (Δ' ,∙)
+under : Δ₁ ⇒ᵣ Δ₂ → (Δ₁ ,∙) ⇒ᵣ (Δ₂ ,∙)
 under ρ zero     = zero
 under ρ (succ x) = succ (ρ x)
 
-wk-r : ∀ {Δ} → (Δ ,∙) ⇒ᵣ Δ
+wk-r : (Δ ,∙) ⇒ᵣ Δ
 wk-r = succ
 
 Renameable : (LinVarCtxt → Set) → Set
@@ -52,6 +58,12 @@ rename-LinExp ρ (const q)   = const q
 rename-LinExp ρ (r `*`var x)   = r `*`var (ρ x)
 rename-LinExp ρ (e₁ `+` e₂) = (rename-LinExp ρ e₁) `+` (rename-LinExp ρ e₂)
 
+-- Scaling a linear expression
+_⊛_ : ℚ → LinExp Δ → LinExp Δ
+q ⊛ const x      = const (q ℚ.* x)
+q ⊛ (r `*`var v) = (q ℚ.* r) `*`var v
+q ⊛ (e₁ `+` e₂)  = (q ⊛ e₁) `+` (q ⊛ e₂)
+
 ------------------------------------------------------------------------------
 -- Linear Constraints in negation normal form
 
@@ -62,95 +74,67 @@ data Constraint (Δ : LinVarCtxt) : Set where
   _`≠`_ : LinExp Δ → LinExp Δ → Constraint Δ
   _`=`f_ : Var Δ → Var Δ → Constraint Δ
   _`≠`f_ : Var Δ → Var Δ → Constraint Δ
-  _and_ : Constraint Δ → Constraint Δ → Constraint Δ
-  _or_  : Constraint Δ → Constraint Δ → Constraint Δ
-
+  
 rename-Constraint : Renameable Constraint
 rename-Constraint ρ (e₁ `≤` e₂) = rename-LinExp ρ e₁ `≤` rename-LinExp ρ e₂
 rename-Constraint ρ (e₁ `<` e₂) = rename-LinExp ρ e₁ `<` rename-LinExp ρ e₂
-rename-Constraint ρ (p and q)   = (rename-Constraint ρ p) and (rename-Constraint ρ q)
-rename-Constraint ρ (p or q)    = (rename-Constraint ρ p) or (rename-Constraint ρ q)
 rename-Constraint ρ (e₁ `=` e₂) = rename-LinExp ρ e₁ `=` rename-LinExp ρ e₂
 rename-Constraint ρ (e₁ `≠` e₂) = rename-LinExp ρ e₁ `≠` rename-LinExp ρ e₂
 rename-Constraint ρ (x₁ `=`f x₂) = ρ x₁ `=`f ρ x₂
 rename-Constraint ρ (x₁ `≠`f x₂) = ρ x₁ `≠`f ρ x₂
 
-------------------------------------------------------------------------------
--- Operations
-
-_⊛_ : ∀ {Δ} → ℚ → LinExp Δ → LinExp Δ
-q ⊛ const x      = const (q ℚ.* x)
-q ⊛ (r `*`var v) = (q ℚ.* r) `*`var v
-q ⊛ (e₁ `+` e₂)  = (q ⊛ e₁) `+` (q ⊛ e₂)
-
-negate : ∀ {Δ} → Constraint Δ → Constraint Δ
+negate : Constraint Δ → Constraint Δ
 negate (e₁ `≤` e₂) = e₂ `<` e₁
 negate (e₁ `<` e₂) = e₂ `≤` e₁
-negate (p and q) = negate p or negate q
-negate (p or q) = negate p and negate q
 negate (e₁ `=` e₂) = e₁ `≠` e₂
 negate (e₁ `≠` e₂) = e₁ `=` e₂
 negate (x₁ `=`f x₂) = x₁ `≠`f x₂
 negate (x₁ `≠`f x₂) = x₁ `=`f x₂
 
 -- Negation commutes with renaming
-rename-negate : ∀ {Δ' Δ} (ρ : Δ' ⇒ᵣ Δ) (ϕ : Constraint Δ)  →
+rename-negate : (ρ : Δ₁ ⇒ᵣ Δ₂) (ϕ : Constraint Δ₂)  →
                 rename-Constraint ρ (negate ϕ) ≡ negate (rename-Constraint ρ ϕ)
-rename-negate ρ (x `≤` x₁) = refl
-rename-negate ρ (x `<` x₁) = refl
-rename-negate ρ (x `=` x₁) = refl
-rename-negate ρ (x `≠` x₁) = refl
+rename-negate ρ (e₁ `≤` e₂) = refl
+rename-negate ρ (e₁ `<` e₂) = refl
+rename-negate ρ (e₁ `=` e₂) = refl
+rename-negate ρ (e₁ `≠` e₂) = refl
 rename-negate ρ (x `=`f x₁) = refl
 rename-negate ρ (x `≠`f x₁) = refl
-rename-negate ρ (ϕ and ϕ₁) = cong₂ _or_ (rename-negate ρ ϕ) (rename-negate ρ ϕ₁)
-rename-negate ρ (ϕ or ϕ₁) = cong₂ _and_ (rename-negate ρ ϕ) (rename-negate ρ ϕ₁)
 
 ------------------------------------------------------------------------------
--- Quantification, first via "free form" formulas with existential
--- quantifiers in them.
+-- Query body
 
-data ExFormula : LinVarCtxt → Set where
-  constraint : ∀ {Δ} → Constraint Δ → ExFormula Δ
-  ex         : ∀ {Δ} → ExFormula (Δ ,∙) → ExFormula Δ
-  _and_      : ∀ {Δ} → ExFormula Δ → ExFormula Δ → ExFormula Δ
-  _or_       : ∀ {Δ} → ExFormula Δ → ExFormula Δ → ExFormula Δ
+data QueryBody (Δ : LinVarCtxt) : Set where
+  constraint : Constraint Δ → QueryBody Δ
+  _and_ : QueryBody Δ → QueryBody Δ → QueryBody Δ
 
-rename-ExFormula : Renameable ExFormula
-rename-ExFormula ρ (constraint ϕ) = constraint (rename-Constraint ρ ϕ)
-rename-ExFormula ρ (ex ϕ)         = ex (rename-ExFormula (under ρ) ϕ)
-rename-ExFormula ρ (ϕ and ψ)      = rename-ExFormula ρ ϕ and rename-ExFormula ρ ψ
-rename-ExFormula ρ (ϕ or ψ)       = rename-ExFormula ρ ϕ or rename-ExFormula ρ ψ
+rename-QueryBody : (ρ : Δ₁ ⇒ᵣ Δ₂) → QueryBody Δ₂ → QueryBody Δ₁
+rename-QueryBody ρ (constraint x) = constraint (rename-Constraint ρ x)
+rename-QueryBody ρ (ϕ₁ and ϕ₂) = rename-QueryBody ρ ϕ₁ and rename-QueryBody ρ ϕ₂
 
 ------------------------------------------------------------------------------
 -- Formulas where all existential quantifiers are floated out to the
 -- front.
 
-data PrenexFormula : LinVarCtxt → Set where
-  constraint : ∀ {Δ} → Constraint Δ → PrenexFormula Δ
-  ex         : ∀ {Δ} → PrenexFormula (Δ ,∙) → PrenexFormula Δ
+data Query : LinVarCtxt → Set where
+  body : ∀ {Δ} → QueryBody Δ → Query Δ
+  ex   : ∀ {Δ} → Query (Δ ,∙) → Query Δ
 
-rename-PrenexFormula : ∀ {Δ Δ'} → (ρ : Δ' ⇒ᵣ Δ) → PrenexFormula Δ → PrenexFormula Δ'
-rename-PrenexFormula ρ (constraint x) = constraint (rename-Constraint ρ x)
-rename-PrenexFormula ρ (ex ϕ) = ex (rename-PrenexFormula (under ρ) ϕ)
+rename-Query : ∀ {Δ Δ'} → (ρ : Δ' ⇒ᵣ Δ) → Query Δ → Query Δ'
+rename-Query ρ (body x) = body (rename-QueryBody ρ x)
+rename-Query ρ (ex ϕ) = ex (rename-Query (under ρ) ϕ)
 
-conj-constraint : ∀ {Δ} → Constraint Δ → PrenexFormula Δ → PrenexFormula Δ
-conj-constraint ϕ (constraint ψ) = constraint (ϕ and ψ)
-conj-constraint ϕ (ex ψ) = ex (conj-constraint (rename-Constraint succ ϕ) ψ)
+------------------------------------------------------------------------------
+-- A set of queries that are under the same variables
 
-conj : ∀ {Δ} → PrenexFormula Δ → PrenexFormula Δ → PrenexFormula Δ
-conj (constraint ϕ) ψ = conj-constraint ϕ ψ
-conj (ex ϕ)         ψ = ex (conj ϕ (rename-PrenexFormula succ ψ))
+data QuerySet : Set where
+  query : Query ε → QuerySet
+  _or_ : QuerySet → QuerySet → QuerySet
 
-disj-constraint : ∀ {Δ} → Constraint Δ → PrenexFormula Δ → PrenexFormula Δ
-disj-constraint ϕ (constraint ψ) = constraint (ϕ or ψ)
-disj-constraint ϕ (ex ψ) = ex (disj-constraint (rename-Constraint succ ϕ) ψ)
+------------------------------------------------------------------------------
+-- A tree of queries
 
-disj : ∀ {Δ} → PrenexFormula Δ → PrenexFormula Δ → PrenexFormula Δ
-disj (constraint ϕ) ψ = disj-constraint ϕ ψ
-disj (ex ϕ) ψ = ex (disj ϕ (rename-PrenexFormula succ ψ))
-
-toPrenexForm : ∀ {Δ} → ExFormula Δ → PrenexFormula Δ
-toPrenexForm (constraint x) = constraint x
-toPrenexForm (ex q)         = ex (toPrenexForm q)
-toPrenexForm (ϕ and ψ)      = conj (toPrenexForm ϕ) (toPrenexForm ψ)
-toPrenexForm (ϕ or ψ)       = disj (toPrenexForm ϕ) (toPrenexForm ψ)
+data QueryTree : Set where
+  querySet : Bool → QuerySet → QueryTree
+  _or_ : QueryTree → QueryTree → QueryTree
+  _and_ : QueryTree → QueryTree → QueryTree

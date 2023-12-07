@@ -1,6 +1,6 @@
 {-# OPTIONS --safe #-}
 
-module EquiInhabited where
+module Util.EquiInhabited where
 
 open import Level using (Level)
 open import Data.Bool renaming (T to True)
