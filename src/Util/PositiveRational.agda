@@ -30,13 +30,13 @@ open import Util
 abstract
 
   max⁺ : Op₂ ℚ⁺
-  max⁺ (p , p⁺) (q , q⁺) = p ⊔ q , ⊔-pres-nonNegative p⁺ q⁺
+  max⁺ (p , p⁺) (q , q⁺) = p ⊔ q , ⊔-pres-nonNegative p q {{p⁺}} {{q⁺}}
 
   min⁺ : Op₂ ℚ⁺
-  min⁺ (p , p⁺) (q , q⁺) = p ⊓ q , ⊓-pres-nonNegative p⁺ q⁺
+  min⁺ (p , p⁺) (q , q⁺) = p ⊓ q , ⊓-pres-nonNegative p q {{p⁺}} {{q⁺}}
 
   _+⁺_ : Op₂ ℚ⁺
-  (p , p⁺) +⁺ (q , q⁺) = p + q , +-pres-nonNegative {p} {q} p⁺ q⁺
+  (p , p⁺) +⁺ (q , q⁺) = p + q , +-pres-nonNegative p q {{p⁺}} {{q⁺}}
 
   _-_[_] : ∀ p q → p ≥ q → ℚ⁺
   p - q [ p≥q ] = p - q , nonNegative (p≥q⇒p-q≥0 p≥q)

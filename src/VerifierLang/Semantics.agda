@@ -4,7 +4,7 @@ open import Data.Bool
        using (Bool; true; false; _∧_; _∨_; if_then_else_; not)
        renaming (T to True)
 open import Data.Bool.Properties using (not-involutive; ∨-∧-booleanAlgebra)
-open import Algebra.Properties.BooleanAlgebra ∨-∧-booleanAlgebra using (deMorgan₁; deMorgan₂)
+open import Algebra.Lattice.Properties.BooleanAlgebra ∨-∧-booleanAlgebra using (deMorgan₁; deMorgan₂)
 open import Data.Product using (Σ-syntax; _×_)
 open import Data.Sum using (_⊎_)
 open import Data.Rational as ℚ using (ℚ; 1ℚ; _*_; _+_; _≤ᵇ_; _≟_)
@@ -65,12 +65,12 @@ eval-Query : ∀ {Δ} → Query Δ → Env Δ → Set
 eval-Query (body ϕ) η = True (eval-QueryBody ϕ η)
 eval-Query (ex ϕ) η = Σ[ q ∈ ℚ ] (eval-Query ϕ (extend-env η q))
 
-eval-QuerySet : QuerySet → Set
-eval-QuerySet (query x) = eval-Query x empty-env
-eval-QuerySet (ϕ or ϕ₂) = eval-QuerySet ϕ ⊎ eval-QuerySet ϕ₂
+eval-QuerySet : ∀ {Δ} → QuerySet Δ → Env Δ → Set
+eval-QuerySet (query x) η = eval-Query x η
+eval-QuerySet (ϕ or ϕ₂) η = eval-QuerySet ϕ η ⊎ eval-QuerySet ϕ₂ η
 
 eval-QueryTree : QueryTree → Set
-eval-QueryTree (querySet negated x₁) = (if negated then ¬_ else id) (eval-QuerySet x₁)
+eval-QueryTree (querySet negated x₁) = (if negated then ¬_ else id) (eval-QuerySet x₁ empty-env)
 eval-QueryTree (t or t₁) = eval-QueryTree t ⊎ eval-QueryTree t₁
 eval-QueryTree (t and t₁) = eval-QueryTree t × eval-QueryTree t₁
 

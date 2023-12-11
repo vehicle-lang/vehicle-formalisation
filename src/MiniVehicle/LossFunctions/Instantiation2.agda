@@ -3,7 +3,7 @@ module MiniVehicle.LossFunctions.Instantiation2 where
 
 open import Data.Sum as Sum
 open import Data.Product as Prod
-open import Data.Rational
+open import Data.Rational hiding (truncate)
 open import Data.Rational.Properties
 open import Data.Bool hiding (_≤_; _<_; _<?_; _≤?_) renaming (Bool to 𝔹; T to True)
 open import Data.Bool.Properties hiding (_<?_; _≤?_)
@@ -12,7 +12,7 @@ open import Data.Empty using (⊥-elim)
 open import Algebra
 open import Function
 open import Function.Reasoning
-open import Relation.Nullary
+open import Relation.Nullary hiding (True)
 open import Relation.Binary.PropositionalEquality using (_≡_; sym; cong; cong₂; refl; subst)
 open import Relation.Unary using (Decidable)
 open import Relation.Nullary.Negation

@@ -7,7 +7,7 @@ open import Data.Product using (Σ; _×_; proj₁; proj₂; _,_; Σ-syntax)
 open import Data.Rational using (ℚ; 1ℚ; _+_; _*_)
 open import Data.Unit using (⊤; tt)
 open import Data.Bool using (true; false)
-open import Relation.Binary.PropositionalEquality using (_≡_; refl)
+open import Relation.Binary.PropositionalEquality using (_≡_; refl; cong; cong₂)
 
 open import MiniVehicle.Language.Syntax.Restriction
 open import MiniVehicle.Language.Model
@@ -46,10 +46,22 @@ negate-BoolExpr (constraint p) = constraint (negate p)
 negate-BoolExpr (p and q) = negate-BoolExpr p or negate-BoolExpr q
 negate-BoolExpr (p or q) = negate-BoolExpr p and negate-BoolExpr q
 
+rename-negate-BoolExpr : ∀ {Δ₁ Δ₂} → (ρ : Δ₁ ⇒ᵣ Δ₂) (ϕ : BoolExpr Δ₂)  →
+                         rename-BoolExpr ρ (negate-BoolExpr ϕ) ≡ negate-BoolExpr (rename-BoolExpr ρ ϕ)
+rename-negate-BoolExpr ρ (constraint x) = cong constraint (rename-negate ρ x)
+rename-negate-BoolExpr ρ (b and b₁) = cong₂ _or_ (rename-negate-BoolExpr ρ b) (rename-negate-BoolExpr ρ b₁)
+rename-negate-BoolExpr ρ (b or b₁) = cong₂ _and_ (rename-negate-BoolExpr ρ b) (rename-negate-BoolExpr ρ b₁)
+
 cast : ∀ {Δ} → BoolExpr Δ → ExFormula Δ
 cast (constraint x) = constraint x
 cast (p and q) = cast p and cast q
-cast (p or q) = cast p and cast q
+cast (p or q) = cast p or cast q
+
+rename-cast : ∀ {Δ₁ Δ₂} → (ρ : Δ₁ ⇒ᵣ Δ₂) (ϕ : BoolExpr Δ₂)  →
+              rename-ExFormula ρ (cast ϕ) ≡ cast (rename-BoolExpr ρ ϕ)
+rename-cast ρ (constraint x) = refl
+rename-cast ρ (ϕ and ψ) = cong₂ _and_ (rename-cast ρ ϕ) (rename-cast ρ ψ)
+rename-cast ρ (ϕ or ψ) = cong₂ _or_ (rename-cast ρ ϕ) (rename-cast ρ ψ)
 
 record ⟦Type⟧ : Set₁ where
   field
@@ -266,32 +278,28 @@ private
   variable
     Δ Δ₁ Δ₂ : LinVarCtxt
 
-liftQuery : ∀ {Δ} → Query Δ → Query ε
-liftQuery {ε}    b = b
-liftQuery {Δ ,∙} b = liftQuery (ex b)
-
 and-QueryBody : QueryBody Δ → Query Δ → Query Δ
 and-QueryBody x (body y) = body (x and y)
 and-QueryBody x (ex y) = ex (and-QueryBody (rename-QueryBody succ x) y)
 
 and-Query : Query Δ → Query Δ → Query Δ
-and-Query (ex x) y = ex (and-Query x (rename-Query succ y))
 and-Query (body x) y = and-QueryBody x y
+and-Query (ex x) y = ex (and-Query x (rename-Query succ y))
 
-and-QuerySet : QuerySet → QuerySet → QuerySet
+and-QuerySet : QuerySet Δ → QuerySet Δ → QuerySet Δ
 and-QuerySet (query x) (query y) = query (and-Query x y)
 and-QuerySet (ps or ps₁) qs = and-QuerySet ps qs or and-QuerySet ps₁ qs
 and-QuerySet ps (qs₁ or qs₂) = and-QuerySet ps qs₁ or and-QuerySet ps qs₂
 
-quantify-QuerySet : QuerySet → QuerySet
-quantify-QuerySet (query x)  = query (ex (rename-Query succ x))
-quantify-QuerySet (ϕ₁ or ϕ₂) = quantify-QuerySet ϕ₁ or quantify-QuerySet ϕ₂
+quantifyQuerySet : QuerySet (Δ ,∙) → QuerySet Δ
+quantifyQuerySet (query x)  = query (ex x)
+quantifyQuerySet (ϕ₁ or ϕ₂) = quantifyQuerySet ϕ₁ or quantifyQuerySet ϕ₂
 
-toQuerySet : ExFormula Δ → QuerySet
-toQuerySet (constraint c) = query (liftQuery (body (constraint c)))
+toQuerySet : ExFormula Δ → QuerySet Δ
+toQuerySet (constraint c) = query (body (constraint c))
 toQuerySet (ϕ and ψ)      = and-QuerySet (toQuerySet ϕ) (toQuerySet ψ)
 toQuerySet (ϕ or ψ)       = _or_ (toQuerySet ϕ) (toQuerySet ψ)
-toQuerySet (ex ϕ)         = quantify-QuerySet (toQuerySet ϕ)
+toQuerySet (ex ϕ)         = quantifyQuerySet (toQuerySet ϕ)
 
 toQueryTree : ExFormula ε → QueryTree
 toQueryTree (ϕ and ψ)      = toQueryTree ϕ and toQueryTree ψ

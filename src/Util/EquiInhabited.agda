@@ -30,35 +30,37 @@ variable
 cong-∃ : ∀ {A : Set ℓ}{B₁ B₂ : A → Set ℓ} →
          ((a : A) → B₁ a ⇔ B₂ a) →
          (Σ A B₁) ⇔ Σ A B₂
-cong-∃ eq .f (a , b₁) = a , eq a .f b₁
-cong-∃ eq .g (a , b₂) = a , eq a .g b₂
-cong-∃ eq .cong₁ refl = refl
-cong-∃ eq .cong₂ refl = refl
+cong-∃ eq .to        (a , b₁) = a , eq a .to b₁
+cong-∃ eq .from      (a , b₂) = a , eq a .from b₂
+cong-∃ eq .to-cong   refl     = refl
+cong-∃ eq .from-cong refl     = refl
 
 known : ∀ {A : Set ℓ}{B : A → Set ℓ} a →
         B a ⇔ (Σ[ a' ∈ A ] (a' ≡ a × B a'))
-known a .f b = a , refl , b
-known a .g (a , refl , b) = b
-known a .cong₁ refl = refl
-known a .cong₂ refl = refl
+known a .to        b = a , refl , b
+known a .from     (a , refl , b) = b
+known a .to-cong   refl = refl
+known a .from-cong refl = refl
 
+-- stdlib v2.0
 or-left : ∀ {A : Set ℓ} → A ⇔ (A ⊎ ⊥)
-or-left .f = inj₁
-or-left .g (inj₁ x) = x
-or-left .cong₁ refl = refl
-or-left .cong₂ refl = refl
+or-left .to = inj₁
+or-left .from (inj₁ x) = x
+or-left .to-cong refl = refl
+or-left .from-cong refl = refl
 
+-- stdlib v2.0
 or-right : ∀ {A : Set ℓ} → A ⇔ (⊥ ⊎ A)
-or-right .f = inj₂
-or-right .g (inj₂ a) = a
-or-right .cong₁ refl = refl
-or-right .cong₂ refl = refl
+or-right .to = inj₂
+or-right .from (inj₂ a) = a
+or-right .to-cong refl = refl
+or-right .from-cong refl = refl
 
 ⊤-fst : ∀ {A : Set ℓ} → A ⇔ (⊤ × A)
-⊤-fst .f a = tt , a
-⊤-fst .g (tt , a) = a
-⊤-fst .cong₁ refl = refl
-⊤-fst .cong₂ refl = refl
+⊤-fst .to a = tt , a
+⊤-fst .from (tt , a) = a
+⊤-fst .to-cong refl = refl
+⊤-fst .from-cong refl = refl
 
 eq-cong : ∀ {A : Set ℓ} {a b c d : A} →
           a ≡ c →
@@ -67,59 +69,64 @@ eq-cong : ∀ {A : Set ℓ} {a b c d : A} →
 eq-cong refl refl = ⇔-refl
 
 ⊥-fst : ∀ {A : Set} → ⊥ ⇔ (⊥ × A)
-⊥-fst .f ()
-⊥-fst .g ()
+⊥-fst .to ()
+⊥-fst .from ()
 
+-- stdlib v2.0
 ⊎-cong : ∀ {a b} {A C : Set a}{B D : Set b} → A ⇔ C → B ⇔ D → (A ⊎ B) ⇔ (C ⊎ D)
-⊎-cong ac bd .f (inj₁ x) = inj₁ (ac .f x)
-⊎-cong ac bd .f (inj₂ y) = inj₂ (bd .f y)
-⊎-cong ac bd .g (inj₁ x) = inj₁ (ac .g x)
-⊎-cong ac bd .g (inj₂ y) = inj₂ (bd .g y)
-⊎-cong ac bd .cong₁ refl = refl
-⊎-cong ac bd .cong₂ refl = refl
+⊎-cong ac bd .to (inj₁ x) = inj₁ (ac .to x)
+⊎-cong ac bd .to (inj₂ y) = inj₂ (bd .to y)
+⊎-cong ac bd .from (inj₁ x) = inj₁ (ac .from x)
+⊎-cong ac bd .from (inj₂ y) = inj₂ (bd .from y)
+⊎-cong ac bd .to-cong refl = refl
+⊎-cong ac bd .from-cong refl = refl
 
+-- stdlib v2.0
 ×-cong : ∀ {a b} {A C : Set a}{B D : Set b} → A ⇔ C → B ⇔ D → (A × B) ⇔ (C × D)
-×-cong ac bd .f (a , b) = (ac .f a) , (bd .f b)
-×-cong ac bd .g (c , d) = (ac .g c) , (bd .g d)
-×-cong ac bd .cong₁ refl = refl
-×-cong ac bd .cong₂ refl = refl
+×-cong ac bd .to (a , b) = (ac .to a) , (bd .to b)
+×-cong ac bd .from (c , d) = (ac .from c) , (bd .from d)
+×-cong ac bd .to-cong refl = refl
+×-cong ac bd .from-cong refl = refl
+
+×-congˡ : ∀ {a b} {A C : Set a} {B : Set b} → A ⇔ C → (A × B) ⇔ (C × B)
+×-congˡ A⇔C = ×-cong A⇔C ⇔-refl
 
 cong-True : ∀ {b₁ b₂ : Bool} → b₁ ≡ b₂ → True b₁ ⇔ True b₂
 cong-True refl = ⇔-refl
 
 True-∧ : ∀ {b₁ b₂ : Bool} → (True b₁ × True b₂) ⇔ True (b₁ ∧ b₂)
-True-∧ {true} {true} .f (tt , tt) = tt
-True-∧ {true} {true} .g x = tt , tt
-True-∧ .cong₁ refl = refl
-True-∧ .cong₂ refl = refl
+True-∧ {true} {true} .to (tt , tt) = tt
+True-∧ {true} {true} .from x = tt , tt
+True-∧ .to-cong refl = refl
+True-∧ .from-cong refl = refl
 
 True-∨ : ∀ {b₁ b₂ : Bool} → (True b₁ ⊎ True b₂) ⇔ True (b₁ ∨ b₂)
-True-∨ {false} {b₂} .f (inj₂ y) = y
-True-∨ {true}  {b₂} .f _ = tt
-True-∨ {false} {b₂} .g = inj₂
-True-∨ {true} {b₂} .g = inj₁
-True-∨ .cong₁ refl = refl
-True-∨ .cong₂ refl = refl
+True-∨ {false} {b₂} .to (inj₂ y) = y
+True-∨ {true}  {b₂} .to _ = tt
+True-∨ {false} {b₂} .from = inj₂
+True-∨ {true} {b₂} .from = inj₁
+True-∨ .to-cong refl = refl
+True-∨ .from-cong refl = refl
 
 ⊥-bool : ∀ {b} → b ≡ false → ⊥ ⇔ True b
-⊥-bool refl .f ()
-⊥-bool refl .g ()
-⊥-bool refl .cong₁ refl = refl
-⊥-bool refl .cong₂ refl = refl
+⊥-bool refl .to ()
+⊥-bool refl .from ()
+⊥-bool refl .to-cong refl = refl
+⊥-bool refl .from-cong refl = refl
 
 ⊤-bool : ∀ {b} → b ≡ true → ⊤ ⇔ True b
-⊤-bool refl .f tt = tt
-⊤-bool refl .g tt = tt
-⊤-bool refl .cong₁ refl = refl
-⊤-bool refl .cong₂ refl = refl
+⊤-bool refl .to tt = tt
+⊤-bool refl .from tt = tt
+⊤-bool refl .to-cong refl = refl
+⊤-bool refl .from-cong refl = refl
 
 does-cong : ∀ {P : Set} (x : Dec P) → True (x .does) ⇔ P
-does-cong (no p) .f ()
-does-cong (no p) .g = p
-does-cong (yes p) .f tt = p
-does-cong (yes p) .g _ = tt
-does-cong _ .cong₁ refl = refl
-does-cong _ .cong₂ refl = refl
+does-cong (no p) .to ()
+does-cong (no p) .from = p
+does-cong (yes p) .to tt = p
+does-cong (yes p) .from _ = tt
+does-cong _ .to-cong refl = refl
+does-cong _ .from-cong refl = refl
 
 variable
   A B : Set
@@ -127,29 +134,38 @@ variable
   Q : B → Set
 
 and-comm-left : (A × Σ[ b ∈ B ] Q b) ⇔ (Σ[ b ∈ B ] (A × Q b))
-and-comm-left .f (a , b , q) = b , a , q
-and-comm-left .g (b , a , q) = a , b , q
-and-comm-left .cong₁ refl = refl
-and-comm-left .cong₂ refl = refl
+and-comm-left .to (a , b , q) = b , a , q
+and-comm-left .from (b , a , q) = a , b , q
+and-comm-left .to-cong refl = refl
+and-comm-left .from-cong refl = refl
 
 and-comm-right : ((Σ[ a ∈ A ] P a) × B) ⇔ (Σ[ a ∈ A ] (P a × B))
-and-comm-right .f ((a , p) , b) = a , p , b
-and-comm-right .g (a , p , b) = (a , p) , b
-and-comm-right .cong₁ refl = refl
-and-comm-right .cong₂ refl = refl
+and-comm-right .to ((a , p) , b) = a , p , b
+and-comm-right .from (a , p , b) = (a , p) , b
+and-comm-right .to-cong refl = refl
+and-comm-right .from-cong refl = refl
 
 or-comm-right : B → (A ⊎ Σ[ b ∈ B ] Q b) ⇔ (Σ[ b ∈ B ] (A ⊎ Q b))
-or-comm-right b .f (inj₁ a) = b , inj₁ a
-or-comm-right b .f (inj₂ (b' , q)) = b' , inj₂ q
-or-comm-right b .g (b' , inj₁ a) = inj₁ a
-or-comm-right b .g (b' , inj₂ q) = inj₂ (b' , q)
-or-comm-right b .cong₁ refl = refl
-or-comm-right b .cong₂ refl = refl
+or-comm-right b .to (inj₁ a) = b , inj₁ a
+or-comm-right b .to (inj₂ (b' , q)) = b' , inj₂ q
+or-comm-right b .from (b' , inj₁ a) = inj₁ a
+or-comm-right b .from (b' , inj₂ q) = inj₂ (b' , q)
+or-comm-right b .to-cong refl = refl
+or-comm-right b .from-cong refl = refl
 
 or-comm-left : A → ((Σ[ a ∈ A ] P a) ⊎ B) ⇔ (Σ[ a ∈ A ] (P a ⊎ B))
-or-comm-left a₀ .f (inj₁ (a , p)) = a , inj₁ p
-or-comm-left a₀ .f (inj₂ b)       = a₀ , inj₂ b
-or-comm-left a₀ .g (a , inj₁ p) = inj₁ (a , p)
-or-comm-left a₀ .g (a , inj₂ b) = inj₂ b
-or-comm-left a₀ .cong₁ refl = refl
-or-comm-left a₀ .cong₂ refl = refl
+or-comm-left a₀ .to (inj₁ (a , p)) = a , inj₁ p
+or-comm-left a₀ .to (inj₂ b)       = a₀ , inj₂ b
+or-comm-left a₀ .from (a , inj₁ p) = inj₁ (a , p)
+or-comm-left a₀ .from (a , inj₂ b) = inj₂ b
+or-comm-left a₀ .to-cong refl = refl
+or-comm-left a₀ .from-cong refl = refl
+
+Σ-distribˡ-⊎ : (Σ A (λ a → P a ⊎ Q a)) ⇔ (Σ A P ⊎ Σ A Q)
+Σ-distribˡ-⊎ .to (a , inj₁ p) = inj₁ (a , p)
+Σ-distribˡ-⊎ .to (a , inj₂ q) = inj₂ (a , q)
+Σ-distribˡ-⊎ .from (inj₁ (a , p)) = a , inj₁ p
+Σ-distribˡ-⊎ .from (inj₂ (a , q)) = a , inj₂ q
+Σ-distribˡ-⊎ .to-cong refl = refl
+Σ-distribˡ-⊎ .from-cong refl = refl
+

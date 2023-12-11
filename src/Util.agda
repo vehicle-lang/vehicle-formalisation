@@ -12,9 +12,9 @@ open import Data.Empty
 open import Data.Unit using (tt)
 import Data.Integer.Properties as ℤ
 open import Function
-open import Function.Properties.Equivalence
+open import Function.Properties.Equivalence using (⇔-isEquivalence)
 open import Level using (Level)
-open import Relation.Nullary
+open import Relation.Nullary using (Dec; yes; no)
 open import Relation.Nullary.Negation
 open import Relation.Binary using (_⇒_)
 open import Relation.Binary.PropositionalEquality as P using (_≡_; refl)
@@ -99,34 +99,32 @@ module ⇔-Reasoning {ℓ} where
     ; isEquivalence = ⇔-isEquivalence
     })
 
-  open Reasoning public hiding (step-≈; step-≈˘; step-≡)
+  open Reasoning public hiding (step-≈; step-≈˘)
 
-  infixr 1 step-⇔ step-⇔˘ step-≡
+  infixr 2 step-⇔ step-⇔˘
 
   step-⇔  = Reasoning.step-≈
   step-⇔˘ = Reasoning.step-≈˘
-  step-≡ = Reasoning.step-≡
 
   syntax step-⇔ x y∼z x⇔y = x ⇔⟨  x⇔y ⟩ y∼z
-  syntax step-⇔˘ x y∼z y⇔x = x ⇔˘⟨ y⇔x ⟩ y∼z
-  syntax step-≡ x y∼z y⇔x = x ≡⟨ y⇔x ⟩ y∼z
+  syntax step-⇔˘ x y∼z y⇔x = x ⇔⟨ y⇔x ⟨ y∼z
   
 -- Will be in stdlib v2.0
 _×-⇔_ : A ⇔ B → C ⇔ D → (A × C) ⇔ (B × D)
-A⇔B ×-⇔ C⇔D = mk⇔ (Prod.map (f A⇔B) (f C⇔D)) (Prod.map (g A⇔B) (g C⇔D))
+A⇔B ×-⇔ C⇔D = mk⇔ (Prod.map (to A⇔B) (to C⇔D)) (Prod.map (from A⇔B) (from C⇔D))
 
 -- Will be in stdlib v2.0
 _⊎-⇔_ : A ⇔ B → C ⇔ D → (A ⊎ C) ⇔ (B ⊎ D)
-A⇔B ⊎-⇔ C⇔D = mk⇔ (Sum.map (f A⇔B) (f C⇔D)) (Sum.map (g A⇔B) (g C⇔D))
+A⇔B ⊎-⇔ C⇔D = mk⇔ (Sum.map (to A⇔B) (to C⇔D)) (Sum.map (from A⇔B) (from C⇔D))
 
 -- Will be in stdlib v2.0
 Σ-⇔ : ∀ {A : Set} {B₁ : A → Set} {B₂ : A → Set}  →
       (∀ {x} → B₁ x ⇔ B₂ x) →
       Σ A B₁ ⇔ Σ A B₂
-Σ-⇔ B₁⇔B₂ = mk⇔ (Prod.map₂ (f B₁⇔B₂)) (Prod.map₂ (g B₁⇔B₂))
+Σ-⇔ B₁⇔B₂ = mk⇔ (Prod.map₂ (to B₁⇔B₂)) (Prod.map₂ (from B₁⇔B₂))
 
 ¬-⇔ : A ⇔ B → (¬ A) ⇔ (¬ B)
-¬-⇔ A⇔B = mk⇔ (_∘ g A⇔B) (_∘ f A⇔B)
+¬-⇔ A⇔B = mk⇔ (_∘ from A⇔B) (_∘ to A⇔B)
 
 ¬?-→ : Dec A → Dec B → (¬ A → ¬ B) → B → A
 ¬?-→ (yes A) _       ¬A⇔¬B = const A
@@ -135,8 +133,8 @@ A⇔B ⊎-⇔ C⇔D = mk⇔ (Sum.map (f A⇔B) (f C⇔D)) (Sum.map (g A⇔B) (g 
 
 ¬?-⇔ : Dec A → Dec B → (¬ A) ⇔ (¬ B) → A ⇔ B
 ¬?-⇔ (yes A) (yes B) ¬A⇔¬B = mk⇔ (const B) (const A)
-¬?-⇔ (yes A) (no ¬B) ¬A⇔¬B = contradiction A (g ¬A⇔¬B ¬B)
-¬?-⇔ (no ¬A) (yes B) ¬A⇔¬B = contradiction B (f ¬A⇔¬B ¬A)
+¬?-⇔ (yes A) (no ¬B) ¬A⇔¬B = contradiction A (from ¬A⇔¬B ¬B)
+¬?-⇔ (no ¬A) (yes B) ¬A⇔¬B = contradiction B (to ¬A⇔¬B ¬A)
 ¬?-⇔ (no ¬A) (no ¬B) ¬A⇔¬B = mk⇔ (⊥-elim ∘ ¬A )(⊥-elim ∘ ¬B)
 
 ------------------------------------------------------------------------------
@@ -193,19 +191,18 @@ p≤q⇔p-q≤0 = mk⇔ p≤q⇒p-q≤0 p-q≤0⇒p≤q
 <ᵇ⇔< : True (p <ᵇ q) ⇔ p < q
 <ᵇ⇔< = mk⇔ <ᵇ⇒< <⇒<ᵇ
 
-⊔-pres-nonNegative : ∀ {p q} → NonNegative p → NonNegative q → NonNegative (p ⊔ q)
-⊔-pres-nonNegative {p} {q} p⁺ q⁺ with p ≤ᵇ q
+⊔-pres-nonNegative : ∀ (p q : ℚ) {{_ : NonNegative p}} {{_ : NonNegative q}} → NonNegative (p ⊔ q)
+⊔-pres-nonNegative p@record{} q@record{} {{p⁺}} {{q⁺}} with p ≤ᵇ q
 ... | true  = q⁺
 ... | false = p⁺
 
-
-⊓-pres-nonNegative : ∀ {p q} → NonNegative p → NonNegative q → NonNegative (p ⊓ q)
-⊓-pres-nonNegative {p} {q} p⁺ q⁺ with p ≤ᵇ q
+⊓-pres-nonNegative : ∀ (p q : ℚ) {{_ : NonNegative p}} {{_ : NonNegative q}} → NonNegative (p ⊓ q)
+⊓-pres-nonNegative p@record{} q@record{} {{p⁺}} {{q⁺}} with p ≤ᵇ q
 ... | true  = p⁺
 ... | false = q⁺
 
-+-pres-nonNegative : ∀ {p q} → NonNegative p → NonNegative q → NonNegative (p + q)
-+-pres-nonNegative {p} {q} p⁺ q⁺ = nonNegative (+-mono-≤ (nonNegative⁻¹ {p} p⁺) (nonNegative⁻¹ {q} q⁺))
++-pres-nonNegative : (p q : ℚ) {{_ : NonNegative p}} {{_ : NonNegative q}} → NonNegative (p + q)
++-pres-nonNegative p q = nonNegative (+-mono-≤ (nonNegative⁻¹ p) (nonNegative⁻¹ q))
 
-nonNegative+pos⇒pos : NonNegative p → Positive q → Positive (p + q)
-nonNegative+pos⇒pos {p} {q} p⁺ q⁺ = positive (+-mono-≤-< (nonNegative⁻¹ {p} p⁺) (positive⁻¹ {q} q⁺))
+nonNegative+pos⇒pos : (p q : ℚ) {{_ : NonNegative p}} {{_ : Positive q}} → Positive (p + q)
+nonNegative+pos⇒pos p q = positive (+-mono-≤-< (nonNegative⁻¹ p) (positive⁻¹ q))

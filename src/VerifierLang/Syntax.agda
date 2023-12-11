@@ -127,14 +127,14 @@ rename-Query ρ (ex ϕ) = ex (rename-Query (under ρ) ϕ)
 ------------------------------------------------------------------------------
 -- A set of queries that are under the same variables
 
-data QuerySet : Set where
-  query : Query ε → QuerySet
-  _or_ : QuerySet → QuerySet → QuerySet
+data QuerySet (Δ : LinVarCtxt) : Set where
+  query : Query Δ → QuerySet Δ
+  _or_ : QuerySet Δ → QuerySet Δ → QuerySet Δ
 
 ------------------------------------------------------------------------------
 -- A tree of queries
 
 data QueryTree : Set where
-  querySet : Bool → QuerySet → QueryTree
+  querySet : Bool → QuerySet ε → QueryTree
   _or_ : QueryTree → QueryTree → QueryTree
   _and_ : QueryTree → QueryTree → QueryTree
