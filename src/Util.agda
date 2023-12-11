@@ -56,27 +56,6 @@ False⇒false : ∀ {a} → ¬ (True a) → a ≡ false
 False⇒false {false} t = refl
 False⇒false {true} t = ⊥-elim (t tt)
 
-True-∧⁺ : ∀ {a b} → True a × True b → True (a ∧ b)
-True-∧⁺ {true} {true} _ = _
-
-True-∧⁻ : ∀ {a b} → True (a ∧ b) → True a × True b
-True-∧⁻ {true} {true} _ = _ , _
-
-True-∧-⇔ : ∀ {a b} → (True a × True b) ⇔ True (a ∧ b)
-True-∧-⇔ = mk⇔ True-∧⁺ True-∧⁻
-
-True-∨⁺ : ∀ {a b} → True a ⊎ True b → True (a ∨ b)
-True-∨⁺ {true} {_} (inj₁ _) = _
-True-∨⁺ {true} {true} (inj₂ _) = tt
-True-∨⁺ {false} {true} (inj₂ _) = tt
-
-True-∨⁻ : ∀ {a b} → True (a ∨ b) → True a ⊎ True b
-True-∨⁻ {_} {true} _ = inj₂ _
-True-∨⁻ {true} {_} _ = inj₁ _
-
-True-∨-⇔ : ∀ {a b} → (True a ⊎ True b) ⇔ True (a ∨ b)
-True-∨-⇔ = mk⇔ True-∨⁺ True-∨⁻
-
 True-not⁻ : ∀ {a} → True (not a) → ¬ True a
 True-not⁻ {false} _ = id
 
@@ -144,7 +123,6 @@ infix 4 _<ᵇ_
 _<ᵇ_ : ℚ → ℚ → Bool
 p <ᵇ q = not (q ≤ᵇ p)
 
--- Should be in v2.0
 p≥q⇒p-q≥0 : p ≥ q → p - q ≥ 0ℚ
 p≥q⇒p-q≥0 {p} {q} p≥q = begin
   0ℚ   ≡˘⟨ +-inverseʳ p ⟩
@@ -152,14 +130,12 @@ p≥q⇒p-q≥0 {p} {q} p≥q = begin
   p - q ∎ where open ≤-Reasoning
 
 
--- Should be in v2.0
 p≤q⇒p-q≤0 : p ≤ q → p - q ≤ 0ℚ
 p≤q⇒p-q≤0 {p} {q} p≤q = begin
   p - q ≤⟨ +-monoˡ-≤ (- q) p≤q ⟩
   q - q ≡⟨ +-inverseʳ q ⟩
   0ℚ    ∎ where open ≤-Reasoning
 
--- Should be in v2.0
 p-q≤0⇒p≤q : p - q ≤ 0ℚ → p ≤ q
 p-q≤0⇒p≤q {p} {q} p-q≤0 = begin
   p             ≡˘⟨ +-identityʳ p ⟩
@@ -173,7 +149,6 @@ p≤q⇔p-q≤0 : p ≤ q ⇔ p - q ≤ 0ℚ
 p≤q⇔p-q≤0 = mk⇔ p≤q⇒p-q≤0 p-q≤0⇒p≤q
 
 ≰⇒≥ : p ≰ q → p ≥ q
-
 ≰⇒≥ = <⇒≤ ∘ ≰⇒>
 
 <⇒≱ : _<_ ⇒ _≱_

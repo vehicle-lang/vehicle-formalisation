@@ -42,14 +42,12 @@ known a .from     (a , refl , b) = b
 known a .to-cong   refl = refl
 known a .from-cong refl = refl
 
--- stdlib v2.0
 or-left : ∀ {A : Set ℓ} → A ⇔ (A ⊎ ⊥)
 or-left .to = inj₁
 or-left .from (inj₁ x) = x
 or-left .to-cong refl = refl
 or-left .from-cong refl = refl
 
--- stdlib v2.0
 or-right : ∀ {A : Set ℓ} → A ⇔ (⊥ ⊎ A)
 or-right .to = inj₂
 or-right .from (inj₂ a) = a
@@ -93,20 +91,6 @@ eq-cong refl refl = ⇔-refl
 
 cong-True : ∀ {b₁ b₂ : Bool} → b₁ ≡ b₂ → True b₁ ⇔ True b₂
 cong-True refl = ⇔-refl
-
-True-∧ : ∀ {b₁ b₂ : Bool} → (True b₁ × True b₂) ⇔ True (b₁ ∧ b₂)
-True-∧ {true} {true} .to (tt , tt) = tt
-True-∧ {true} {true} .from x = tt , tt
-True-∧ .to-cong refl = refl
-True-∧ .from-cong refl = refl
-
-True-∨ : ∀ {b₁ b₂ : Bool} → (True b₁ ⊎ True b₂) ⇔ True (b₁ ∨ b₂)
-True-∨ {false} {b₂} .to (inj₂ y) = y
-True-∨ {true}  {b₂} .to _ = tt
-True-∨ {false} {b₂} .from = inj₂
-True-∨ {true} {b₂} .from = inj₁
-True-∨ .to-cong refl = refl
-True-∨ .from-cong refl = refl
 
 ⊥-bool : ∀ {b} → b ≡ false → ⊥ ⇔ True b
 ⊥-bool refl .to ()

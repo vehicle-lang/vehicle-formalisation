@@ -3,7 +3,7 @@ open import Level using (0ℓ; suc; lift)
 
 open import Data.Bool using (not; _∧_; _∨_; true; false)
                    renaming (Bool to 𝔹; T to True; if_then_else_ to ifᵇ_then_else_)
-open import Data.Bool.Properties using (not-involutive; ∨-∧-booleanAlgebra)
+open import Data.Bool.Properties using (not-involutive; ∨-∧-booleanAlgebra; T-∧; T-∨)
 open import Data.Fin using (Fin)
 open import Data.Nat using (ℕ)
 open import Data.Product as Prod using (_×_; _,_; proj₁; proj₂; Σ-syntax)
@@ -487,13 +487,13 @@ compile-lemma l w x₁ (N.let-funexp x k) r =
 cast-ok : ∀ w ϕ {b} → eval-BoolExpr ϕ (w .env) ≡ b → True b ⇔ eval-ExFormula (N.cast ϕ) (w. env)
 cast-ok w (constraint x) eq = cong-True (sym eq)
 cast-ok w (ϕ and ϕ₁) {b} eq = begin
-  True b                                                                    ≡⟨ cong True (sym eq) ⟩
-  True (eval-BoolExpr ϕ (w .env) ∧ eval-BoolExpr ϕ₁ (w .env))               ⇔⟨ ⇔-sym True-∧ ⟩
+  True b                                                                    ≡⟨ cong True eq ⟨
+  True (eval-BoolExpr ϕ (w .env) ∧ eval-BoolExpr ϕ₁ (w .env))               ⇔⟨ T-∧ ⟩
   (True (eval-BoolExpr ϕ (w .env)) × True (eval-BoolExpr ϕ₁ (w .env)))      ⇔⟨ ×-cong (cast-ok w ϕ refl) (cast-ok w ϕ₁ refl) ⟩
   (eval-ExFormula (N.cast ϕ) (w .env) × eval-ExFormula (N.cast ϕ₁) (w .env)) ∎
 cast-ok w (ϕ or ϕ₁) {b} eq = begin
-  True b                                                                    ≡⟨ cong True (sym eq) ⟩
-  True (eval-BoolExpr ϕ (w .env) ∨ eval-BoolExpr ϕ₁ (w .env))               ⇔⟨ ⇔-sym True-∨ ⟩
+  True b                                                                    ≡⟨ cong True eq ⟨
+  True (eval-BoolExpr ϕ (w .env) ∨ eval-BoolExpr ϕ₁ (w .env))               ⇔⟨ T-∨ ⟩
   (True (eval-BoolExpr ϕ (w .env)) ⊎ True (eval-BoolExpr ϕ₁ (w .env)))      ⇔⟨ ⊎-cong (cast-ok w ϕ refl) (cast-ok w ϕ₁ refl) ⟩
   (eval-ExFormula (N.cast ϕ) (w .env) ⊎ eval-ExFormula (N.cast ϕ₁) (w .env)) ∎
 
@@ -590,7 +590,7 @@ quantifyQuerySet-ok (ϕ or ϕ₁) η = begin
 
 andQueryBody-ok : ∀ {Δ} (ϕ : QueryBody Δ) (ψ : Query Δ) η →
                 (True (eval-QueryBody ϕ η) × eval-Query ψ η) ⇔ eval-Query (N.and-QueryBody ϕ ψ) η
-andQueryBody-ok ϕ (body ψ) η = True-∧
+andQueryBody-ok ϕ (body ψ) η = ⇔-sym T-∧
 andQueryBody-ok ϕ (ex ψ)   η = ⇔-trans
    and-comm-left
    (cong-∃ λ q → ⇔-trans

@@ -6,7 +6,7 @@ open import Data.Rational as ℚ
 open import Data.Product using (_×_)
 open import Data.Sum using (_⊎_)
 open import Data.Bool renaming (Bool to 𝔹; T to True; T? to True?)
-open import Data.Bool.Properties using (not-involutive)
+open import Data.Bool.Properties using (not-involutive; T-∧; T-∨)
 open import Function
 open import Relation.Nullary using (¬_)
 open import Relation.Unary using (Decidable)
@@ -75,12 +75,12 @@ module _ (dl : DifferentiableLogic) where
   predicateToRelation pred = record
     { R      = _⇿_
     ; R⟪and⟫ = λ {a} {p} {b} {q} a⇿p b⇿q → begin
-      True (a ∧ b)          ⇔⟨ True-∧-⇔ ⟨
+      True (a ∧ b)          ⇔⟨ T-∧ ⟩
       (True a × True b)     ⇔⟨ a⇿p ×-⇔ b⇿q ⟩
       (Truish p × Truish q) ⇔⟨ ⟪and⟫-⇿ p q ⟩
       Truish (p ⟪and⟫ q)    ∎
     ; R⟪or⟫  = λ {a} {p} {b} {q} a⇿p b⇿q → begin
-      True (a ∨ b)          ⇔⟨ True-∨-⇔ ⟨
+      True (a ∨ b)          ⇔⟨ T-∨ ⟩
       (True a ⊎ True b)     ⇔⟨ a⇿p ⊎-⇔ b⇿q ⟩
       (Truish p ⊎ Truish q) ⇔⟨ ⟪or⟫-⇿ p q ⟩
       Truish (p ⟪or⟫ q)     ∎
