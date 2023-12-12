@@ -1,7 +1,7 @@
 {
   description = "Formalisation of the Vehicle Language in Agda";
   inputs = {
-    nixpkgs.url = github:NixOS/nixpkgs/nixos-22.05;
+    nixpkgs.url = github:NixOS/nixpkgs/nixos-23.11;
     flake-utils.url = github:numtide/flake-utils;
   };
   outputs = { self, nixpkgs, flake-utils }:
@@ -9,7 +9,16 @@
     eachSystem allSystems (system:
       let
         pkgs = nixpkgs.legacyPackages.${system};
-        agda = pkgs.agda.withPackages (ps: [ ps.standard-library ]);
+        agda = pkgs.agda.withPackages
+          (ps: [ (ps.standard-library.overrideAttrs (oldAttrs: {
+            version = "2.0-rc2";
+            src = pkgs.fetchFromGitHub {
+              repo = "agda-stdlib";
+              owner = "agda";
+              rev = "v2.0-rc2";
+              hash = "sha256-fGgOAvTWqVWE2kap2WQtsAwMSJDi3fK/V3lJ6ttDcGo=";
+            };
+          })) ]);
       in rec {
         packages = {
           html-doc = pkgs.stdenvNoCC.mkDerivation rec {
