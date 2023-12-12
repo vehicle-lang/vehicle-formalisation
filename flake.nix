@@ -11,12 +11,12 @@
         pkgs = nixpkgs.legacyPackages.${system};
         agda = pkgs.agda.withPackages
           (ps: [ (ps.standard-library.overrideAttrs (oldAttrs: {
-            version = "2.0-rc2";
+            version = "2.0";
             src = pkgs.fetchFromGitHub {
               repo = "agda-stdlib";
               owner = "agda";
-              rev = "v2.0-rc2";
-              hash = "sha256-fGgOAvTWqVWE2kap2WQtsAwMSJDi3fK/V3lJ6ttDcGo=";
+              rev = "v2.0";
+              hash = "sha256-TjGvY3eqpF+DDwatT7A78flyPcTkcLHQ1xcg+MKgCoE=";
             };
           })) ]);
       in rec {
